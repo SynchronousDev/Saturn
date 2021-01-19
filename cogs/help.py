@@ -37,7 +37,8 @@ class Help(commands.Cog):
                 if command.hidden:  # if command is hidden
                     continue
 
-                elif command.parent is not None:
+                elif command.parent is not None: # if the command has a parent
+                    
                     continue
 
                 text += f"{command.name}\n"

@@ -13,6 +13,19 @@ class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        guild = member.guild
+        try:
+            if self.bot.muted_users[member.id]:
+                data = await self.bot.config.find_by_id(guild.id)
+                mute_role = guild.get_role(data['mute_role_id'])
+                if mute_role:
+                    await member.add_roles(mute_role, reason='Attempted mute bypass', atomic=True)
+
+        except KeyError:
+            pass
+
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, exc):
@@ -23,11 +36,7 @@ class Events(commands.Cog):
             await ctx.send(embed=em)
 
         elif isinstance(exc, commands.MissingRequiredArgument):
-            try:
-                invalid_param, param_type = str(exc.param).split(':')
-            except ValueError:
-                invalid_param = str(exc.param)
-                param_type = None
+            invalid_param = str(exc.param)
             em = Embed(
                 description=f"{ERROR} Invalid argument `{invalid_param}` passed\n"
                             f"{await syntax(ctx.command, ctx)}",
@@ -47,10 +56,31 @@ class Events(commands.Cog):
                 colour=RED)
             await ctx.send(embed=em)
 
+        elif isinstance(exc, commands.RoleNotFound):
+            em = Embed(
+                description=f"{ERROR} No such role was found.",
+                colour=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, commands.ChannelNotFound):
+            em = Embed(
+                description=f"{ERROR} No such channel was found.",
+                colour=RED)
+            await ctx.send(embed=em)
+
         elif isinstance(exc, commands.MissingPermissions):
             perms = str(', '.join(exc.missing_perms)).title().replace('_', ' ')
             em = Embed(
                 description=f"{ERROR} You do not have the required permissions to perform this action.\n"
+                            f"```Missing {perms} permissions```",
+                colour=RED)
+
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, commands.BotMissingPermissions):
+            perms = str(', '.join(exc.missing_perms)).title().replace('_', ' ')
+            em = Embed(
+                description=f"{ERROR} I do not have permission to perform this action.\n"
                             f"```Missing {perms} permissions```",
                 colour=RED)
 

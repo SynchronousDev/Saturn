@@ -1,6 +1,7 @@
-import asyncio
-import json
-import os
+import contextlib as ctxlib
+import io
+import textwrap
+from traceback import format_exception
 import typing as t
 from datetime import datetime as dt
 
@@ -23,7 +24,7 @@ class Dev(commands.Cog):
 
         em = discord.Embed(
                 description=f"{CHECK} Blacklisted {member.mention} for **{reason}**.",
-                colour=GREEN,
+                colour=MAIN,
                 timestamp=dt.now())
         await ctx.send(embed=em)
 
@@ -45,9 +46,66 @@ class Dev(commands.Cog):
 
         em = discord.Embed(
                 description=f"{CHECK} Unblacklisted {member.mention} for **{reason}**.",
-                colour=GREEN,
+                colour=MAIN,
                 timestamp=dt.now())
         await ctx.send(embed=em)
+
+    @commands.command(
+        name='eval',
+        aliases=['ev', 'exec'],
+        description='The eval command. Executes code (only accessable by me)')
+    @commands.is_owner()
+    async def eval(self, ctx, *, code):
+        code = clean_code(code)
+        local_vars = {
+            "discord": discord,
+            "commands": commands,
+            "ctx": ctx,
+            "bot": self.bot,
+            "channel": ctx.channel,
+            "author": ctx.author,
+            "guild": ctx.guild,
+            "message": ctx.message,
+            "member": ctx.author,
+            "msg": ctx.message
+        }
+
+        stdout = io.StringIO()
+
+        try:
+            with ctxlib.redirect_stdout(stdout):
+                exec(
+                    f"async def func():\n{textwrap.indent(code, '    ')}", local_vars
+                )
+
+                object = await local_vars["func"]()
+                value = stdout.getvalue() or "None"
+                result = f'{value}\n-- {object}\n'
+                color = MAIN
+
+        except Exception as e:
+            result = ''.join(format_exception(e, e, e.__traceback__))
+            color = RED
+
+        em = discord.Embed(
+            description=f"```py\n{code}``````py\n{result}```",
+            color=color,
+            timestamp=dt.utcnow())
+        em.set_footer(text='Selenium Eval Command')
+        await ctx.send(embed=em)
+
+
+    @commands.command(
+        name='logout',
+        aliases=['exit'],
+        description='Closes the websocket connection and logs the bot out')
+    async def logout_cmd(self, ctx):
+        em = discord.Embed(
+            description=f"{CHECK} Closing the websocket connection!",
+            color=MAIN)
+        await ctx.send(embed=em, delete_after=2)
+
+        await self.bot.logout()
 
 
 def setup(bot):

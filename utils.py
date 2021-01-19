@@ -7,18 +7,22 @@ from datetime import datetime as dt
 
 import discord
 from discord import Color
+from discord.ext import commands
 from discord.ext.commands import MemberNotFound
 
 # Colours, emotes, and useful stuff
 
-MAIN = 0x05c96b
+MAIN = 0xff00ff
 RED = Color.red()
 GREEN = Color.green()
+GOLD = Color.gold()
 
 ERROR = '<:SelCross:793577338062766091>  '
-CHECK = '<:SelCheck:793577337915572295>  '
-LOADING = '<a:SeleniumLoading:796212409420349541>'
+CHECK = '<:SelCheck:800778507680612353>  '
+LOADING = '<a:SeleniumLoading:800924830098653194>'
 BLANK = '\uFEFF'
+LOCK = ':lock:'
+UNLOCK = ':unlock:'
 
 time_regex = re.compile(r"(?:(\d{1,5})(h|s|m|d))+?")
 time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400}
@@ -43,17 +47,21 @@ def write_json(data, file):
         json.dump(data, f, indent=4)
 
 def convert_time(time):
-    day = time // (24 * 3600)
-    time = time % (24 * 3600)
-    hour = time // 3600
-    time %= 3600
-    minutes = time // 60
-    time %= 60
-    seconds = time
-    return (f"`{str(int(day)) + 'd' if day else ''}"
-            f"{(' ' if day else '') + str(int(hour)) + 'h' if hour else ''}"
-            f"{(' ' if hour else '') + str(int(minutes)) + 'm' if minutes else ''}"
-            f"{(' ' if minutes else '') + str(int(seconds)) + 's' if seconds else ('0s' if not day and not hour and not minutes else '')}`")
+    try:
+        day = time // (24 * 3600)
+        time = time % (24 * 3600)
+        hour = time // 3600
+        time %= 3600
+        minutes = time // 60
+        time %= 60
+        seconds = time
+        return (f"`{str(int(day)) + 'd' if day else ''}"
+                f"{(' ' if day else '') + str(int(hour)) + 'h' if hour else ''}"
+                f"{(' ' if hour else '') + str(int(minutes)) + 'm' if minutes else ''}"
+                f"{(' ' if minutes else '') + str(int(seconds)) + 's' if seconds else ('0s' if not day and not hour and not minutes else '')}`")
+
+    except TypeError:
+        return 'indefinitely'
 
 async def syntax(command, ctx):
     params = []
@@ -79,15 +87,50 @@ async def retrieve_prefix(bot, message):
         return "sl!"
 
 async def send_punishment(member, guild, action, moderator, reason, duration=None):
-    em = discord.Embed(
-        description=f"**Guild** - {guild}\n"
-                    f"**Moderator** - {moderator.mention}\n"
-                    f"**Action** - {action.title()}\n"
-                    f"{'**Duration** - {}'.format(duration) if duration else ''}\n"
-                    f"**Reason** - {reason}",
-        colour=RED,
-        timestamp=dt.now())
-    await member.send(embed=em)
+    if duration:
+        em = discord.Embed(
+            description=f"**Guild** - {guild}\n"
+                        f"**Moderator** - {moderator.mention}\n"
+                        f"**Action** - {action.title()}\n"
+                        f"**Duration** - {duration}\n"
+                        f"**Reason** - {reason}",
+            colour=RED,
+            timestamp=dt.now())
+        await member.send(embed=em)
+
+    else:
+        em = discord.Embed(
+            description=f"**Guild** - {guild}\n"
+                        f"**Moderator** - {moderator.mention}\n"
+                        f"**Action** - {action.title()}\n"
+                        f"**Reason** - {reason}",
+            colour=RED,
+            timestamp=dt.now())
+        await member.send(embed=em)
+
+
+def clean_code(content):
+    if content.startswith("```") and content.endswith("```"):
+        return "\n".join(content.split("\n")[1:])[:-3]
+    else:
+        return content
+
+
+class TimeConverter(commands.Converter):
+    async def convert(self, ctx, argument):
+        args = argument.lower()
+        matches = re.findall(time_regex, args)
+        time = 0
+        for key, value in matches:
+            try:
+                time += time_dict[value] * float(key)
+            except KeyError:
+                raise commands.BadArgument(
+                    f"{value} is an invalid time key! h|m|s|d are valid arguments"
+                )
+            except ValueError:
+                raise commands.BadArgument(f"{key} is not a number!")
+        return round(time)
 
 """
 A helper section for using mongo db

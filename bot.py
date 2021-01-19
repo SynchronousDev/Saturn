@@ -37,18 +37,23 @@ bot = commands.Bot(
     intents=discord.Intents.all(),
     case_insensitive=True,
     owner_id=531501355601494026)
+bot.muted_users = {}
 bot.config_token = secret_file['token']
 bot.connection_url = secret_file['mongo']
+bot.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(bot.connection_url))
+bot.db = bot.mongo["seleniumV2"]
+bot.config = Document(bot.db, "config")
+bot.mutes = Document(bot.db, "mutes")
+bot.blacklists = Document(bot.db, "blacklists")
 
 @bot.event
 async def on_ready():
     # The on ready event. Fires when the bot is ready
     print(f"------\nLogged in as {bot.user.name} (ID {bot.user.id})\n------")
 
-    bot.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(bot.connection_url))
-    bot.db = bot.mongo["seleniumV2"]
-    bot.config = Document(bot.db, "config")
-    bot.blacklists = Document(bot.db, "blacklists")
+    current_mutes = await bot.mutes.get_all()
+    for mute in current_mutes:
+        bot.muted_users[mute["_id"]] = mute
 
     await bot.change_presence(
         activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users | sl!help"))
@@ -64,6 +69,7 @@ async def on_message(message):
                         colour=RED)
                 await message.channel.send(embed=em)
                 return
+                
         pass
 
     await bot.process_commands(message)
