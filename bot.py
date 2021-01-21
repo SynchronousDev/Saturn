@@ -6,7 +6,7 @@ import typing as t
 from datetime import datetime as dt
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 import motor.motor_asyncio
 
@@ -45,16 +45,21 @@ bot.db = bot.mongo["seleniumV2"]
 bot.config = Document(bot.db, "config")
 bot.mutes = Document(bot.db, "mutes")
 bot.blacklists = Document(bot.db, "blacklists")
+bot.reaction_roles = Document(bot.db, "reactionroles")
 
 @bot.event
 async def on_ready():
     # The on ready event. Fires when the bot is ready
-    print(f"------\nLogged in as {bot.user.name} (ID {bot.user.id})\n------")
+    print(f"------\nLogged in as {bot.user.name} (ID {bot.user.id})\n------\nTime: {dt.now()}\n------")
 
     current_mutes = await bot.mutes.get_all()
     for mute in current_mutes:
         bot.muted_users[mute["_id"]] = mute
 
+    change_pres.start()
+
+@tasks.loop(minutes=1)
+async def change_pres():
     await bot.change_presence(
         activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users | sl!help"))
 

@@ -9,6 +9,7 @@ import discord
 from discord import Color
 from discord.ext import commands
 from discord.ext.commands import MemberNotFound
+from discord.ext.buttons import Paginator
 
 # Colours, emotes, and useful stuff
 
@@ -23,9 +24,13 @@ LOADING = '<a:SeleniumLoading:800924830098653194>'
 BLANK = '\uFEFF'
 LOCK = ':lock:'
 UNLOCK = ':unlock:'
+WEAK_SIGNAL = '<:signal_weak:801138730147643464>'
+MEDIUM_SIGNAL = '<:signal_medium:801138730383179786>'
+STRONG_SIGNAL = '<:signal_strong:801138730311090197>'
 
-time_regex = re.compile(r"(?:(\d{1,5})(h|s|m|d))+?")
-time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400}
+
+time_regex = re.compile(r"(?:(\d{1,5})(h|s|m|d|w))+?")
+time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400, "w": 604800}
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -34,6 +39,7 @@ cwd = str(cwd)
 JSON utilities
 Used to save time and not having to use `with open` every single time I load json lol
 """
+        
 
 def read_json(file):
     # Reads stuff from a json file
@@ -63,7 +69,7 @@ def convert_time(time):
     except TypeError:
         return 'indefinitely'
 
-async def syntax(command, ctx):
+async def syntax(command, ctx, bot):
     params = []
 
     for key, value in command.params.items():
@@ -72,6 +78,7 @@ async def syntax(command, ctx):
                 value) else f"<{key}>")
 
     params = " ".join(params)
+    prefix = await retrieve_prefix(bot, ctx)
 
     return f"```{str(command)} {params}```"
 
@@ -126,7 +133,7 @@ class TimeConverter(commands.Converter):
                 time += time_dict[value] * float(key)
             except KeyError:
                 raise commands.BadArgument(
-                    f"{value} is an invalid time key! h|m|s|d are valid arguments"
+                    f"{value} is an invalid time key! m|w|h|m|s|d are valid arguments"
                 )
             except ValueError:
                 raise commands.BadArgument(f"{key} is not a number!")

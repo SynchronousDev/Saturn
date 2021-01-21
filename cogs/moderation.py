@@ -36,7 +36,12 @@ class Mod(commands.Cog, name='Moderation'):
             mute_role = guild.get_role(data['mute_role_id'])
 
             if current_time >= unmute_time:
-                await self.bot.mutes.delete_by_id(member.id)
+                try:
+                    await self.bot.mutes.delete_by_id(member.id)
+
+                except discord.MemberNotFound:
+                    pass 
+                
                 if mute_role in member.roles:
                     await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
                 
@@ -58,7 +63,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='kick',
         aliases=['k'],
-        description='Kicks members from the server.')
+        description='Kicks members from the server. 3 second cooldown, must have Kick Users permission.')
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.guild_only()
     @commands.bot_has_permissions(kick_members=True)
@@ -93,7 +98,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='ban',
         aliases=['b'],
-        description='Bans members from the server.')
+        description='Bans members from the server. 5 second cooldown, must have Ban Members permission.')
     @commands.cooldown(1, 5, commands.BucketType.member)
     @commands.guild_only()
     @commands.bot_has_permissions(ban_members=True)
@@ -128,7 +133,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='warn',
         aliases=['w', 'wrn'],
-        description='Warns members in the server.')
+        description='Warns members in the server. 5 second cooldown, must have Manage Messages permission.')
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.member)
@@ -165,16 +170,16 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='mute',
         aliases=['m', 'silence'],
-        description='Mutes users in the server.')
+        description='Mutes users in the server. 3 second cooldown, must have Manage Messages permission. Cannot be bypassed.')
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.has_permissions(manage_roles=True)
-    async def mute_cmd(self, ctx, member: discord.Member, time: t.Optional[TimeConverter], *, reason: t.Optional[str]):
+    @commands.has_permissions(manage_messages=True)
+    async def mute_cmd(self, ctx, member: discord.Member, time: t.Optional[TimeConverter], *, reason: t.Optional[str] = 'no reason provided'):
         data = await self.bot.config.find_by_id(ctx.guild.id)
         mute_role = ctx.guild.get_role(data['mute_role_id'])
         if not mute_role:
             em = discord.Embed(
-                description=f"{LOADING} Couldn't find a mute role to assign to {member.mention}, making one now.",
+                description=f"{LOADING} Couldn't find a mute role to assign to {member.mention}, making one now...",
                 colour=MAIN)
             msg = await ctx.send(embed=em)
 
@@ -252,17 +257,17 @@ class Mod(commands.Cog, name='Moderation'):
 
     @commands.command(
         name='unmute',
-        aliases=['um', 'umt'],
-        description='Unmutes members in the server')
+        aliases=['um', 'umt', 'unm'],
+        description='Unmutes members in the server. 3 second cooldown, must have Manage Messages permission.')
     @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.has_permissions(manage_messages=True, manage_roles=True)
+    @commands.has_permissions(manage_messages=True)
     async def unmute_cmd(self, ctx, member: discord.Member,
                          *, reason: t.Optional[str]='no reason provided'):
         data = await self.bot.config.find_by_id(ctx.guild.id)
         mute_role = ctx.guild.get_role(data['mute_role_id'])
         if not mute_role:
             em = discord.Embed(
-                description=f"{LOADING} Couldn't find a mute role in this guild, making one now.",
+                description=f"{LOADING} Couldn't find a mute role in this guild, making one now...",
                 colour=MAIN)
             msg = await ctx.send(embed=em)
 
@@ -294,7 +299,12 @@ class Mod(commands.Cog, name='Moderation'):
                             colour=MAIN)
                         await ctx.send(embed=em)
 
-                        await self.bot.mutes.delete_by_id(member.id)
+                        try:
+                            await self.bot.mutes.delete_by_id(member.id)
+
+                        except discord.MemberNotFound:
+                            pass 
+                        
                         try:
                             self.bot.muted_users.pop(member.id)
 

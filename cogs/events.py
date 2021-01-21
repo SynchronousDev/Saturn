@@ -26,7 +26,6 @@ class Events(commands.Cog):
         except KeyError:
             pass
 
-
     @commands.Cog.listener()
     async def on_command_error(self, ctx, exc):
         if isinstance(exc, commands.CommandNotFound):
@@ -39,7 +38,7 @@ class Events(commands.Cog):
             invalid_param = str(exc.param)
             em = Embed(
                 description=f"{ERROR} Invalid argument `{invalid_param}` passed\n"
-                            f"{await syntax(ctx.command, ctx)}",
+                            f"{await syntax(ctx.command, ctx, self.bot)}",
                 colour=RED)
             await ctx.send(embed=em)
 
@@ -99,6 +98,7 @@ class Events(commands.Cog):
                 color=RED)
             await ctx.send(embed=em)
             raise exc
+
 
 def setup(bot):
     bot.add_cog(Events(bot))
