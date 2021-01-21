@@ -46,7 +46,7 @@ bot.config = Document(bot.db, "config")
 bot.mutes = Document(bot.db, "mutes")
 bot.blacklists = Document(bot.db, "blacklists")
 bot.reaction_roles = Document(bot.db, "reactionroles")
-
+    
 @bot.event
 async def on_ready():
     # The on ready event. Fires when the bot is ready

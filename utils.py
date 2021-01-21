@@ -24,9 +24,9 @@ LOADING = '<a:SeleniumLoading:800924830098653194>'
 BLANK = '\uFEFF'
 LOCK = ':lock:'
 UNLOCK = ':unlock:'
-WEAK_SIGNAL = '<:signal_weak:801138730147643464>'
-MEDIUM_SIGNAL = '<:signal_medium:801138730383179786>'
-STRONG_SIGNAL = '<:signal_strong:801138730311090197>'
+WEAK_SIGNAL = ':red_circle:'
+MEDIUM_SIGNAL = ':yellow_circle:'
+STRONG_SIGNAL = ':green_circle:'
 
 
 time_regex = re.compile(r"(?:(\d{1,5})(h|s|m|d|w))+?")
