@@ -27,7 +27,6 @@ class Config(commands.Cog):
                 colour=MAIN)
         await ctx.send(embed=em)
 
-
     @commands.command(
         name='deleteprefix',
         aliases=['dp', 'delpre'],
@@ -45,16 +44,24 @@ class Config(commands.Cog):
     @commands.group(
         name='muterole',
         aliases=['mr'],
-        description='The command to change the settings for the muted role that the bot assigns to members upon a mute.',
+        description='The command to change the settings for the '
+                    'muted role that the bot assigns to members upon a mute.',
         invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.guild)
-    async def mute_role(self, ctx, role: discord.Role):
+    async def mute_role(self, ctx):
+        await ctx.invoke(self.bot.get_command('help'), entity='muterole')
+
+    @mute_role.command(
+        name='set',
+        aliases=['assign'],
+        description='Sets the mute role to a role.')
+    async def mute_role_set(self, ctx, role: discord.Role):
         await self.bot.config.upsert({"_id": ctx.guild.id, "mute_role_id": role.id})
         em = discord.Embed(
-                description=f"{CHECK} The mute role has been assigned to {role.mention}",
-                colour=MAIN)
+            description=f"{CHECK} The mute role has been assigned to {role.mention}",
+            colour=MAIN)
         await ctx.send(embed=em)
 
     @mute_role.command(

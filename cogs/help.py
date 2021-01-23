@@ -32,7 +32,7 @@ class Help(commands.Cog):
             cogs.remove('Events')
             cogs.remove('Help')
             cogs.remove('Dev')
-            cogs.remove('Tags')
+            cogs.remove('Reaction Roles')
 
             for cog in cogs:
                 text = "\n"
@@ -41,10 +41,10 @@ class Help(commands.Cog):
                         continue
 
                     elif command.parent is not None:
-            
-                        continue
+                        text += f"   {command.name}\n"
 
-                    text += f"{command.name}\n"
+                    else:
+                        text += f"{command.name}\n"
 
                 em.add_field(name=cog, value=f"```{text}```", inline=True)
 

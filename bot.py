@@ -45,8 +45,8 @@ bot.db = bot.mongo["seleniumV2"]
 bot.config = Document(bot.db, "config")
 bot.mutes = Document(bot.db, "mutes")
 bot.blacklists = Document(bot.db, "blacklists")
-bot.reaction_roles = Document(bot.db, "reactionroles")
-    
+bot.tags = Document(bot.db, "tags")
+
 @bot.event
 async def on_ready():
     # The on ready event. Fires when the bot is ready
@@ -83,4 +83,4 @@ if __name__ == '__main__':
     for file in os.listdir(cwd+'/cogs'):
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
-    bot.run(bot.config_token)
+    bot.run(bot.config_token)   

@@ -103,7 +103,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.guild_only()
     @commands.bot_has_permissions(ban_members=True)
     @commands.has_permissions(ban_members=True)
-    async def ban_cmd(self, ctx, member: discord.Member, reason: t.Optional[str] = "no reason provided"):
+    async def ban_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if ctx.guild.me.top_role > member.top_role:
             if ctx.author.top_role > member.top_role:
                 em = discord.Embed(
