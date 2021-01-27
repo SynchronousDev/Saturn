@@ -20,14 +20,14 @@ class Dev(commands.Cog):
         description='A developer command. Blacklists a user from using the bot.')
     @commands.is_owner()
     async def blacklist_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str]='no reason provided'):
-        await self.bot.blacklists.upsert({"_id": member.id, "reason": reason})
+        await self.bot.blacklists.update_one({"_id": member.id},
+                                             {'$set': {"reason": reason}}, upsert=True)
 
         em = discord.Embed(
                 description=f"{CHECK} Blacklisted {member.mention} for **{reason}**.",
                 colour=MAIN,
                 timestamp=dt.now())
         await ctx.send(embed=em)
-
 
     @commands.command(
         name='unblacklist',
@@ -36,7 +36,7 @@ class Dev(commands.Cog):
     @commands.is_owner()
     async def unblacklist_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str]='no reason provided'):
         try:
-            await self.bot.blacklists.delete_by_id(member.id)
+            await self.bot.blacklists.delete_one({"_id": member.id})
 
         except commands.MemberNotFound:
             em = discord.Embed(
@@ -93,7 +93,6 @@ class Dev(commands.Cog):
             timestamp=dt.utcnow())
         em.set_footer(text='Selenium Eval Command')
         await ctx.send(embed=em)
-
 
     @commands.command(
         name='logout',

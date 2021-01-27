@@ -1,11 +1,11 @@
-import discord 
+import discord
 from discord.ext import commands
 import typing as t
 from utils import *
 
 class Management(commands.Cog, name='Server Management'):
     def __init__(self, bot):
-        self.bot = bot 
+        self.bot = bot
 
     @commands.command(
         name='addrole',
@@ -62,7 +62,7 @@ class Management(commands.Cog, name='Server Management'):
                 added_roles.append(member)
 
             else:
-                continue 
+                continue
 
         else:
             await msg.delete()
@@ -91,7 +91,7 @@ class Management(commands.Cog, name='Server Management'):
                 removed_roles.append(member)
 
             else:
-                continue 
+                continue
 
         else:
             await msg.delete()
@@ -99,7 +99,6 @@ class Management(commands.Cog, name='Server Management'):
                     description=f"{CHECK} Removed {role.mention} from `{len(removed_roles)}` members.",
                     colour=MAIN)
             await ctx.send(embed=em)
-
 
     @commands.command(
         name='removerole',
@@ -139,15 +138,12 @@ class Management(commands.Cog, name='Server Management'):
         name='create',
         aliases=['make', 'new'],
         description='The delete group of commands.',
-        invoke_without_command=True)    
+        invoke_without_command=True)
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def create(self, ctx):
-        em = discord.Embed(
-            description=f"{ERROR} Please specify an action to perform.",
-            colour=RED)
-        await ctx.send(embed=em)
+        await ctx.invoke(self.bot.get_command('help'), entity='create')
 
     @create.command(
         name='category',
@@ -206,10 +202,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def delete(self, ctx):
-        em = discord.Embed(
-            description=f"{ERROR} Please specify an action to perform.",
-            colour=RED)
-        await ctx.send(embed=em)
+        await ctx.invoke(self.bot.get_command('help'), entity='delete')
 
     @delete.command(
         name='category',

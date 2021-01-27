@@ -100,7 +100,8 @@ class Utility(commands.Cog):
     @commands.command(
         name='lock',
         aliases=['lck', 'lk'],
-        description='Locks a channel. Essentially mutes the channel and no one can talk in it. Run the command again to unlock the channel.')
+        description='Locks a channel. Essentially mutes the channel and no one can talk in it. '
+                    'Run the command again to unlock the channel.')
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)

@@ -70,7 +70,8 @@ class Miscellaneous(commands.Cog):
 
     @commands.command(
         name='rps', aliases=['rockpaperscissors'],
-        description='Play rock paper scissors with the bot! This is not rigged and is generated via the `random` module.')
+        description='Play rock paper scissors with the bot! '
+                    'This is not rigged and is generated via the `random` module.')
     @commands.cooldown(1, 1, commands.BucketType.member)
     async def rps_cmd(self, ctx, choice):
         if choice.startswith('r'):

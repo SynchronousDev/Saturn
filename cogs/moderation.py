@@ -32,19 +32,19 @@ class Mod(commands.Cog, name='Moderation'):
             guild = self.bot.get_guild(value['guild_id'])
             member = guild.get_member(value['_id'])
 
-            data = await self.bot.config.find_by_id(guild.id)
+            data = await self.bot.config.find_one({"_id": guild.id})
             mute_role = guild.get_role(data['mute_role_id'])
 
             if current_time >= unmute_time:
                 try:
-                    await self.bot.mutes.delete_by_id(member.id)
+                    await self.bot.mutes.delete_one({"_id": member.id})
 
                 except discord.MemberNotFound:
-                    pass 
-                
+                    pass
+
                 if mute_role in member.roles:
                     await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
-                
+
                 else:
                     pass
 
@@ -52,13 +52,11 @@ class Mod(commands.Cog, name='Moderation'):
                     self.bot.muted_users.pop(member.id)
 
                 except KeyError:
-                    pass 
-
+                    pass
 
     @check_mutes.before_loop
     async def before_check_mutes(self):
         await self.bot.wait_until_ready()
-
 
     @commands.command(
         name='kick',
@@ -137,7 +135,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.member)
-    async def warn_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str]="no reason provided"):
+    async def warn_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if ctx.guild.me.top_role > member.top_role:
             if ctx.author.top_role > member.top_role:
                 em = discord.Embed(
@@ -170,90 +168,88 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='mute',
         aliases=['m', 'silence'],
-        description='Mutes users in the server. 3 second cooldown, must have Manage Messages permission. Cannot be bypassed.')
+        description='Mutes users in the server. '
+                    '3 second cooldown, must have Manage Messages permission. Cannot be bypassed.')
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
-    async def mute_cmd(self, ctx, member: discord.Member, time: t.Optional[TimeConverter], *, reason: t.Optional[str] = 'no reason provided'):
-        data = await self.bot.config.find_by_id(ctx.guild.id)
-        mute_role = ctx.guild.get_role(data['mute_role_id'])
-        if not mute_role:
+    async def mute_cmd(self, ctx, member: discord.Member, time: t.Optional[TimeConverter], *,
+                       reason: str = 'no reason provided'):
+        data = await self.bot.config.find_one({"_id": ctx.guild.id})
+        try:
+            mute_role = ctx.guild.get_role(data['mute_role_id'])
+            if not mute_role:
+                em = discord.Embed(
+                    description=f"{LOADING} Couldn't find a mute role to assign to {member.mention}, making one now...",
+                    colour=MAIN)
+                msg = await ctx.send(embed=em)
+
+                mute_role = await create_mute_role(self.bot, ctx)
+
+                await msg.delete()
+
+        except KeyError:
             em = discord.Embed(
                 description=f"{LOADING} Couldn't find a mute role to assign to {member.mention}, making one now...",
                 colour=MAIN)
             msg = await ctx.send(embed=em)
 
-            perms = discord.Permissions(
-                send_messages=False, read_messages=True)
-            mute_role = await ctx.guild.create_role(name='Muted', colour=RED, permissions=perms, reason='Could not find a muted role')
+            mute_role = await create_mute_role(self.bot, ctx)
 
-            await self.bot.config.upsert({"_id": ctx.guild.id, "mute_role_id": mute_role.id})
+            await msg.delete()
 
-            for channel in ctx.guild.channels:
+        if ctx.guild.me.top_role > member.top_role:
+            if ctx.author.top_role > member.top_role:
                 try:
-                    await channel.set_permissions(mute_role, read_messages=True, send_messages=False)
+                    if self.bot.muted_users[member.id]:
+                        em = discord.Embed(
+                            description=f"{ERROR} {member.mention} is already muted! "
+                                        f"Talk about adding insult to injury.",
+                            colour=RED)
+                        await ctx.send(embed=em)
+                        return
+
+                except KeyError:
+                    pass
+
+                data = {
+                    '_id': member.id,
+                    'muted_at': dt.utcnow(),
+                    'mute_duration': time or None,
+                    'muted_by': ctx.author.id,
+                    'guild_id': ctx.guild.id
+                }
+                await self.bot.mutes.update_one({"_id": member.id}, {'$set': data}, upsert=True)
+                self.bot.muted_users[member.id] = data
+                em = discord.Embed(
+                    description=f"{CHECK} Muted {member.mention} lasting {str(convert_time(time))}"
+                                f", for `{reason}`.", timestamp=dt.utcnow(),
+                    colour=MAIN)
+                await ctx.send(embed=em)
+                await member.add_roles(mute_role, reason=f'Muted by {ctx.author} lasting {str(convert_time(time))}'
+                                                         f', for {reason}.', atomic=True)
+
+                try:
+                    await send_punishment(member, ctx.guild, 'mute', ctx.author, reason, convert_time(time))
 
                 except discord.Forbidden:
                     pass
 
-                except discord.HTTPException:
-                    pass
-
-            await msg.delete()
-
-        else:
-            if ctx.guild.me.top_role > member.top_role:
-                if ctx.author.top_role > member.top_role:
-                    try:
-                        if self.bot.muted_users[member.id]:
-                            em = discord.Embed(
-                                description=f"{ERROR} {member.mention} is already muted! Talk about adding insult to injury.",
-                                colour=RED)
-                            await ctx.send(embed=em)
-                            return
-
-                    except KeyError:
-                        pass
-
-                    data = {
-                        "_id": member.id,
-                        'muted_at': dt.utcnow(),
-                        'mute_duration': time or None,
-                        'muted_by': ctx.author.id,
-                        'guild_id': ctx.guild.id
-                    }
-                    await self.bot.mutes.upsert(data)
-                    self.bot.muted_users[member.id] = data 
-                    em = discord.Embed(
-                            description=f"{CHECK} Muted {member.mention} lasting {str(convert_time(time))}, for `{reason}`.",
-                            timestamp=dt.utcnow(),
-                            colour=MAIN)
-                    await ctx.send(embed=em)
-                    await member.add_roles(mute_role, reason=
-                            f'Muted by {ctx.author} lasting {str(convert_time(time))}, for {reason}.', 
-                            atomic=True)
-
-                    try:
-                        await send_punishment(member, ctx.guild, 'mute', ctx.author, reason, convert_time(time))
-
-                    except discord.Forbidden:
-                        pass
-
-                else:
-                    em = discord.Embed(
-                        description=f"{ERROR} You are not high enough in the role"
-                                    f" hierarchy to perform this action.",
-                        colour=RED)
-                    await ctx.send(embed=em)
-                    return
-
             else:
                 em = discord.Embed(
-                    description=f"{ERROR} I am not high enough in the member"
+                    description=f"{ERROR} You are not high enough in the role"
                                 f" hierarchy to perform this action.",
                     colour=RED)
                 await ctx.send(embed=em)
                 return
+
+        else:
+            em = discord.Embed(
+                description=f"{ERROR} I am not high enough in the member"
+                            f" hierarchy to perform this action.",
+                colour=RED)
+            await ctx.send(embed=em)
+            return
 
     @commands.command(
         name='unmute',
@@ -262,87 +258,81 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     async def unmute_cmd(self, ctx, member: discord.Member,
-                         *, reason: t.Optional[str]='no reason provided'):
-        data = await self.bot.config.find_by_id(ctx.guild.id)
-        mute_role = ctx.guild.get_role(data['mute_role_id'])
-        if not mute_role:
+                         *, reason: t.Optional[str] = 'no reason provided'):
+        data = await self.bot.config.find_one({"_id": ctx.guild.id})
+        try:
+            mute_role = ctx.guild.get_role(data['mute_role_id'])
+            if not mute_role:
+                em = discord.Embed(
+                    description=f"{LOADING} Couldn't find a mute role to assign to {member.mention}, making one now...",
+                    colour=MAIN)
+                msg = await ctx.send(embed=em)
+
+                mute_role = await create_mute_role(self.bot, ctx)
+
+                await msg.delete()
+
+        except KeyError:
             em = discord.Embed(
-                description=f"{LOADING} Couldn't find a mute role in this guild, making one now...",
+                description=f"{LOADING} Couldn't find a mute role to assign to {member.mention}, making one now...",
                 colour=MAIN)
             msg = await ctx.send(embed=em)
 
-            perms = discord.Permissions(
-                send_messages=False, read_messages=True)
-            mute_role = await ctx.guild.create_role(name='Muted', colour=RED, permissions=perms, reason='Could not find a muted role')
-
-            await self.bot.config.upsert({"_id": ctx.guild.id, "mute_role_id": mute_role.id})
-
-            for channel in ctx.guild.channels:
-                try:
-                    await channel.set_permissions(mute_role, read_messages=True, send_messages=False)
-
-                except discord.Forbidden:
-                    pass
-
-                except discord.HTTPException:
-                    pass
+            mute_role = await create_mute_role(self.bot, ctx)
 
             await msg.delete()
 
-        else:
-            if ctx.guild.me.top_role > member.top_role:
-                if ctx.author.top_role > member.top_role:
-                    if mute_role in member.roles:
-                        em = discord.Embed(
-                            description=f"{CHECK} Unmuted {member.mention} for **{reason}**.",
-                            timestamp=dt.utcnow(),
-                            colour=MAIN)
-                        await ctx.send(embed=em)
+        if ctx.guild.me.top_role > member.top_role:
+            if ctx.author.top_role > member.top_role:
+                if mute_role in member.roles:
+                    em = discord.Embed(
+                        description=f"{CHECK} Unmuted {member.mention} for **{reason}**.",
+                        timestamp=dt.utcnow(),
+                        colour=MAIN)
+                    await ctx.send(embed=em)
 
-                        try:
-                            await self.bot.mutes.delete_by_id(member.id)
+                    try:
+                        await self.bot.mutes.delete_one({"_id": member.id})
 
-                        except discord.MemberNotFound:
-                            pass 
-                        
-                        try:
-                            self.bot.muted_users.pop(member.id)
+                    except discord.MemberNotFound:
+                        pass
 
-                        except KeyError:
-                            pass 
+                    try:
+                        self.bot.muted_users.pop(member.id)
 
-                        await member.remove_roles(mute_role, reason=reason)
+                    except KeyError:
+                        pass
 
-                        try:
-                            await send_punishment(member, ctx.guild, 'unmute', ctx.author, reason)
+                    await member.remove_roles(mute_role, reason=reason)
 
-                        except discord.Forbidden:
-                            pass
+                    try:
+                        await send_punishment(member, ctx.guild, 'unmute', ctx.author, reason)
 
-                    else:
-                        em = discord.Embed(
-                            description=f"{ERROR} {member.mention} is not muted.",
-                            colour=RED)
-                        await ctx.send(embed=em)
-                        return
+                    except discord.Forbidden:
+                        pass
 
                 else:
                     em = discord.Embed(
-                        description=f"{ERROR} You are not high enough in the role"
-                                    f" hierarchy to perform this action.",
+                        description=f"{ERROR} {member.mention} is not muted.",
                         colour=RED)
                     await ctx.send(embed=em)
                     return
 
             else:
                 em = discord.Embed(
-                    description=f"{ERROR} I am not high enough in the member"
+                    description=f"{ERROR} You are not high enough in the role"
                                 f" hierarchy to perform this action.",
                     colour=RED)
                 await ctx.send(embed=em)
                 return
 
-    
+        else:
+            em = discord.Embed(
+                description=f"{ERROR} I am not high enough in the member"
+                            f" hierarchy to perform this action.",
+                colour=RED)
+            await ctx.send(embed=em)
+            return
 
 
 def setup(bot):
