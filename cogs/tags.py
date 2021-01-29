@@ -16,11 +16,11 @@ class Tags(commands.Cog):
 		for document in await cursor.to_list(length=100):
 			tags.append(document)
 
-		found = False
-		content = None
-
 		em = discord.Embed(
 			title='{0}\'s  Tags ({1})'.format(ctx.guild, len(tags)), colour=MAIN)
+
+		em.description = '`' + ', '.join(tags) + '`'
+		await ctx.send(embed=em)
 
 	@commands.group(
 		name='tag',

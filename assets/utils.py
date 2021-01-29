@@ -19,8 +19,8 @@ RED = Color.red()
 GREEN = Color.green()
 GOLD = Color.gold()
 
-ERROR = '<:SelCross:793577338062766091>  '
-CHECK = '<:SelCheck:800778507680612353>  '
+ERROR = '<:SelError:804756495044444160>'
+CHECK = '<:SelCheck:804756481831993374>'
 LOADING = '<a:SeleniumLoading:800924830098653194>'
 BLANK = '\uFEFF'
 LOCK = ':lock:'
