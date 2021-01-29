@@ -1,10 +1,5 @@
-import typing as t
-import discord
+from assets import *
 from discord.ext import commands
-import emojis
-
-from utils import *
-
 
 class ReactionRoles(commands.Cog, name='Reaction Roles'):
     def __init__(self, bot):

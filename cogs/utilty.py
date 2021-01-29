@@ -1,11 +1,9 @@
-from datetime import datetime as dt
-from datetime import timedelta
-import typing as t 
+import typing as t
 
-import discord
-from utils import *
+from assets import *
 from discord import Embed
 from discord.ext import commands
+import pytimeparse as pytp
 
 
 class Utility(commands.Cog):
@@ -48,8 +46,8 @@ class Utility(commands.Cog):
                 check=check)
 
             em = Embed(
-                description=f"{CHECK} Deleted {len(deleted,)} messages in {ctx.channel.mention}",
-                color=MAIN)
+                description=f"{CHECK} Deleted {len(deleted, )} messages in {ctx.channel.mention}",
+                color=GREEN)
             await ctx.send(embed=em, delete_after=2)
 
         else:
@@ -118,7 +116,8 @@ class Utility(commands.Cog):
                 colour=RED)
             await ctx.send(embed=em)
 
-        elif channel.overwrites[ctx.guild.default_role].send_messages == True or channel.overwrites[ctx.guild.default_role].send_messages == None:
+        elif channel.overwrites[ctx.guild.default_role].send_messages or channel.overwrites[
+             ctx.guild.default_role].send_messages is None:
             overwrites = channel.overwrites[ctx.guild.default_role]
             overwrites.send_messages = False
             await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites)
@@ -133,29 +132,30 @@ class Utility(commands.Cog):
             await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites)
             em = discord.Embed(
                 description=f"{UNLOCK} {channel.mention} is now unlocked.",
-                colour=MAIN)
+                colour=GREEN)
             await ctx.send(embed=em)
 
     @commands.command(
         name='slowmode',
         aliases=['slm', 'sl'],
-        description='Changes the slowmode delay on a given channel. Must be equal or less than 6 hours. Requires Manage Channels permission.')
+        description='Changes the slowmode delay on a given channel. '
+                    'Must be equal or less than 6 hours. Requires Manage Channels permission.')
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def slowmode_cmd(self, ctx, channel: t.Optional[discord.TextChannel], time: TimeConverter):
+    async def slowmode_cmd(self, ctx, channel: t.Optional[discord.TextChannel], time: pytp.parse):
         channel = channel or ctx.channel
         if time > 21600 or time < 1:
             em = discord.Embed(
                 description=f"{ERROR} Slowmode time should be equal or less than 6 hours.",
                 colour=RED)
             await ctx.send(embed=em)
-            return 
+            return
 
         await channel.edit(slowmode_delay=time, reason='Slowmode delay edited by {ctx.author} via slowmode command')
         em = discord.Embed(
-                description=f":clock1: Slowmode delay for {channel.mention} was set to {str(convert_time(time))}",
-                colour=MAIN)
+            description=f":clock1: Slowmode delay for {channel.mention} was set to {str(convert_time(time))}",
+            colour=GREEN)
         await ctx.send(embed=em)
 
 

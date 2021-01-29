@@ -1,7 +1,7 @@
-import discord
-from discord.ext import commands
 import typing as t
-from utils import *
+from assets import *
+from discord.ext import commands
+import discord
 
 class Management(commands.Cog, name='Server Management'):
     def __init__(self, bot):
@@ -23,7 +23,7 @@ class Management(commands.Cog, name='Server Management'):
                 await member.add_roles(role, reason=reason, atomic=True)
                 em = discord.Embed(
                     description=f"{CHECK} Added {role.mention} to {member.mention}",
-                    colour=MAIN)
+                    colour=GREEN)
                 await ctx.send(embed=em)
 
             else:
@@ -68,7 +68,7 @@ class Management(commands.Cog, name='Server Management'):
             await msg.delete()
             em = discord.Embed(
                     description=f"{CHECK} Added {role.mention} to `{len(added_roles)}` members.",
-                    colour=MAIN)
+                    colour=GREEN)
             await ctx.send(embed=em)
 
     @commands.command(
@@ -97,7 +97,7 @@ class Management(commands.Cog, name='Server Management'):
             await msg.delete()
             em = discord.Embed(
                     description=f"{CHECK} Removed {role.mention} from `{len(removed_roles)}` members.",
-                    colour=MAIN)
+                    colour=GREEN)
             await ctx.send(embed=em)
 
     @commands.command(
@@ -116,7 +116,7 @@ class Management(commands.Cog, name='Server Management'):
                 await member.remove_roles(role, reason=reason, atomic=True)
                 em = discord.Embed(
                     description=f"{CHECK} Added {role.mention} to {member.mention}",
-                    colour=MAIN)
+                    colour=GREEN)
                 await ctx.send(embed=em)
 
             else:
@@ -159,7 +159,7 @@ class Management(commands.Cog, name='Server Management'):
         category = await ctx.guild.create_category(name=name, overwrites=overwrites)
         em = discord.Embed(
             description=f"{CHECK} Created category `{category.name}`",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @create.command(
@@ -176,7 +176,7 @@ class Management(commands.Cog, name='Server Management'):
         channel = await ctx.guild.create_text_channel(name=name, overwrites=overwrites)
         em = discord.Embed(
             description=f"{CHECK} Created channel {channel.mention}",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @create.command(
@@ -190,7 +190,7 @@ class Management(commands.Cog, name='Server Management'):
         new_role = await ctx.guild.create_role(name=name, colour=colour if colour else discord.Color.default(), reason=reason)
         em = discord.Embed(
             description=f"{CHECK} Created role {new_role.mention}",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.group(
@@ -215,7 +215,7 @@ class Management(commands.Cog, name='Server Management'):
         await category.delete(reason=reason)
         em = discord.Embed(
             description=f"{CHECK} Deleted category `{category.name}`",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @delete.command(
@@ -230,7 +230,7 @@ class Management(commands.Cog, name='Server Management'):
         await channel.delete(reason=reason)
         em = discord.Embed(
             description=f"{CHECK} Deleted channel `{channel.name}`",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @delete.command(
@@ -244,7 +244,7 @@ class Management(commands.Cog, name='Server Management'):
         await role.delete(reason=reason)
         em = discord.Embed(
             description=f"{CHECK} Deleted role `{role.name}`",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
 def setup(bot):

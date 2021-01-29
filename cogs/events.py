@@ -1,13 +1,6 @@
-import asyncio
-import os
-import typing as t
-from datetime import datetime as dt
-
 from discord import Embed
-import discord
+from assets import *
 from discord.ext import commands
-from utils import *
-
 
 class Events(commands.Cog):
     def __init__(self, bot):
@@ -38,7 +31,7 @@ class Events(commands.Cog):
             invalid_param = str(exc.param)
             em = Embed(
                 description=f"{ERROR} Invalid argument `{invalid_param}` passed\n"
-                            f"{await syntax(ctx.command, ctx, self.bot)}",
+                            f"{await syntax(ctx.command)}",
                 colour=RED)
             await ctx.send(embed=em)
 

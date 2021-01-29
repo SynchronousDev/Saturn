@@ -1,8 +1,6 @@
 import typing as t
-import discord
 from aiohttp import request
-from discord.ext import commands
-from utils import *
+from assets import *
 import random
 
 
@@ -45,7 +43,7 @@ class Miscellaneous(commands.Cog):
                     fact_em = discord.Embed(
                         title=f"{animal.title()} fact",
                         description=data['fact'],
-                        color=ctx.author.color)
+                        color=MAIN)
                     if IMAGE_URL is not None:
                         fact_em.set_image(url=image_link)
                     else:
@@ -83,25 +81,27 @@ class Miscellaneous(commands.Cog):
         elif choice.startswith('p'):
             choice = 'paper'
 
-        def random_choice(options=["rock", "paper", "scissors"]):
+        def random_choice(options=None):
+            if options is None:
+                options = ["rock", "paper", "scissors"]
             return random.choice(options)
 
         def determine_winner(choice1, choice2):
             winners = {
-                "rock":{
+                "rock": {
                     "rock": None,
                     "paper": "paper",
                     "scissors": "rock",
                 },
-                "paper":{
+                "paper": {
                     "rock": "paper",
-                    "paper": None, 
+                    "paper": None,
                     "scissors": "scissors",
                 },
-                "scissors":{
+                "scissors": {
                     "rock": "rock",
                     "paper": "scissors",
-                    "scissors": None, 
+                    "scissors": None,
                 },
             }
 
@@ -132,16 +132,15 @@ class Miscellaneous(commands.Cog):
                     await ctx.send(embed=loss)
             else:
                 tie = discord.Embed(
-                        description=f"```You both chose {choice}```",
-                        color=GOLD)
+                    description=f"```You both chose {choice}```",
+                    color=GOLD)
                 tie.set_author(icon_url=ctx.author.avatar_url, name='You tied!')
                 await ctx.send(embed=tie)
         else:
             invalid_choice = discord.Embed(
                 description=f"{ERROR} Expected either `rock`, `paper` or `scissors`, not `{choice}`",
                 color=RED)
-            await ctx.send(embed=invalid_choice)            
-
+            await ctx.send(embed=invalid_choice)
 
     @commands.command(
         name='rolldice', aliases=['rd', 'dice', 'roll'],
@@ -156,9 +155,9 @@ class Miscellaneous(commands.Cog):
                 rolls = [random.randint(1, value) for i in range(amount)]
 
                 em = discord.Embed(
-                    description=('\n'.join(f"**Dice {i + 1}** rolled a **{roll}**" 
-                                for i, roll in enumerate(rolls))
-                                + f"```Total !sum - {sum(rolls)}```"), 
+                    description=('\n'.join(f"**Dice {i + 1}** rolled a **{roll}**"
+                                           for i, roll in enumerate(rolls))
+                                 + f"```Total !sum - {sum(rolls)}```"),
                     color=MAIN)
                 em.set_author(icon_url=ctx.author.avatar_url, name=f"{ctx.author.name}'s Dice Roll")
                 await ctx.send(embed=em)
@@ -167,11 +166,10 @@ class Miscellaneous(commands.Cog):
                 em = discord.Embed(
                     description=f"{ERROR} Cannot roll that many dice. Maximum number of dice is `10`",
                     color=RED)
-                await ctx.send(embed=em)   
+                await ctx.send(embed=em)
 
         elif amount.isalpha():
             await ctx.send("https://www.youtube.com/watch?v=dQw4w9WgXcQ Well, you asked for it!")
-
 
     @commands.command(
         name="8ball",
@@ -201,7 +199,6 @@ class Miscellaneous(commands.Cog):
                      'Outlook is not so good',
                      'Very doubtful']
         await ctx.send(f'{random.choice(responses)}')
-
 
 
 def setup(bot):

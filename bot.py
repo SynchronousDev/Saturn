@@ -1,20 +1,12 @@
-import asyncio
-import json
-import logging
 import os
-import typing as t
-from datetime import datetime as dt
 
-import discord
-from discord.ext import commands, tasks
+from discord.ext import tasks
 
 import motor.motor_asyncio
 
-from utils import *
+from assets import *
 
-print('{}\n------'.format(cwd))
 
-configuration = json.load(open(cwd + '/config/secrets.json'))
 logging.basicConfig(level=logging.INFO)
 default_prefix = "sl!"
 
@@ -34,12 +26,18 @@ async def get_prefix(bot, message):
     except:
         return commands.when_mentioned_or(default_prefix)(bot, message)
 
-
 bot = commands.Bot(
     command_prefix=get_prefix,
     intents=discord.Intents.all(),
     case_insensitive=True,
     owner_id=531501355601494026)
+bot.cwd = Path(__file__).parents[0]
+bot.cwd = str(bot.cwd)
+
+configuration = json.load(open(bot.cwd + '/assets/secrets.json'))
+
+print('{}\n------'.format(bot.cwd))
+
 bot.muted_users = {}
 bot.config_token = configuration['token']
 bot.connection_url = configuration['mongo']
@@ -49,7 +47,6 @@ bot.config = bot.db["config"]
 bot.mutes = bot.db["mutes"]
 bot.blacklists = bot.db["blacklists"]
 bot.tags = bot.db["tags"]
-
 
 @bot.event
 async def on_ready():
@@ -91,7 +88,7 @@ async def on_message(message):
 
 
 if __name__ == '__main__':
-    for file in os.listdir(cwd + '/cogs'):
+    for file in os.listdir(bot.cwd + '/cogs'):
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
     bot.run(bot.config_token)

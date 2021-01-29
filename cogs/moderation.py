@@ -1,13 +1,10 @@
-import asyncio
-from datetime import datetime as dt
 import typing as t
 from copy import deepcopy
 from dateutil.relativedelta import relativedelta
 
-import discord
-from discord.errors import ClientException
-from discord.ext import commands, tasks
-from utils import *
+from discord.ext import tasks
+from assets import *
+import pytimeparse as pytp
 
 
 class Mod(commands.Cog, name='Moderation'):
@@ -72,7 +69,7 @@ class Mod(commands.Cog, name='Moderation'):
                 em = discord.Embed(
                     description=f"{CHECK} Kicked {member.mention} for `{reason}`.",
                     timestamp=dt.utcnow(),
-                    colour=MAIN)
+                    colour=GREEN)
                 await ctx.send(embed=em)
                 await send_punishment(member, ctx.guild, 'kick', ctx.author, reason)
                 await member.kick(reason=reason)
@@ -107,7 +104,7 @@ class Mod(commands.Cog, name='Moderation'):
                 em = discord.Embed(
                     description=f"{CHECK} Banned {member.mention} for `{reason}`.",
                     timestamp=dt.utcnow(),
-                    colour=MAIN)
+                    colour=GREEN)
                 await ctx.send(embed=em)
                 await send_punishment(member, ctx.guild, 'ban', ctx.author, reason)
                 await member.ban(reason=reason)
@@ -141,7 +138,7 @@ class Mod(commands.Cog, name='Moderation'):
                 em = discord.Embed(
                     description=f"{CHECK} Warned {member.mention} for `{reason}`.",
                     timestamp=dt.utcnow(),
-                    colour=MAIN)
+                    colour=GREEN)
                 await ctx.send(embed=em)
                 try:
                     await send_punishment(member, ctx.guild, 'warn', ctx.author, reason)
@@ -173,8 +170,13 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
-    async def mute_cmd(self, ctx, member: discord.Member, time: t.Optional[TimeConverter], *,
-                       reason: str = 'no reason provided'):
+    async def mute_cmd(self, ctx, member: discord.Member, *args):
+        time = pytp.parse(args[0]) or None
+        if not time:
+            reason = ' '.join(args)
+
+        else:
+            reason = ' '.join(args[1:])
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
             mute_role = ctx.guild.get_role(data['mute_role_id'])
@@ -224,7 +226,7 @@ class Mod(commands.Cog, name='Moderation'):
                 em = discord.Embed(
                     description=f"{CHECK} Muted {member.mention} lasting {str(convert_time(time))}"
                                 f", for `{reason}`.", timestamp=dt.utcnow(),
-                    colour=MAIN)
+                    colour=GREEN)
                 await ctx.send(embed=em)
                 await member.add_roles(mute_role, reason=f'Muted by {ctx.author} lasting {str(convert_time(time))}'
                                                          f', for {reason}.', atomic=True)
@@ -286,9 +288,9 @@ class Mod(commands.Cog, name='Moderation'):
             if ctx.author.top_role > member.top_role:
                 if mute_role in member.roles:
                     em = discord.Embed(
-                        description=f"{CHECK} Unmuted {member.mention} for **{reason}**.",
+                        description=f"{CHECK} Unmuted {member.mention} for `{reason}`.",
                         timestamp=dt.utcnow(),
-                        colour=MAIN)
+                        colour=GREEN)
                     await ctx.send(embed=em)
 
                     try:

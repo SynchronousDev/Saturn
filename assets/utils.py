@@ -9,6 +9,8 @@ import discord
 from discord import Color
 from discord.ext import commands
 from discord.ext.commands import MemberNotFound
+from datetime import datetime as dt, timedelta
+import functools
 
 # Colours, emotes, and useful stuff
 
@@ -26,12 +28,6 @@ UNLOCK = ':unlock:'
 WEAK_SIGNAL = ':red_circle:'
 MEDIUM_SIGNAL = ':yellow_circle:'
 STRONG_SIGNAL = ':green_circle:'
-
-time_regex = re.compile(r"(?:(\d{1,5})(h|s|m|d|w))+?")
-time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400, "w": 604800}
-
-cwd = Path(__file__).parents[0]
-cwd = str(cwd)
 
 """
 JSON utilities
@@ -54,23 +50,42 @@ def write_json(data, file):
 
 def convert_time(time):
     try:
-        day = time // (24 * 3600)
-        time = time % (24 * 3600)
-        hour = time // 3600
+        times = []
+        years = time // 31536000
+        time %= 31536000
+        months = time // 2628000
+        time %= 2628000
+        weeks = time // 604800
+        time %= 604800
+        days = time // 86400
+        time %= 86400
+        hours = time // 3600
         time %= 3600
         minutes = time // 60
         time %= 60
         seconds = time
-        return (f"`{str(int(day)) + 'd' if day else ''}"
-                f"{(' ' if day else '') + str(int(hour)) + 'h' if hour else ''}"
-                f"{(' ' if hour else '') + str(int(minutes)) + 'm' if minutes else ''}"
-                f"{(' ' if minutes else '') + str(int(seconds)) + 's' if seconds else ''}`")
+        # this is a very slow and messy process but I can't seem to think of a better way to do it
+        if years >= 1:
+            times.append(str(years) + ' years')
+        if months >= 1:
+            times.append(str(months) + ' months')
+        if weeks >= 1:
+            times.append(str(weeks) + ' weeks')
+        if days >= 1:
+            times.append(str(days) + ' days')
+        if hours >= 1:
+            times.append(str(hours) + ' hours')
+        if minutes >= 1:
+            times.append(str(minutes) + ' mintues')
+        if seconds >= 1:
+            times.append(str(seconds) + ' seconds')
+        return f"`{' '.join(times)}`"
 
-    except TypeError:
-        return 'indefinitely'
+    except Exception:
+        return '`indefinitely`'
+# I have this function collapsed so it won't look too bad to the eys
 
-
-async def syntax(command, ctx, bot):
+async def syntax(command):
     params = []
 
     for key, value in command.params.items():
@@ -94,6 +109,7 @@ async def retrieve_prefix(bot, message):
             return data["prefix"]
     except Exception as e:
         return "sl!"
+
 
 async def create_mute_role(bot, ctx):
     perms = discord.Permissions(
@@ -152,22 +168,3 @@ def clean_code(content):
         return "\n".join(content.split("\n")[1:])[:-3]
     else:
         return content
-
-
-class TimeConverter(commands.Converter):
-    async def convert(self, ctx, argument):
-        args = argument.lower()
-        matches = re.findall(time_regex, args)
-        time = 0
-        for key, value in matches:
-            try:
-                time += time_dict[value] * float(key)
-            except KeyError:
-                raise commands.BadArgument(
-                    f"{value} is an invalid time key! m|w|h|m|s|d are valid arguments"
-                )
-            except ValueError:
-                raise commands.BadArgument(f"{key} is not a number!")
-
-        return round(time)
-

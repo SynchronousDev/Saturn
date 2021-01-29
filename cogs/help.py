@@ -1,9 +1,6 @@
-from datetime import datetime as dt
-
 import typing as t
-import discord
+from assets import *
 from discord.ext import commands
-from utils import *
 
 
 class Help(commands.Cog):
@@ -79,7 +76,7 @@ class Help(commands.Cog):
                     em.add_field(name='Description',
                                  value=command.description if command.description else "No description for this command.",
                                  inline=False)
-                    em.add_field(name='Syntax', value=await syntax(command, ctx, self.bot), inline=False)
+                    em.add_field(name='Syntax', value=await syntax(command), inline=False)
                     em.add_field(name='Aliases',
                                  value=f"```{', '.join(command.aliases)}```" if command.aliases else "No aliases for this command.")
                     if hasattr(command, "all_commands"):

@@ -1,12 +1,4 @@
-import asyncio
-import json
-import os
-import typing as t
-from datetime import datetime as dt
-
-import discord
-from discord.ext import commands
-from utils import *
+from assets.utils import *
 
 
 class Config(commands.Cog):
@@ -24,7 +16,7 @@ class Config(commands.Cog):
         await self.bot.config.update_one({"_id": ctx.guild.id}, {'$set': {"prefix": prefix}}, upsert=True)
         em = discord.Embed(
                 description=f"{CHECK} Prefix has been set to `{prefix}`",
-                colour=MAIN)
+                colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.command(
@@ -38,7 +30,7 @@ class Config(commands.Cog):
         await self.bot.config.update_one({"_id": ctx.guild.id}, {"$unset": {"prefix": 1}})
         em = discord.Embed(
                 description=f"{CHECK} Prefix has been reset to the default `sl!`",
-                colour=MAIN)
+                colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.group(
@@ -67,7 +59,7 @@ class Config(commands.Cog):
             {"_id": ctx.guild.id}, {'$set': {"moderator_role_id": role.id}}, upsert=True)
         em = discord.Embed(
             description=f"{CHECK} The moderator role has been assigned to {role.mention}",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @mod_role.command(
@@ -122,7 +114,7 @@ class Config(commands.Cog):
 
         em = discord.Embed(
             description=f"{CHECK} The moderator role has been deleted.",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @mod_role.command(
@@ -165,7 +157,7 @@ class Config(commands.Cog):
 
         em = discord.Embed(
             description=f"{CHECK} The moderator role was created.",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.group(
@@ -192,7 +184,7 @@ class Config(commands.Cog):
             {"_id": ctx.guild.id}, {'$set': {"mute_role_id": role.id}}, upsert=True)
         em = discord.Embed(
             description=f"{CHECK} The mute role has been assigned to {role.mention}",
-            colour=MAIN)
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @mute_role.command(
@@ -245,7 +237,7 @@ class Config(commands.Cog):
 
         em = discord.Embed(
                 description=f"{CHECK} The mute role has been deleted.",
-                colour=MAIN)
+                colour=GREEN)
         await ctx.send(embed=em)
 
     @mute_role.command(
@@ -289,7 +281,7 @@ class Config(commands.Cog):
 
         em = discord.Embed(
                 description=f"{CHECK} The mute role was created.",
-                colour=MAIN)
+                colour=GREEN)
         await ctx.send(embed=em)
 
 

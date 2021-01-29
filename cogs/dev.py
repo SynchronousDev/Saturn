@@ -3,11 +3,8 @@ import io
 import textwrap
 from traceback import format_exception
 import typing as t
-from datetime import datetime as dt
 
-import discord
-from discord.ext import commands
-from utils import *
+from assets import *
 
 
 class Dev(commands.Cog):
@@ -25,7 +22,7 @@ class Dev(commands.Cog):
 
         em = discord.Embed(
                 description=f"{CHECK} Blacklisted {member.mention} for **{reason}**.",
-                colour=MAIN,
+                colour=GREEN,
                 timestamp=dt.now())
         await ctx.send(embed=em)
 
@@ -46,7 +43,7 @@ class Dev(commands.Cog):
 
         em = discord.Embed(
                 description=f"{CHECK} Unblacklisted {member.mention} for **{reason}**.",
-                colour=MAIN,
+                colour=GREEN,
                 timestamp=dt.now())
         await ctx.send(embed=em)
 
@@ -81,7 +78,7 @@ class Dev(commands.Cog):
                 object = await local_vars["func"]()
                 value = stdout.getvalue() or "None"
                 result = f'{value}\n-- {object}\n'
-                color = MAIN
+                color = GREEN
 
         except Exception as e:
             result = ''.join(format_exception(e, e, e.__traceback__))
@@ -100,8 +97,8 @@ class Dev(commands.Cog):
         description='Closes the websocket connection and logs the bot out')
     async def logout_cmd(self, ctx):
         em = discord.Embed(
-            description=f"{CHECK} Closing the websocket connection!",
-            color=MAIN)
+            description=f"{CHECK} Closing the websocket connection.",
+            color=GREEN)
         await ctx.send(embed=em, delete_after=2)
 
         await self.bot.logout()
