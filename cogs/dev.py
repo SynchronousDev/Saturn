@@ -94,7 +94,7 @@ class Dev(commands.Cog):
     @commands.command(
         name='logout',
         aliases=['exit'],
-        description='Closes the websocket connection and logs the bot out')
+        description='A developer command. Closes the websocket connection and logs the bot out.')
     async def logout_cmd(self, ctx):
         em = discord.Embed(
             description=f"{CHECK} Closing the websocket connection.",
@@ -103,6 +103,34 @@ class Dev(commands.Cog):
 
         await self.bot.logout()
 
+    @commands.command(
+        name='global_toggle',
+        aliases=['gtoggle', 'gt'],
+        description='A developer command. Enable or disable commands globally.')
+    async def global_toggle(self, ctx, *, command):
+        command = self.bot.get_command(command)
+
+        if not command:
+            em = discord.Embed(
+                description=f"{ERROR} Command `{command}` does not exist.",
+                colour=RED)
+            await ctx.send(embed=em)
+            return
+
+        elif ctx.command == command or command in [c for c in self.bot.get_cog('Dev').walk_commands()]:
+            em = discord.Embed(
+                description=f"{ERROR} This command cannot be disabled.",
+                colour=RED)
+            await ctx.send(embed=em)
+            return
+
+        else:
+            command.enabled = not command.enabled
+            status = "enabled" if command.enabled else "disabled"
+            em = discord.Embed(
+                description=f"{CHECK} {status.title()} `{command.qualified_name}`",
+                color=GREEN)
+            await ctx.send(embed=em)
 
 def setup(bot):
     bot.add_cog(Dev(bot))

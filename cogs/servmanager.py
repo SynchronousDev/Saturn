@@ -195,7 +195,7 @@ class Management(commands.Cog, name='Server Management'):
 
     @commands.group(
         name='delete',
-        aliases=['del', 'remove'],
+        aliases=['del'],
         description='The delete group of commands.',
         invoke_without_command=True)
     @commands.guild_only()

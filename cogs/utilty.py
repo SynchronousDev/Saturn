@@ -17,16 +17,19 @@ class Utility(commands.Cog):
         latency = float(f"{self.bot.latency * 1000:.2f}")
         if latency < 60:
             strength = STRONG_SIGNAL
+            colour = GREEN
 
         elif latency < 101:
             strength = MEDIUM_SIGNAL
+            colour = GOLD
 
         else:
             strength = WEAK_SIGNAL
+            colour = RED
 
         em = Embed(
             description=f"{strength} Pong! `{latency}ms`",
-            colour=MAIN)
+            colour=colour)
         await ctx.send(embed=em)
 
     @commands.command(

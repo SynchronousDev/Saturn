@@ -50,7 +50,8 @@ class Help(commands.Cog):
                       '[Invite Selenium (Administrator)]'
                       '(https://discord.com/oauth2/authorize?client_id=793572249059196959&permissions=8&scope=bot)\n'
                       '[Invite Selenium (Recommended)]'
-                      '(https://discord.com/oauth2/authorize?client_id=793572249059196959&permissions=501083383&scope=bot)',
+                      '(https://discord.com/oauth2/authorize?client_id=793572249059196959&permissions=501083383&scope'
+                      '=bot)',
                 inline=False)
 
             await ctx.send(embed=em)
@@ -72,13 +73,14 @@ class Help(commands.Cog):
                             str(command.name).title()),
                         colour=MAIN,
                         timestamp=dt.now())
-                    em.set_thumbnail(url=self.bot.user.avatar_url)
                     em.add_field(name='Description',
-                                 value=command.description if command.description else "No description for this command.",
+                                 value=command.description if command.description else "No description for this "
+                                                                                       "command.",
                                  inline=False)
                     em.add_field(name='Syntax', value=await syntax(command), inline=False)
                     em.add_field(name='Aliases',
-                                 value=f"```{', '.join(command.aliases)}```" if command.aliases else "No aliases for this command.")
+                                 value=f"```{', '.join(command.aliases)}```" if command.aliases else "No aliases for "
+                                                                                                     "this command.")
                     if hasattr(command, "all_commands"):
                         subcmds = []
                         subcommands = [cmd for cmd in command.cog.walk_commands()]

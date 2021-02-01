@@ -14,7 +14,7 @@ import functools
 
 # Colours, emotes, and useful stuff
 
-MAIN = 0xff00ff
+MAIN = 0x660dd9
 RED = Color.red()
 GREEN = Color.green()
 GOLD = Color.gold()
@@ -28,6 +28,9 @@ UNLOCK = ':unlock:'
 WEAK_SIGNAL = ':red_circle:'
 MEDIUM_SIGNAL = ':yellow_circle:'
 STRONG_SIGNAL = ':green_circle:'
+NO_REPEAT = '⏭'
+REPEAT_ONE = '🔂'
+REPEAT_ALL = '🔁'
 
 """
 JSON utilities

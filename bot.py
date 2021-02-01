@@ -33,8 +33,9 @@ bot = commands.Bot(
     owner_id=531501355601494026)
 bot.cwd = Path(__file__).parents[0]
 bot.cwd = str(bot.cwd)
+version = '0.0.1'
 
-configuration = json.load(open(bot.cwd + '/assets/secrets.json'))
+configuration = json.load(open(bot.cwd + '/assets/configuration.json'))
 
 print('{}\n------'.format(bot.cwd))
 
@@ -51,23 +52,33 @@ bot.tags = bot.db["tags"]
 @bot.event
 async def on_ready():
     # The on ready event. Fires when the bot is ready
-    print(f"------\nLogged in as {bot.user.name} (ID {bot.user.id})\n------\nTime: {dt.now()}\n------"
-          f"\nCurrently serving {len(bot.guilds)} guilds\nand {len(bot.users)} users\n------"
-          f"\nDefault prefix: {default_prefix}\n------")
+    print(f"------\nLogged in as {bot.user.name}"
+          f" (ID {bot.user.id})\n------\nTime: {dt.now()}")
 
     data = []
     async for document in bot.mutes.find({}):
         data.append(document)
+
     for mute in data:
         bot.muted_users[mute["_id"]] = mute
 
     change_pres.start()
 
+@bot.event
+async def on_connect():
+    print("------\nSelenium connected")
+
+@bot.event
+async def on_disconnect():
+    print("------\nSelenium disconnected")
+    change_pres.cancel()
+
 
 @tasks.loop(minutes=1)
 async def change_pres():
     await bot.change_presence(
-        activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users | sl!help"))
+        activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users"
+                                   f" | sl!help | Version {version}"))
 
 
 @bot.event
@@ -92,3 +103,4 @@ if __name__ == '__main__':
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
     bot.run(bot.config_token)
+    print("Running Selenium")

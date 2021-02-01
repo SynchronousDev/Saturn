@@ -1,6 +1,8 @@
 from discord import Embed
 from assets import *
 from discord.ext import commands
+import traceback
+import sys
 
 class Events(commands.Cog):
     def __init__(self, bot):
@@ -21,6 +23,14 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, exc):
+        if hasattr(ctx.command, 'on_error'):
+            return
+
+        cog = ctx.cog
+        if cog:
+            if cog._get_overridden_method(cog.cog_command_error) is not None:
+                return
+
         if isinstance(exc, commands.CommandNotFound):
             em = Embed(
                 description=f"{ERROR} Command `{ctx.invoked_with}` does not exist.",
@@ -29,8 +39,14 @@ class Events(commands.Cog):
 
         elif isinstance(exc, commands.MissingRequiredArgument):
             invalid_param = str(exc.param)
+            try:
+                parameter, param_type = invalid_param.split(':')
+
+            except ValueError:
+                parameter = invalid_param
+
             em = Embed(
-                description=f"{ERROR} Invalid argument `{invalid_param}` passed\n"
+                description=f"{ERROR} Invalid argument `{parameter}` passed\n"
                             f"{await syntax(ctx.command)}",
                 colour=RED)
             await ctx.send(embed=em)
@@ -51,6 +67,20 @@ class Events(commands.Cog):
         elif isinstance(exc, commands.RoleNotFound):
             em = Embed(
                 description=f"{ERROR} No such role was found.",
+                colour=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, commands.BadUnionArgument):
+            invalid_param = str(exc.param)
+            try:
+                parameter, param_type = invalid_param.split(':')
+
+            except ValueError:
+                parameter = invalid_param
+
+            em = Embed(
+                description=f"{ERROR} Invalid argument `{parameter}` passed\n"
+                            f"{await syntax(ctx.command)}",
                 colour=RED)
             await ctx.send(embed=em)
 
@@ -82,15 +112,63 @@ class Events(commands.Cog):
             em = Embed(
                 description=f"{ERROR} You are not a developer of this bot.",
                 colour=RED)
-
             await ctx.send(embed=em)
 
-        else:
+        elif isinstance(exc, commands.DisabledCommand):
+            em = Embed(
+                description=f"{ERROR} This command is currently disabled.",
+                colour=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, NoMoreTracks):
             em = discord.Embed(
-                description=f"{ERROR} Whoops! Something went wrong. We'll look into it.",
+                description=f"{ERROR} There are no more tracks in the queue.",
                 color=RED)
             await ctx.send(embed=em)
-            raise exc
+
+        elif isinstance(exc, NoPreviousTracks):
+            em = discord.Embed(
+                description=f"{ERROR} There are no previous tracks in the queue.",
+                color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, InvalidRepeatMode):
+            em = discord.Embed(
+                description=f"{ERROR} Invalid repeat mode specified.",
+                color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, PlayerIsAlreadyPaused):
+            em = discord.Embed(
+                description=f"{ERROR} Player is already paused.",
+                color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, QueueIsEmpty):
+            em = discord.Embed(
+                description=f"{ERROR} The queue is empty.",
+                color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, AlreadyConnectedToChannel):
+            em = discord.Embed(
+                    description=f"{ERROR} Already connected to a channel.",
+                    color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, NoVoiceChannel):
+            em = discord.Embed(
+                    description=f"{ERROR} You are not in a voice channel.",
+                    color=RED)
+            await ctx.send(embed=em)
+
+        elif hasattr(exc, "original"):
+            raise exc.original
+
+        else:
+            print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+            traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
+            
 
 
 def setup(bot):

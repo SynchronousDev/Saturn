@@ -5,7 +5,7 @@ from dateutil.relativedelta import relativedelta
 from discord.ext import tasks
 from assets import *
 import pytimeparse as pytp
-
+import asyncio
 
 class Mod(commands.Cog, name='Moderation'):
     def __init__(self, bot):
@@ -98,23 +98,77 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.guild_only()
     @commands.bot_has_permissions(ban_members=True)
     @commands.has_permissions(ban_members=True)
-    async def ban_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
+    async def ban_cmd(self, ctx, member: t.Union[discord.Member, discord.User],
+                      delete_days: t.Optional[int], *, reason: t.Optional[str] = "no reason provided"):
+        delete_days = int(delete_days) if delete_days else 7
+        if delete_days > 7:
+            em = discord.Embed(
+                description=f"{ERROR} The `days_delete` parameter has to be either equal or less than 7.",
+                colour=RED)
+            await ctx.send(embed=em)
+            return
+
+        if isinstance(member, discord.Member):
+            if ctx.guild.me.top_role > member.top_role:
+                if ctx.author.top_role > member.top_role:
+                    em = discord.Embed(
+                        description=f"{CHECK} Banned {member.mention} for `{reason}`.",
+                        timestamp=dt.utcnow(),
+                        colour=GREEN)
+                    await ctx.send(embed=em)
+                    await send_punishment(member, ctx.guild, 'ban', ctx.author, reason)
+                    await member.ban(reason=reason, delete_message_days=delete_days)
+                else:
+                    em = discord.Embed(
+                        description=f"{ERROR} You are not high enough in the role"
+                                    f" hierarchy to perform this action.",
+                        colour=RED)
+                    await ctx.send(embed=em)
+                    return
+
+            else:
+                em = discord.Embed(
+                    description=f"{ERROR} I am not high enough in the member"
+                                f" hierarchy to perform this action.",
+                    colour=RED)
+                await ctx.send(embed=em)
+                return
+
+        elif isinstance(member, discord.User):
+            em = discord.Embed(
+                description=f"{CHECK} Banned {member.mention} for `{reason}`.",
+                timestamp=dt.utcnow(),
+                colour=GREEN)
+            await ctx.send(embed=em)
+            await ctx.guild.ban(member, reason=reason, delete_message_days=delete_days)
+
+    @commands.command(
+        name='softban',
+        aliases=['sban', 'sb', 'softb'],
+        description='Bans a member and deletes all of their messages within a 14 day span.')
+    @commands.cooldown(1, 5, commands.BucketType.member)
+    @commands.guild_only()
+    @commands.bot_has_permissions(ban_members=True)
+    @commands.has_permissions(ban_members=True)
+    async def softban_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if ctx.guild.me.top_role > member.top_role:
             if ctx.author.top_role > member.top_role:
                 em = discord.Embed(
-                    description=f"{CHECK} Banned {member.mention} for `{reason}`.",
+                    description=f"{CHECK} Softbanned {member.mention} for `{reason}`.",
                     timestamp=dt.utcnow(),
                     colour=GREEN)
                 await ctx.send(embed=em)
-                await send_punishment(member, ctx.guild, 'ban', ctx.author, reason)
-                await member.ban(reason=reason)
+                await send_punishment(member, ctx.guild, 'softban', ctx.author, reason)
+                await member.ban(reason=reason, delete_message_days=7)
+                await asyncio.sleep(1)
+                await member.unban(reason='Softban actioned by {0} (ID {1})'.format(ctx.author, ctx.author.id))
+
             else:
                 em = discord.Embed(
                     description=f"{ERROR} You are not high enough in the role"
                                 f" hierarchy to perform this action.",
                     colour=RED)
                 await ctx.send(embed=em)
-
                 return
 
         else:
@@ -124,6 +178,52 @@ class Mod(commands.Cog, name='Moderation'):
                 colour=RED)
             await ctx.send(embed=em)
             return
+
+    @commands.command(
+        name='unban',
+        aliases=['ub', 'unb'],
+        description='Unbans members from a server.')
+    @commands.cooldown(1, 5, commands.BucketType.member)
+    @commands.guild_only()
+    @commands.bot_has_permissions(ban_members=True)
+    @commands.has_permissions(ban_members=True)
+    async def unban_cmd(self, ctx, member: t.Union[discord.User, int],
+                        *, reason: t.Optional[str] = 'no reason provided'):
+        if isinstance(member, discord.User):
+            try:
+                await ctx.guild.unban(member, reason=reason)
+
+            except Exception:
+                em = discord.Embed(
+                    description=f"{ERROR} No such member was found.",
+                    colour=RED)
+                await ctx.send(embed=em)
+                return
+
+        elif isinstance(member, int):
+            user = await self.bot.get_user(member)
+            if not user:
+                em = discord.Embed(
+                    description=f"{ERROR} No such member was found.",
+                    colour=RED)
+                await ctx.send(embed=em)
+                return
+
+            try:
+                await ctx.guild.unban(user, reason=reason)
+
+            except Exception:
+                em = discord.Embed(
+                    description=f"{ERROR} No such member was found.",
+                    colour=RED)
+                await ctx.send(embed=em)
+                return
+
+        em = discord.Embed(
+            description=f"{CHECK} Unbanned {member.mention} for `{reason}`.",
+            timestamp=dt.utcnow(),
+            colour=GREEN)
+        await ctx.send(embed=em)
 
     @commands.command(
         name='warn',
