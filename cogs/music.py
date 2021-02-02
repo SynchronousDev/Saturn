@@ -11,180 +11,11 @@ from discord.ext import commands
 
 from assets import *
 
-URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s(" \
-            r")<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’])) "
-
-
-class RepeatMode(Enum):
-    NONE = 0
-    ONE = 1
-    ALL = 2
-
-class Queue:
-    def __init__(self):
-        self._queue = []
-        self.position = 0
-        self.repeat_mode = RepeatMode.NONE
-
-    @property
-    def is_empty(self):
-        return not self._queue
-
-    @property
-    def current_track(self):
-        if not self._queue:
-            raise QueueIsEmpty
-
-        if self.position <= len(self._queue) - 1:
-            return self._queue[self.position]
-
-    @property
-    def upcoming(self):
-        if not self._queue:
-            raise QueueIsEmpty
-
-        return self._queue[self.position + 1:]
-
-    @property
-    def history(self):
-        if not self._queue:
-            raise QueueIsEmpty
-
-        return self._queue[:self.position]
-
-    @property
-    def length(self):
-        return len(self._queue)
-
-    def add(self, *args):
-        self._queue.extend(args)
-
-    def get_next_track(self):
-        if not self._queue:
-            raise QueueIsEmpty
-
-        self.position += 1
-
-        if self.position < 0:
-            return None
-        elif self.position > len(self._queue) - 1:
-            if self.repeat_mode == RepeatMode.ALL:
-                self.position = 0
-            else:
-                return None
-
-        return self._queue[self.position]
-
-    def shuffle(self):
-        if not self._queue:
-            raise QueueIsEmpty
-
-        upcoming = self.upcoming
-        random.shuffle(upcoming)
-        self._queue = self._queue[:self.position + 1]
-        self._queue.extend(upcoming)
-
-    def set_repeat_mode(self, mode):
-        if mode == "none":
-            self.repeat_mode = RepeatMode.NONE
-        elif mode == "one":
-            self.repeat_mode = RepeatMode.ONE
-        elif mode == "all":
-            self.repeat_mode = RepeatMode.ALL
-
-    def empty(self):
-        self._queue.clear()
-        self.position = 0
-
-
-class Player(wavelink.Player):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.queue = Queue()
-
-    async def connect(self, ctx, channel=None):
-        if self.is_connected:
-            raise AlreadyConnectedToChannel
-
-        if (channel := getattr(ctx.author.voice, "channel", channel)) is None:
-            raise NoVoiceChannel
-
-        await super().connect(channel.id)
-        return channel
-
-    async def teardown(self):
-        try:
-            await self.destroy()
-        except KeyError:
-            pass
-
-    async def add_tracks(self, ctx, tracks):
-        if not tracks:
-            raise NoTracksFound
-
-        if isinstance(tracks, wavelink.TrackPlaylist):
-            self.queue.add(*tracks.tracks)
-        elif len(tracks) == 1:
-            self.queue.add(tracks[0])
-            em = discord.Embed(
-                description=f"{CHECK} Added `{tracks[0].title}` to the queue.",
-                color=GREEN)
-            em.set_image(url=tracks[0].thumb)
-            await ctx.send(embed=em)
-        else:
-            if (track := await self.get_first_track(tracks)) is not None:
-                self.queue.add(track)
-                em = discord.Embed(
-                    description=f"{CHECK} Added `{track.title}` to the queue.",
-                    color=GREEN)
-                em.set_image(url=track.thumb)
-                await ctx.send(embed=em)
-
-        if not self.is_playing and not self.queue.is_empty:
-            await self.start_playback()
-
-    async def get_first_track(self, tracks):
-        if len(tracks):
-            return tracks[0]
-        else:
-            return NoTracksFound
-
-    async def search_tracks(self, ctx, tracks):
-        embed = discord.Embed(
-            title=f"Selenium's Searches",
-            description=(
-                "\n".join(
-                    f"**{i + 1}) **[{t.title}](https://www.youtube.com/watch?v={t.ytid}) "
-                    f"({t.length//60000}:{str(t.length%60).zfill(2)}) "
-                    for i, t in enumerate(tracks[:15])
-                )
-            ),
-            colour=MAIN,
-            timestamp=dt.utcnow()
-        )
-        embed.set_thumbnail(url=self.bot.user.avatar_url)
-        embed.set_footer(text=f"Selenium's Searches")
-
-        await ctx.send(embed=embed)
-
-    async def start_playback(self):
-        await self.play(self.queue.current_track)
-
-    async def advance(self):
-        try:
-            if (track := self.queue.get_next_track()) is not None:
-                await self.play(track)
-        except QueueIsEmpty:
-            pass
-
-    async def repeat_track(self):
-        await self.play(self.queue.current_track)
-
-
 class Music(commands.Cog, wavelink.WavelinkMixin):
     def __init__(self, bot):
         self.bot = bot
         self.wavelink = wavelink.Client(bot=bot)
+        # woo hoo music stuff that I'm too lazy to work on
         self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
@@ -210,7 +41,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if isinstance(ctx.channel, discord.DMChannel):
             if ctx.command in self.bot.get_cog('Music').walk_commands():
                 em = discord.Embed(
-                    description=f"{ERROR} Commands are not available in DMs.",
+                    description=f"{ERROR} Music commands are not available in DMs.",
                     color=RED)
                 await ctx.send(embed=em)
                 return False
@@ -303,7 +134,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await ctx.send(embed=em)
 
     @commands.command(name="stop", aliases=['stp'],
-                      description='Stop the currently playing music.')
+                      description='Stop the currently playing music. This is not equivalent '
+                                  'to the `pause` command, this one clears the queue. If you '
+                                  'want to only pause music, consider using the `pause` command'
+                                  'instead of this one.')
     async def stop_command(self, ctx):
         player = self.get_player(ctx)
         player.queue.empty()
@@ -448,6 +282,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             query = f"ytsearch:{query}"
 
         await player.search_tracks(ctx, await self.wavelink.get_tracks(query))
+
+    @commands.command(
+        name='remove',
+        description='Removes a track from the queue.')
+    async def remove_tracks(self, ctx, track_id: int):
+        player = self.get_player(ctx)
+        player.remove_track(track_id)
 
     # TODO Add the ability to remove tracks from queue
     # TODO Reformat some stuff lol

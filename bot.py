@@ -33,7 +33,7 @@ bot = commands.Bot(
     owner_id=531501355601494026)
 bot.cwd = Path(__file__).parents[0]
 bot.cwd = str(bot.cwd)
-version = '0.0.1'
+bot.version = '0.0.1'
 
 configuration = json.load(open(bot.cwd + '/assets/configuration.json'))
 
@@ -78,7 +78,7 @@ async def on_disconnect():
 async def change_pres():
     await bot.change_presence(
         activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users"
-                                   f" | sl!help | Version {version}"))
+                                   f" | sl!help | Version {bot.version}"))
 
 
 @bot.event
@@ -92,8 +92,6 @@ async def on_message(message):
                     colour=RED)
                 await message.channel.send(embed=em)
                 return
-
-        pass
 
     await bot.process_commands(message)
 

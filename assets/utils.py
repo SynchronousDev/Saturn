@@ -31,6 +31,8 @@ STRONG_SIGNAL = ':green_circle:'
 NO_REPEAT = '⏭'
 REPEAT_ONE = '🔂'
 REPEAT_ALL = '🔁'
+URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s(" \
+            r")<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’])) "
 
 """
 JSON utilities
@@ -53,6 +55,8 @@ def write_json(data, file):
 
 def convert_time(time):
     try:
+        # not exactly what I would call the most efficient process
+        # but it gets the job done
         times = []
         years = time // 31536000
         time %= 31536000
@@ -68,6 +72,8 @@ def convert_time(time):
         time %= 60
         seconds = time
         # this is a very slow and messy process but I can't seem to think of a better way to do it
+        # especially because I'm calculating more than just hours and minutes and seconds, I'm going into years
+        # but be honest, how many of you guys have cooldowns lasting 5 decades?
         if years >= 1:
             times.append(str(years) + ' years')
         if months >= 1:
@@ -82,11 +88,10 @@ def convert_time(time):
             times.append(str(minutes) + ' mintues')
         if seconds >= 1:
             times.append(str(seconds) + ' seconds')
-        return f"`{' '.join(times)}`"
+        return f"`{' '.join(times) if len(times) else '0 seconds'}`"
 
     except Exception:
         return '`indefinitely`'
-# I have this function collapsed so it won't look too bad to the eys
 
 async def syntax(command):
     params = []
