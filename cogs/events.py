@@ -162,6 +162,24 @@ class Events(commands.Cog):
                     color=RED)
             await ctx.send(embed=em)
 
+        elif isinstance(exc, TrackDoesNotExist):
+            em = discord.Embed(
+                    description=f"{ERROR} Track does not exist.",
+                    color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, RoleNotHighEnough):
+            em = discord.Embed(
+                    description=f"{ERROR} You are not high enough in the role hierarchy to perform this action.",
+                    color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, BotRoleNotHighEnough):
+            em = discord.Embed(
+                    description=f"{ERROR} I am not high enough in the role hierarchy to perform this action.",
+                    color=RED)
+            await ctx.send(embed=em)
+
         elif hasattr(exc, "original"):
             raise exc.original
 
