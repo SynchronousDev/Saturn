@@ -3,7 +3,6 @@ import datetime as dt
 import random
 import re
 import typing as t
-from enum import Enum
 
 import discord
 import wavelink
@@ -69,6 +68,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await self.wavelink.initiate_node(**node)
 
     # noinspection PyTypeChecker
+    # Ugh pycharm messing things up again
     def get_player(self, obj):
         if isinstance(obj, commands.Context):
             return self.wavelink.get_player(obj.guild.id, cls=Player, context=obj)
@@ -228,15 +228,15 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             player = self.get_player(ctx)
             if str(reaction.emoji) == NO_REPEAT:
                 player.queue.set_repeat_mode('none')
-                mode = 'none'
+                mode = "none"
 
             elif str(reaction.emoji) == REPEAT_ONE:
-                player.queue.set_repeat_mode('1')
-                mode = 'one'
+                player.queue.set_repeat_mode("1")
+                mode = "one"
 
             elif str(reaction.emoji) == REPEAT_ALL:
-                player.queue.set_repeat_mode('all')
-                mode = 'all'
+                player.queue.set_repeat_mode("all")
+                mode = "all"
 
         em = discord.Embed(
             description=f"{CHECK} Set repeat mode to `{mode}`.",
@@ -265,7 +265,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         )
         if upcoming := player.queue.upcoming:
             embed.add_field(
-                name="Upcomming",
+                name="Upcoming",
                 value="\n".join(f"[{t.title}](https://www.youtube.com/watch?v={t.ytid})" for t in upcoming[:10]),
                 inline=False
             )
@@ -288,10 +288,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         description='Removes a track from the queue.')
     async def remove_tracks(self, ctx, track_id: int):
         player = self.get_player(ctx)
-        player.remove_track(track_id)
+        await player.remove_track(track_id)
 
-    # TODO Add the ability to remove tracks from queue
-    # TODO Reformat some stuff lol
+        em = discord.Embed(
+            description=f"{CHECK} Removed track number `{track_id}`.",
+            color=GREEN)
+        await ctx.send(embed=em)
 
 def setup(bot):
     bot.add_cog(Music(bot))

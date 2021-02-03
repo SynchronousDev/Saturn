@@ -66,29 +66,22 @@ class Mod(commands.Cog, name='Moderation'):
     async def kick_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if ctx.guild.me.top_role > member.top_role:
             if ctx.author.top_role > member.top_role:
-                em = discord.Embed(
-                    description=f"{CHECK} Kicked {member.mention} for `{reason}`.",
-                    timestamp=dt.utcnow(),
-                    colour=GREEN)
-                await ctx.send(embed=em)
-                await send_punishment(member, ctx.guild, 'kick', ctx.author, reason)
-                await member.kick(reason=reason)
+                if member is not ctx.guild.owner:
+                    em = discord.Embed(
+                        description=f"{CHECK} Kicked {member.mention} for `{reason}`.",
+                        timestamp=dt.utcnow(),
+                        colour=GREEN)
+                    await ctx.send(embed=em)
+                    await send_punishment(member, ctx.guild, 'kick', ctx.author, reason)
+                    await member.kick(reason=reason)
+                else:
+                    raise RoleNotHighEnough
 
             else:
-                em = discord.Embed(
-                    description=f"{ERROR} You are not high enough in the role"
-                                f" hierarchy to perform this action.",
-                    colour=RED)
-                await ctx.send(embed=em)
-                return
+                raise RoleNotHighEnough
 
         else:
-            em = discord.Embed(
-                description=f"{ERROR} I am not high enough in the member"
-                            f" hierarchy to perform this action.",
-                colour=RED)
-            await ctx.send(embed=em)
-            return
+            raise BotRoleNotHighEnough
 
     @commands.command(
         name='ban',
@@ -111,28 +104,22 @@ class Mod(commands.Cog, name='Moderation'):
         if isinstance(member, discord.Member):
             if ctx.guild.me.top_role > member.top_role:
                 if ctx.author.top_role > member.top_role:
-                    em = discord.Embed(
-                        description=f"{CHECK} Banned {member.mention} for `{reason}`.",
-                        timestamp=dt.utcnow(),
-                        colour=GREEN)
-                    await ctx.send(embed=em)
-                    await send_punishment(member, ctx.guild, 'ban', ctx.author, reason)
-                    await member.ban(reason=reason, delete_message_days=delete_days)
+                    if member is not ctx.guild.owner:
+                        em = discord.Embed(
+                            description=f"{CHECK} Banned {member.mention} for `{reason}`.",
+                            timestamp=dt.utcnow(),
+                            colour=GREEN)
+                        await ctx.send(embed=em)
+                        await send_punishment(member, ctx.guild, 'ban', ctx.author, reason)
+                        await member.ban(reason=reason, delete_message_days=delete_days)
+                    else:
+                        raise RoleNotHighEnough
+
                 else:
-                    em = discord.Embed(
-                        description=f"{ERROR} You are not high enough in the role"
-                                    f" hierarchy to perform this action.",
-                        colour=RED)
-                    await ctx.send(embed=em)
-                    return
+                    raise RoleNotHighEnough
 
             else:
-                em = discord.Embed(
-                    description=f"{ERROR} I am not high enough in the member"
-                                f" hierarchy to perform this action.",
-                    colour=RED)
-                await ctx.send(embed=em)
-                return
+                raise BotRoleNotHighEnough
 
         elif isinstance(member, discord.User):
             em = discord.Embed(
@@ -153,31 +140,25 @@ class Mod(commands.Cog, name='Moderation'):
     async def softban_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if ctx.guild.me.top_role > member.top_role:
             if ctx.author.top_role > member.top_role:
-                em = discord.Embed(
-                    description=f"{CHECK} Softbanned {member.mention} for `{reason}`.",
-                    timestamp=dt.utcnow(),
-                    colour=GREEN)
-                await ctx.send(embed=em)
-                await send_punishment(member, ctx.guild, 'softban', ctx.author, reason)
-                await member.ban(reason=reason, delete_message_days=7)
-                await asyncio.sleep(1)
-                await member.unban(reason='Softban actioned by {0} (ID {1})'.format(ctx.author, ctx.author.id))
+                if member is not ctx.guild.owner:
+                    em = discord.Embed(
+                        description=f"{CHECK} Softbanned {member.mention} for `{reason}`.",
+                        timestamp=dt.utcnow(),
+                        colour=GREEN)
+                    await ctx.send(embed=em)
+                    await send_punishment(member, ctx.guild, 'softban', ctx.author, reason)
+                    await member.ban(reason=reason, delete_message_days=7)
+                    await asyncio.sleep(1)
+                    await member.unban(reason='Softban actioned by {0} (ID {1})'.format(ctx.author, ctx.author.id))
+
+                else:
+                    raise RoleNotHighEnough
 
             else:
-                em = discord.Embed(
-                    description=f"{ERROR} You are not high enough in the role"
-                                f" hierarchy to perform this action.",
-                    colour=RED)
-                await ctx.send(embed=em)
-                return
+                raise RoleNotHighEnough
 
         else:
-            em = discord.Embed(
-                description=f"{ERROR} I am not high enough in the member"
-                            f" hierarchy to perform this action.",
-                colour=RED)
-            await ctx.send(embed=em)
-            return
+            raise BotRoleNotHighEnough
 
     @commands.command(
         name='unban',
@@ -194,30 +175,18 @@ class Mod(commands.Cog, name='Moderation'):
                 await ctx.guild.unban(member, reason=reason)
 
             except Exception:
-                em = discord.Embed(
-                    description=f"{ERROR} No such member was found.",
-                    colour=RED)
-                await ctx.send(embed=em)
-                return
+                raise commands.MemberNotFound(member)
 
         elif isinstance(member, int):
             user = await self.bot.get_user(member)
             if not user:
-                em = discord.Embed(
-                    description=f"{ERROR} No such member was found.",
-                    colour=RED)
-                await ctx.send(embed=em)
-                return
+                raise commands.MemberNotFound(member)
 
             try:
                 await ctx.guild.unban(user, reason=reason)
 
             except Exception:
-                em = discord.Embed(
-                    description=f"{ERROR} No such member was found.",
-                    colour=RED)
-                await ctx.send(embed=em)
-                return
+                raise commands.MemberNotFound(member)
 
         em = discord.Embed(
             description=f"{CHECK} Unbanned {member.mention} for `{reason}`.",
@@ -247,20 +216,10 @@ class Mod(commands.Cog, name='Moderation'):
                     pass
 
             else:
-                em = discord.Embed(
-                    description=f"{ERROR} You are not high enough in the role"
-                                f" hierarchy to perform this action.",
-                    colour=RED)
-                await ctx.send(embed=em)
-                return
+                raise RoleNotHighEnough
 
         else:
-            em = discord.Embed(
-                description=f"{ERROR} I am not high enough in the member"
-                            f" hierarchy to perform this action.",
-                colour=RED)
-            await ctx.send(embed=em)
-            return
+            raise BotRoleNotHighEnough
 
     @commands.command(
         name='mute',
@@ -302,56 +261,50 @@ class Mod(commands.Cog, name='Moderation'):
 
         if ctx.guild.me.top_role > member.top_role:
             if ctx.author.top_role > member.top_role:
-                try:
-                    if self.bot.muted_users[member.id]:
-                        em = discord.Embed(
-                            description=f"{ERROR} {member.mention} is already muted! "
-                                        f"Talk about adding insult to injury.",
-                            colour=RED)
-                        await ctx.send(embed=em)
-                        return
+                if member is not ctx.guild.owner:
+                    try:
+                        if self.bot.muted_users[member.id]:
+                            em = discord.Embed(
+                                description=f"{ERROR} {member.mention} is already muted! "
+                                            f"Talk about adding insult to injury.",
+                                colour=RED)
+                            await ctx.send(embed=em)
+                            return
 
-                except KeyError:
-                    pass
+                    except KeyError:
+                        pass
 
-                data = {
-                    '_id': member.id,
-                    'muted_at': dt.utcnow(),
-                    'mute_duration': time or None,
-                    'muted_by': ctx.author.id,
-                    'guild_id': ctx.guild.id
-                }
-                await self.bot.mutes.update_one({"_id": member.id}, {'$set': data}, upsert=True)
-                self.bot.muted_users[member.id] = data
-                em = discord.Embed(
-                    description=f"{CHECK} Muted {member.mention} lasting {str(convert_time(time))}"
-                                f", for `{reason}`.", timestamp=dt.utcnow(),
-                    colour=GREEN)
-                await ctx.send(embed=em)
-                await member.add_roles(mute_role, reason=f'Muted by {ctx.author} lasting {str(convert_time(time))}'
-                                                         f', for {reason}.', atomic=True)
+                    data = {
+                        '_id': member.id,
+                        'muted_at': dt.utcnow(),
+                        'mute_duration': time or None,
+                        'muted_by': ctx.author.id,
+                        'guild_id': ctx.guild.id
+                    }
+                    await self.bot.mutes.update_one({"_id": member.id}, {'$set': data}, upsert=True)
+                    self.bot.muted_users[member.id] = data
+                    em = discord.Embed(
+                        description=f"{CHECK} Muted {member.mention} lasting {str(convert_time(time))}"
+                                    f", for `{reason}`.", timestamp=dt.utcnow(),
+                        colour=GREEN)
+                    await ctx.send(embed=em)
+                    await member.add_roles(mute_role, reason=f'Muted by {ctx.author} lasting {str(convert_time(time))}'
+                                                             f', for {reason}.', atomic=True)
 
-                try:
-                    await send_punishment(member, ctx.guild, 'mute', ctx.author, reason, convert_time(time))
+                    try:
+                        await send_punishment(member, ctx.guild, 'mute', ctx.author, reason, convert_time(time))
 
-                except discord.Forbidden:
-                    pass
+                    except discord.Forbidden:
+                        pass
+
+                else:
+                    raise RoleNotHighEnough
 
             else:
-                em = discord.Embed(
-                    description=f"{ERROR} You are not high enough in the role"
-                                f" hierarchy to perform this action.",
-                    colour=RED)
-                await ctx.send(embed=em)
-                return
+                raise RoleNotHighEnough
 
         else:
-            em = discord.Embed(
-                description=f"{ERROR} I am not high enough in the member"
-                            f" hierarchy to perform this action.",
-                colour=RED)
-            await ctx.send(embed=em)
-            return
+            raise BotRoleNotHighEnough
 
     @commands.command(
         name='unmute',
@@ -421,20 +374,10 @@ class Mod(commands.Cog, name='Moderation'):
                     return
 
             else:
-                em = discord.Embed(
-                    description=f"{ERROR} You are not high enough in the role"
-                                f" hierarchy to perform this action.",
-                    colour=RED)
-                await ctx.send(embed=em)
-                return
+                raise RoleNotHighEnough
 
         else:
-            em = discord.Embed(
-                description=f"{ERROR} I am not high enough in the member"
-                            f" hierarchy to perform this action.",
-                colour=RED)
-            await ctx.send(embed=em)
-            return
+            raise BotRoleNotHighEnough
 
 
 def setup(bot):

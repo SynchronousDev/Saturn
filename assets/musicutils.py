@@ -1,6 +1,11 @@
 import wavelink  # woo wavelink stuff
 import discord
 from discord.ext import commands
+from .errors import *
+from .utils import *
+from datetime import datetime as dt
+from enum import Enum
+
 
 # I originally had this in the music cog, but now that I put it in here it helps me keep my stuff more organized
 
@@ -8,7 +13,6 @@ class RepeatMode(Enum):
     NONE = 0
     ONE = 1
     ALL = 2
-
 
 class Queue:
     def __init__(self):
@@ -64,6 +68,7 @@ class Queue:
         elif self.position > len(self._queue) - 1:
             if self.repeat_mode == RepeatMode.ALL:
                 self.position = 0
+
             else:
                 return None
 
@@ -157,15 +162,14 @@ class Player(wavelink.Player):
             title=f"Search for Music",
             description=(
                 "\n".join(
-                    f"**{i + 1}) **[{t.title}](https://www.youtube.com/watch?v={t.ytid}) "
-                    f"({t.length // 60000}:{str(t.length % 60).zfill(2)}) "
-                    for i, t in enumerate(tracks[:15])
-                )
+                    f"[{t.title}](https://www.youtube.com/watch?v={t.ytid}) "
+                    f"({t.length // 60000}:{str(t.length % 60).zfill(2)})"
+                    for t in tracks[:15])
             ),
             colour=MAIN,
             timestamp=dt.utcnow()
         )
-        embed.set_thumbnail(url=self.bot.user.avatar_url)
+        embed.set_image(url=tracks[0].thumb)
         embed.set_footer(text=f"Selenium's Searches")
 
         await ctx.send(embed=embed)

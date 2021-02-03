@@ -39,8 +39,19 @@ class Tags(commands.Cog):
         aliases=['t'],
         description='The tag group. Create tags for your guild.',
         invoke_without_command=True)
-    async def tag_cmd(self, ctx, name):
-        tags = await self.get_tag_content(ctx)
+    async def tag_cmd(self, ctx, name: t.Optional[str], member: t.Optional[discord.Member]):
+        if not name:
+            await ctx.invoke(self.bot.get_command('help'), entity='tag')
+            return
+
+        if member:
+            tags = []
+            cursor = self.bot.tags.find({"guild_id": ctx.guild.id, "author": member.id})
+            for document in await cursor.to_list(length=100):
+                tags.append(document)
+
+        else:
+            tags = await self.get_tag_content(ctx)
 
         found = False
         content = None
@@ -175,11 +186,18 @@ class Tags(commands.Cog):
         found = False
 
         for tag in tags:
+            if tag['name'] == str(new_name):
+                em = discord.Embed(
+                    description=f"{ERROR} A tag already exists with a name or alias `{new_name}`",
+                    colour=RED)
+                await ctx.send(embed=em)
+                return
+
             if tag['name'] == str(name):
                 if tag['guild_id'] == ctx.guild.id:
                     if tag['author'] == ctx.author.id:
                         self.bot.tags.update_one(
-                            {"guild_id": ctx.guild.id, "author": ctx.author.id},
+                            {"guild_id": ctx.guild.id, "name": name},
                             {'$set': {"name": new_name}}, upsert=True)
                         found = True
 
@@ -240,6 +258,47 @@ class Tags(commands.Cog):
             description=f"{CHECK} The tag `{name}` was edited.",
             colour=GREEN)
         await ctx.send(embed=em)
+
+    @tag_cmd.command(
+        name='owner',
+        aliases=['transferowner', 'ownership', 'author'],
+        description='Transfer a tag\'s owner to someone else.')
+    async def transfer_tag_ownership(self, ctx, name, new_author: discord.Member):
+        tags = await self.get_tag_content(ctx)
+
+        found = False
+
+        for tag in tags:
+            if tag['name'] == str(name):
+                if tag['guild_id'] == ctx.guild.id:
+                    if tag['author'] == ctx.author.id:
+                        self.bot.tags.update_one(
+                            {"guild_id": ctx.guild.id, "name": str(name), "author": ctx.author.id},
+                            {'$set': {"author": new_author}}, upsert=True)
+                        found = True
+
+                    else:
+                        em = discord.Embed(
+                            description=f"{ERROR} The tag `{name}` does not belong to you.",
+                            colour=RED)
+                        await ctx.send(embed=em)
+                        return
+
+        else:
+            if not found:
+                em = discord.Embed(
+                    description=f"{ERROR} The tag `{name}` does not exist.",
+                    colour=RED)
+                await ctx.send(embed=em)
+                return
+
+        em = discord.Embed(
+            description=f"{CHECK} The tag `{name}`'s author has "
+                        f"been transfered to {new_author.mention}.",
+            colour=GREEN)
+        await ctx.send(embed=em)
+
+    # TODO Add parameter to tags command that allows user to see tags only owned by a discord.Member
 
 
 def setup(bot):
