@@ -28,11 +28,13 @@ UNLOCK = ':unlock:'
 WEAK_SIGNAL = ':red_circle:'
 MEDIUM_SIGNAL = ':yellow_circle:'
 STRONG_SIGNAL = ':green_circle:'
+SHARD = '<:SeleniumShard:806598937381306418>'
 NO_REPEAT = '⏭'
 REPEAT_ONE = '🔂'
 REPEAT_ALL = '🔁'
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s(" \
             r")<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’])) "
+
 
 """
 JSON utilities

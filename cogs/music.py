@@ -81,8 +81,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         channel = await player.connect(ctx)
         em = discord.Embed(
-                description=f"{CHECK} Connected to `{channel.name}`.",
-                color=GREEN)
+                description=f"{SHARD} Connected to `{channel.name}`.",
+                color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="disconnect", aliases=["leave", 'd', 'dconn'],
@@ -91,8 +91,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         await player.teardown()
         em = discord.Embed(
-                description=f"{CHECK} Disconnected.",
-                color=GREEN)
+                description=f"{SHARD} Disconnected.",
+                color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="play", aliases=['pl'],
@@ -108,8 +108,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
             await player.set_pause(False)
             em = discord.Embed(
-                description=f"{CHECK} Playing.",
-                color=GREEN)
+                description=f"{SHARD} Playing.",
+                color=MAIN)
             await ctx.send(embed=em)
 
         else:
@@ -129,8 +129,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await player.set_pause(True)
         em = discord.Embed(
-                description=f"{CHECK} Paused.",
-                color=GREEN)
+                description=f"{SHARD} Paused.",
+                color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="stop", aliases=['stp'],
@@ -143,8 +143,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player.queue.empty()
         await player.stop()
         em = discord.Embed(
-                description=f"{CHECK} Stopped playing music.",
-                color=GREEN)
+                description=f"{SHARD} Stopped playing music.",
+                color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="next", aliases=["skip", 'n', 'nxt'],
@@ -157,8 +157,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await player.stop()
         em = discord.Embed(
-                description=f"{CHECK} Skipped to next track.",
-                color=GREEN)
+                description=f"{SHARD} Skipped to next track.",
+                color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="previous", aliases=['prev', 'prvs'],
@@ -172,8 +172,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player.queue.position -= 2
         await player.stop()
         em = discord.Embed(
-                description=f"{CHECK} Playing previous track in the queue.",
-                color=GREEN)
+                description=f"{SHARD} Playing previous track in the queue.",
+                color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="shuffle", aliases=['shffl', 'sf'],
@@ -182,8 +182,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         player.queue.shuffle()
         em = discord.Embed(
-            description=f"{CHECK} Shuffled the queue.",
-            color=GREEN)
+            description=f"{SHARD} Shuffled the queue.",
+            color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="repeat", aliases=['r', 'rpt'],
@@ -197,8 +197,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 raise InvalidRepeatMode
             else:
                 em = discord.Embed(
-                    description=f"{CHECK} Set repeat mode to `{mode}`.",
-                    color=GREEN)
+                    description=f"{SHARD} Set repeat mode to `{mode}`.",
+                    color=MAIN)
                 await ctx.send(embed=em)
                 return
         
@@ -239,8 +239,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 mode = "all"
 
         em = discord.Embed(
-            description=f"{CHECK} Set repeat mode to `{mode}`.",
-            color=GREEN)
+            description=f"{SHARD} Set repeat mode to `{mode}`.",
+            color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="queue", aliases=['q'],
