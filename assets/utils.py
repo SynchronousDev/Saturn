@@ -8,8 +8,6 @@ from datetime import datetime as dt
 import discord
 from discord import Color
 from discord.ext import commands
-from discord.ext.commands import MemberNotFound
-from datetime import datetime as dt, timedelta
 import functools
 
 # Colours, emotes, and useful stuff
@@ -35,26 +33,6 @@ REPEAT_ALL = '🔁'
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s(" \
             r")<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’])) "
 SPOTIFY_URL_REGEX = r"[\bhttps://open.\b]*spotify[\b.com\b]*[/:]*track[/:]*[A-Za-z0-9?=]+"
-
-
-"""
-JSON utilities
-Used to save time and not having to use `with open` every single time I load json lol
-"""
-
-
-def read_json(file):
-    # Reads stuff from a json file
-    with open(f"{cwd}/config/{file}.json", "r") as f:
-        data = json.load(f)
-    return data
-
-
-def write_json(data, file):
-    # Dumps stuff from a json file
-    with open(f"{cwd}/config/{file}.json", "w") as f:
-        json.dump(data, f, indent=4)
-
 
 def convert_time(time):
     try:
