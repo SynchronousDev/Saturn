@@ -35,13 +35,16 @@ bot.cwd = Path(__file__).parents[0]
 bot.cwd = str(bot.cwd)
 bot.version = '0.0.1'
 
-configuration = json.load(open(bot.cwd + '/assets/configuration.json'))
+bot.configuration = json.load(open(bot.cwd + '/assets/configuration.json'))
 
 print('{}\n------'.format(bot.cwd))
 
 bot.muted_users = {}
-bot.config_token = configuration['token']
-bot.connection_url = configuration['mongo']
+bot.config_token = bot.configuration['token']
+bot.connection_url = bot.configuration['mongo']
+bot.spotify_client_id = bot.configuration['spotify_client_id']
+bot.spotify_client_secret = bot.configuration['spotify_client_secret']
+
 bot.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(bot.connection_url))
 bot.db = bot.mongo["seleniumV2"]
 bot.config = bot.db["config"]
@@ -80,21 +83,14 @@ async def change_pres():
         activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users"
                                    f" | sl!help | Version {bot.version}"))
 
+@bot.before_invoke
+async def blacklist_check(ctx):
+    if await bot.blacklists.find_one({"_id": ctx.author.id}) is not None:
+        raise Blacklisted
 
-@bot.event
-async def on_message(message):
-    if not message.author.bot:
-        if (user := await bot.blacklists.find_one({"_id": message.author.id})) is not None:
-            if (message.content.startswith(await retrieve_prefix(bot, message)) and
-                    len(message.content) > (len(await retrieve_prefix(bot, message)))):
-                em = discord.Embed(
-                    description=f"{ERROR} You are blacklisted from using this bot.",
-                    colour=RED)
-                await message.channel.send(embed=em)
-                return
-
-    await bot.process_commands(message)
-
+    else:
+        pass 
+    
 
 if __name__ == '__main__':
     for file in os.listdir(bot.cwd + '/cogs'):

@@ -1,11 +1,15 @@
-import wavelink  # woo wavelink stuff
-import discord
-from discord.ext import commands
-from .errors import *
-from .utils import *
+import random
 from datetime import datetime as dt
 from enum import Enum
 
+import discord
+import spotipy
+import wavelink  # woo wavelink stuff
+from discord.ext import commands
+from spotipy.oauth2 import SpotifyClientCredentials
+
+from .errors import *
+from .utils import *
 
 # I originally had this in the music cog, but now that I put it in here it helps me keep my stuff more organized
 
@@ -100,7 +104,7 @@ class Queue:
             raise QueueIsEmpty
 
         elif track_id > len(self._queue):
-            raise TrackDoesNotExists
+            raise TrackDoesNotExist
 
         self._queue.pop(int(track_id) - 1)
 
@@ -132,21 +136,43 @@ class Player(wavelink.Player):
 
         if isinstance(tracks, wavelink.TrackPlaylist):
             self.queue.add(*tracks.tracks)
+
         elif len(tracks) == 1:
+            if self.queue.length == 0:
+                em = discord.Embed(
+                    description=f"{SHARD} Playing [`{tracks[0].title}`]"
+                                f"(https://www.youtube.com/watch?v={tracks[0].ytid})",
+                    color=MAIN)
+                em.set_image(url=tracks[0].thumb)
+                await ctx.send(embed=em)
+            else:
+                em = discord.Embed(
+                    description=f"{SHARD} Added [`{tracks[0].title}`](https://www.youtube.com/watch?v="
+                                f"{tracks[0].ytid}) to the queue.",
+                    color=MAIN)
+                em.set_image(url=tracks[0].thumb)
+                await ctx.send(embed=em)
+
             self.queue.add(tracks[0])
-            em = discord.Embed(
-                description=f"{CHECK} Added `{tracks[0].title}` to the queue.",
-                color=GREEN)
-            em.set_image(url=tracks[0].thumb)
-            await ctx.send(embed=em)
+
         else:
             if (track := await self.get_first_track(tracks)) is not None:
+                if self.queue.length == 0:
+                    em = discord.Embed(
+                        description=f"{SHARD} Playing [`{tracks[0].title}`]"
+                                    f"(https://www.youtube.com/watch?v={tracks[0].ytid})",
+                        color=MAIN)
+                    em.set_image(url=tracks[0].thumb)
+                    await ctx.send(embed=em)
+                else:
+                    em = discord.Embed(
+                        description=f"{SHARD} Added [`{tracks[0].title}`]"
+                                    f"(https://www.youtube.com/watch?v={tracks[0].ytid}) to the queue.",
+                        color=MAIN)
+                    em.set_image(url=tracks[0].thumb)
+                    await ctx.send(embed=em)
+
                 self.queue.add(track)
-                em = discord.Embed(
-                    description=f"{CHECK} Added `{track.title}` to the queue.",
-                    color=GREEN)
-                em.set_image(url=track.thumb)
-                await ctx.send(embed=em)
 
         if not self.is_playing and not self.queue.is_empty:
             await self.start_playback()
@@ -191,3 +217,13 @@ class Player(wavelink.Player):
         # pointer to the Queue.remove function
         # why does this even exist lol
         self.queue.remove(track_id)
+
+
+class SpotifyClient:
+    def __init__(self, id, secret):
+        self.credentials_manager = SpotifyClientCredentials(id, secret)
+        self.sp = spotipy.Spotify(client_credentials_manager=self.credentials_manager)
+
+    def get_track(self, url: str):
+        track = self.sp.track(url)
+        return track["name"] + track["artists"][0]["name"]

@@ -23,10 +23,11 @@ class NoVoiceChannel(commands.CommandError):
 class QueueIsEmpty(commands.CommandError):
     pass
 
+class Blacklisted(commands.CommandError):
+    pass
 
 class NoTracksFound(commands.CommandError):
     pass
-
 
 class PlayerIsAlreadyPaused(commands.CommandError):
     pass

@@ -6,9 +6,9 @@ import typing as t
 
 import discord
 import wavelink
+from assets import *
 from discord.ext import commands
 
-from assets import *
 
 class Music(commands.Cog, wavelink.WavelinkMixin):
     def __init__(self, bot):
@@ -16,6 +16,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         self.wavelink = wavelink.Client(bot=bot)
         # woo hoo music stuff that I'm too lazy to work on
         self.bot.loop.create_task(self.start_nodes())
+        self.sp = SpotifyClient(
+            self.bot.configuration['spotify_client_id'],
+            self.bot.configuration['spotify_client_secret'])
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -33,6 +36,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def on_player_stop(self, node, payload):
         if payload.player.queue.repeat_mode == RepeatMode.ONE:
             await payload.player.repeat_track()
+
         else:
             await payload.player.advance()
 
@@ -81,7 +85,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         channel = await player.connect(ctx)
         em = discord.Embed(
-                description=f"{SHARD} Connected to `{channel.name}`.",
+                description=f"{SHARD} Connected to `{channel.name}`",
                 color=MAIN)
         await ctx.send(embed=em)
 
@@ -113,11 +117,20 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await ctx.send(embed=em)
 
         else:
-            query = query.strip("<>")
-            if not re.match(URL_REGEX, query):
-                query = f"ytsearch:{query}"
+            if re.search(SPOTIFY_URL_REGEX, query):
+                track = self.sp.get_track(query)
+                query = f"ytsearch:{track}"
+            
+            else:
+                query = query.strip("<>")
+                if not re.match(URL_REGEX, query):
+                    query = f"ytsearch:{query}"
+
+                else:
+                    pass
 
             await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+
 
     @commands.command(name="pause", aliases=['ps'],
                       description='Pause the currently playing music.')
@@ -189,15 +202,25 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @commands.command(name="repeat", aliases=['r', 'rpt'],
                       description='Set a song\'s repeat mode.')
     async def repeat(self, ctx, mode: t.Optional[str]):
+        player = self.get_player(ctx)
+
         if mode:
             mode = mode.lower()
-            if mode in ('one', 'once'):
-                mode = '1'
-            if mode not in ("none", "1", "all"):
+            if mode in ('1', 'once', 'track', 'song'):
+                mode = 'one'
+
+            elif mode in ('0', 'no'):
+                mode = 'none'
+
+            elif mode in ('queue', 'playlist', 'tracks'):
+                mode = 'all'
+
+            if mode not in ("none", "one", "all"):
                 raise InvalidRepeatMode
             else:
+                player.queue.set_repeat_mode(mode)
                 em = discord.Embed(
-                    description=f"{SHARD} Set repeat mode to `{mode}`.",
+                    description=f"{SHARD} Set repeat mode to `{mode}`",
                     color=MAIN)
                 await ctx.send(embed=em)
                 return
@@ -225,13 +248,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return
 
         else:
-            player = self.get_player(ctx)
             if str(reaction.emoji) == NO_REPEAT:
                 player.queue.set_repeat_mode('none')
                 mode = "none"
 
             elif str(reaction.emoji) == REPEAT_ONE:
-                player.queue.set_repeat_mode("1")
+                player.queue.set_repeat_mode("one")
                 mode = "one"
 
             elif str(reaction.emoji) == REPEAT_ALL:
@@ -239,7 +261,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 mode = "all"
 
         em = discord.Embed(
-            description=f"{SHARD} Set repeat mode to `{mode}`.",
+            description=f"{SHARD} Set repeat mode to `{mode}`",
             color=MAIN)
         await ctx.send(embed=em)
 
@@ -256,6 +278,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             colour=MAIN,
             timestamp=dt.utcnow()
         )
+        
         embed.set_thumbnail(url=self.bot.user.avatar_url)
         embed.add_field(    
             name="Currently Playing",
@@ -265,7 +288,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         )
         if upcoming := player.queue.upcoming:
             embed.add_field(
-                name="Upcoming",
+                name="Upcoming Tracks",
                 value="\n".join(f"[{t.title}](https://www.youtube.com/watch?v={t.ytid})" for t in upcoming[:10]),
                 inline=False
             )
@@ -291,7 +314,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await player.remove_track(track_id)
 
         em = discord.Embed(
-            description=f"{CHECK} Removed track number `{track_id}`.",
+            description=f"{SHARD} Removed track number `{track_id}`",
             color=GREEN)
         await ctx.send(embed=em)
 

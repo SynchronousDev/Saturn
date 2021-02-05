@@ -100,7 +100,7 @@ class Help(commands.Cog):
 
                 else:
                     em = discord.Embed(
-                        description=f"{ERROR} Enitity `{entity}` does not exist.",
+                        description=f"{ERROR} Entity `{entity}` does not exist.",
                         colour=RED)
                     await ctx.send(embed=em)
 

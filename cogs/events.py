@@ -115,6 +115,12 @@ class Events(commands.Cog):
                 colour=RED)
             await ctx.send(embed=em)
 
+        elif isinstance(exc, Blacklisted):
+            em = discord.Embed(
+                    description=f"{ERROR} You are blacklisted.",
+                    colour=RED)
+            await ctx.send(embed=em)
+
         elif isinstance(exc, NoMoreTracks):
             em = discord.Embed(
                 description=f"{ERROR} There are no more tracks in the queue.",
@@ -142,6 +148,12 @@ class Events(commands.Cog):
         elif isinstance(exc, QueueIsEmpty):
             em = discord.Embed(
                 description=f"{ERROR} The queue is empty.",
+                color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, NoTracksFound):
+            em = discord.Embed(
+                description=f"{ERROR} No tracks were found.",
                 color=RED)
             await ctx.send(embed=em)
 
