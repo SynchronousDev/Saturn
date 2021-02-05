@@ -227,3 +227,6 @@ class SpotifyClient:
     def get_track(self, url: str):
         track = self.sp.track(url)
         return track["name"] + track["artists"][0]["name"]
+
+class YoutubeClient:
+    def __init__(self)
