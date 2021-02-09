@@ -29,6 +29,9 @@ class Blacklisted(commands.CommandError):
 class NoTracksFound(commands.CommandError):
     pass
 
+class UrlNotFound(commands.CommandError):
+    pass
+
 class PlayerIsAlreadyPaused(commands.CommandError):
     pass
 

@@ -7,6 +7,7 @@ class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.remove_command('help')
+        self.logger = logging.getLogger(__name__) 
 
     @commands.command(
         name='help',

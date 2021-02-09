@@ -4,11 +4,13 @@ from assets import *
 from discord import Embed
 from discord.ext import commands
 import pytimeparse as pytp
+from datetime import timedelta
 
 
 class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.logger = logging.getLogger(__name__) 
 
     @commands.command(
         name='ping',

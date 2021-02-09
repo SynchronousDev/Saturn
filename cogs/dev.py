@@ -10,6 +10,8 @@ from assets import *
 class Dev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot 
+        self.logger = logging.getLogger(__name__) 
+
 
     @commands.command(
         name='blacklist',

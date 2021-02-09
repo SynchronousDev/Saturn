@@ -7,6 +7,7 @@ import sys
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.logger = logging.getLogger(__name__) 
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -101,6 +102,13 @@ class Events(commands.Cog):
                             f"```Missing {perms} permissions```",
                 colour=RED)
 
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, commands.BadArgument):
+            em = Embed(
+                description=f"{ERROR} Invalid argument passed\n"
+                            f"{await syntax(ctx.command)}",
+                colour=RED)
             await ctx.send(embed=em)
 
         elif isinstance(exc, commands.NotOwner):

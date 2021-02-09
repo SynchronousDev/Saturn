@@ -6,6 +6,7 @@ import discord
 class Management(commands.Cog, name='Server Management'):
     def __init__(self, bot):
         self.bot = bot
+        self.logger = logging.getLogger(__name__) 
 
     @commands.command(
         name='addrole',

@@ -11,6 +11,8 @@ class Mod(commands.Cog, name='Moderation'):
     def __init__(self, bot):
         self.bot = bot
         self.mute_task = self.check_mutes.start()
+        self.logger = logging.getLogger(__name__) 
+
 
     def cog_unload(self):
         self.mute_task.cancel()
@@ -236,6 +238,9 @@ class Mod(commands.Cog, name='Moderation'):
 
         else:
             reason = ' '.join(args[1:])
+            if not reason:
+                reason = 'no reason provided'
+                
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
             mute_role = ctx.guild.get_role(data['mute_role_id'])

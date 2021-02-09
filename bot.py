@@ -90,7 +90,6 @@ async def blacklist_check(ctx):
 
     else:
         pass 
-    
 
 if __name__ == '__main__':
     for file in os.listdir(bot.cwd + '/cogs'):

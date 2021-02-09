@@ -6,7 +6,40 @@ import typing as t
 import discord
 import wavelink
 from assets import *
-from discord.ext import commands
+from discord.ext import commands, menus
+import urllib.parse as urlparse
+
+class QueueMenu(menus.ListPageSource):
+    def __init__(self, ctx, data):
+        self.ctx = ctx
+
+        super().__init__(data, per_page=10)
+
+    async def write_queue(self, menu, queue):
+        offset = (menu.current_page * self.per_page) + 1
+        len_data = len(self.entries)
+
+        em = discord.Embed(
+            title="Player Queue",
+            colour=MAIN,
+            timestamp=dt.utcnow())
+
+        if not queue:
+            em.description = 'There are no more tracks in the queue.'
+
+        for track in queue:
+            em.add_field(name=BLANK, value=f"```{track.title} ({get_track_length(track)})```", inline=False)
+            em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} of {len_data:,} tracks.")
+
+        return em
+
+    async def format_page(self, menu, entries):
+        queue = [] 
+
+        for track in entries:
+            queue.append(track)
+
+        return await self.write_queue(menu, queue)
 
 
 class Music(commands.Cog, wavelink.WavelinkMixin):
@@ -18,6 +51,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         self.sp = SpotifyClient(
             self.bot.configuration['spotify_client_id'],
             self.bot.configuration['spotify_client_secret'])
+        self.logger = logging.getLogger(__name__)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -84,8 +118,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         channel = await player.connect(ctx)
         em = discord.Embed(
-                description=f"{SHARD} Connected to `{channel.name}`",
-                color=MAIN)
+            description=f"{SHARD} Connected to `{channel.name}`",
+            color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="disconnect", aliases=["leave", 'd', 'dconn'],
@@ -94,8 +128,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         await player.teardown()
         em = discord.Embed(
-                description=f"{SHARD} Disconnected.",
-                color=MAIN)
+            description=f"{SHARD} Disconnected.",
+            color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="play", aliases=['pl'],
@@ -117,19 +151,16 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         else:
             if re.search(SPOTIFY_URL_REGEX, query):
-                track = self.sp.get_track(query)
+                track = await self.sp.get_track(query)
                 query = f"ytsearch:{track}"
-            
-            else:
+                self.logger.debug("Found tracks with a Spotify Link")
+
+            elif not re.search(YOUTUBE_URL_REGEX, query):
                 query = query.strip("<>")
-                if not re.match(URL_REGEX, query):
-                    query = f"ytsearch:{query}"
+                query = f"ytsearch:{query}"
+                self.logger.debug("Found tracks with a Youtube Link")
 
-                else:
-                    pass
-
-            await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
-
+            await player.add_tracks(ctx, await self.wavelink.get_tracks(query, retry_on_failure=True))
 
     @commands.command(name="pause", aliases=['ps'],
                       description='Pause the currently playing music.')
@@ -141,8 +172,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await player.set_pause(True)
         em = discord.Embed(
-                description=f"{SHARD} Paused.",
-                color=MAIN)
+            description=f"{SHARD} Paused.",
+            color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="stop", aliases=['stp'],
@@ -155,8 +186,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player.queue.empty()
         await player.stop()
         em = discord.Embed(
-                description=f"{SHARD} Stopped playing music.",
-                color=MAIN)
+            description=f"{SHARD} Stopped playing music.",
+            color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="next", aliases=["skip", 'n', 'nxt'],
@@ -169,8 +200,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await player.stop()
         em = discord.Embed(
-                description=f"{SHARD} Skipped to next track.",
-                color=MAIN)
+            description=f"{SHARD} Skipped to next track.",
+            color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="previous", aliases=['prev', 'prvs'],
@@ -184,8 +215,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player.queue.position -= 2
         await player.stop()
         em = discord.Embed(
-                description=f"{SHARD} Playing previous track in the queue.",
-                color=MAIN)
+            description=f"{SHARD} Playing previous track in the queue.",
+            color=MAIN)
         await ctx.send(embed=em)
 
     @commands.command(name="shuffle", aliases=['shffl', 'sf'],
@@ -223,7 +254,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     color=MAIN)
                 await ctx.send(embed=em)
                 return
-        
+
         em = discord.Embed(
             title='Choose a repeat mode',
             description='React to the emoji you want to set.',
@@ -272,26 +303,24 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if player.queue.is_empty:
             raise QueueIsEmpty
 
-        embed = discord.Embed(
-            title="Selenium's Queue",
-            colour=MAIN,
-            timestamp=dt.utcnow()
-        )
-        
-        embed.set_thumbnail(url=self.bot.user.avatar_url)
-        embed.add_field(    
-            name="Currently Playing",
-            value=f"[{player.queue.current_track.title}](https://www.youtube.com/watch?v="
-                  f"{player.queue.current_track.ytid})"
-                  if player.queue.current_track else "No tracks are playing right now.", inline=False
-        )
-        if upcoming := player.queue.upcoming:
-            embed.add_field(
-                name="Upcoming Tracks",
-                value="\n".join(f"[{t.title}](https://www.youtube.com/watch?v={t.ytid})" for t in upcoming[:10]),
-                inline=False
-            )
-        await ctx.send(embed=embed)
+        queue = menus.MenuPages(source=QueueMenu(ctx, player.queue.upcoming), delete_message_after=True)
+        await queue.start(ctx)
+
+        # embed = discord.Embed()
+
+        # embed.add_field(    
+        #     name="Currently Playing",
+        #     value=f"[{player.queue.current_track.title}](https://www.youtube.com/watch?v="
+        #            f"{player.queue.current_track.ytid})"
+        #            if player.queue.current_track else "No tracks are playing right now.", inline=False
+        #  )
+        # if upcoming := player.queue.upcoming:
+        #     embed.add_field(
+        #         name="Upcoming Tracks",
+        #         value="\n".join(f"[{t.title}](https://www.youtube.com/watch?v={t.ytid})" for t in upcoming[:10]),
+        #         inline=False
+        #     )
+        # await ctx.send(embed=embed)
 
     @commands.command(
         name='search',
@@ -316,6 +345,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             description=f"{SHARD} Removed track number `{track_id}`",
             color=GREEN)
         await ctx.send(embed=em)
+
 
 def setup(bot):
     bot.add_cog(Music(bot))

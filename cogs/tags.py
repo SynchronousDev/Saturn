@@ -8,6 +8,7 @@ class Tags(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.accepted_chars = string.ascii_letters + string.digits + '_-'
+        self.logger = logging.getLogger(__name__) 
 
     async def get_tag_content(self, ctx):
         tags = []

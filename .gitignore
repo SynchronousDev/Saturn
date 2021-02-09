@@ -2,3 +2,5 @@ __pycache__
 .idea
 /assets/configuration.json
 .vscode
+oauth.py
+dashboard

@@ -7,16 +7,23 @@ import spotipy
 import wavelink  # woo wavelink stuff
 from discord.ext import commands
 from spotipy.oauth2 import SpotifyClientCredentials
+from googleapiclient.discovery import build
+from urllib.parse import urlparse, parse_qs
 
 from .errors import *
 from .utils import *
 
+
 # I originally had this in the music cog, but now that I put it in here it helps me keep my stuff more organized
+
 
 class RepeatMode(Enum):
     NONE = 0
     ONE = 1
     ALL = 2
+    
+def get_track_length(track):
+    return f"{track.length // 60000}:{str(track.length % 60).zfill(2)}"
 
 class Queue:
     def __init__(self):
@@ -136,43 +143,32 @@ class Player(wavelink.Player):
 
         if isinstance(tracks, wavelink.TrackPlaylist):
             self.queue.add(*tracks.tracks)
+            queue = []
+            for track in tracks.tracks:
+                queue.append(track)
+            em = discord.Embed(
+                description=f"{SHARD} Added `{len(queue)} tracks` to the queue.",
+                color=MAIN)
+            em.set_image(url=queue[0].thumb)
+            await ctx.send(embed=em)
 
-        elif len(tracks) == 1:
+        else:
+            self.queue.add(tracks[0])
             if self.queue.length == 0:
                 em = discord.Embed(
-                    description=f"{SHARD} Playing [`{tracks[0].title}`]"
-                                f"(https://www.youtube.com/watch?v={tracks[0].ytid})",
+                    description=
+                        f'{SHARD} Now playing [`{tracks[0].title} ({get_track_length(tracks[0])})`]'
+                        f'(https://www.youtube.com/watch?v={tracks[0].ytid})',
                     color=MAIN)
                 em.set_image(url=tracks[0].thumb)
                 await ctx.send(embed=em)
             else:
                 em = discord.Embed(
-                    description=f"{SHARD} Added [`{tracks[0].title}`](https://www.youtube.com/watch?v="
-                                f"{tracks[0].ytid}) to the queue.",
+                    description=f"{SHARD} Added [`{tracks[0].title} ({get_track_length(tracks[0])})`]"
+                                f"(https://www.youtube.com/watch?v={tracks[0].ytid}) to the queue.",
                     color=MAIN)
                 em.set_image(url=tracks[0].thumb)
                 await ctx.send(embed=em)
-
-            self.queue.add(tracks[0])
-
-        else:
-            if (track := await self.get_first_track(tracks)) is not None:
-                if self.queue.length == 0:
-                    em = discord.Embed(
-                        description=f"{SHARD} Playing [`{tracks[0].title}`]"
-                                    f"(https://www.youtube.com/watch?v={tracks[0].ytid})",
-                        color=MAIN)
-                    em.set_image(url=tracks[0].thumb)
-                    await ctx.send(embed=em)
-                else:
-                    em = discord.Embed(
-                        description=f"{SHARD} Added [`{tracks[0].title}`]"
-                                    f"(https://www.youtube.com/watch?v={tracks[0].ytid}) to the queue.",
-                        color=MAIN)
-                    em.set_image(url=tracks[0].thumb)
-                    await ctx.send(embed=em)
-
-                self.queue.add(track)
 
         if not self.is_playing and not self.queue.is_empty:
             await self.start_playback()
@@ -222,9 +218,9 @@ class Player(wavelink.Player):
 class SpotifyClient:
     def __init__(self, id, secret):
         self.credentials_manager = SpotifyClientCredentials(id, secret)
-        self.sp = spotipy.Spotify(client_credentials_manager=self.credentials_manager)
+        self.sp = spotipy.Spotify(
+            client_credentials_manager=self.credentials_manager)
 
-    def get_track(self, url: str):
+    async def get_track(self, url: str):
         track = self.sp.track(url)
         return track["name"] + track["artists"][0]["name"]
-
