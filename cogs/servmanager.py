@@ -53,7 +53,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def mass_add_roles(self, ctx, role: discord.Role, has_role: discord.Role, reason: t.Optional[str]='no reason provided'):
         em = discord.Embed(
-            description=f"{LOADING} This might take a while, please wait...",
+            description=f"{SHARD} This might take a while, please wait...",
             colour=MAIN)
         msg = await ctx.send(embed=em)
         added_roles = []
@@ -82,7 +82,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, reason: t.Optional[str]='no reason provided'):
         em = discord.Embed(
-            description=f"{LOADING} This might take a while, please wait...",
+            description=f"{SHARD} This might take a while, please wait...",
             colour=MAIN)
         msg = await ctx.send(embed=em)
         removed_roles = []

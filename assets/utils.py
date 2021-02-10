@@ -19,7 +19,6 @@ GOLD = Color.gold()
 
 ERROR = '<:SelError:804756495044444160>'
 CHECK = '<:SelCheck:804756481831993374>'
-LOADING = '<a:SeleniumLoading:800924830098653194>'
 BLANK = '\uFEFF'
 LOCK = ':lock:'
 UNLOCK = ':unlock:'
@@ -57,7 +56,6 @@ def convert_time(time):
         seconds = time
         # this is a very slow and messy process but I can't seem to think of a better way to do it
         # especially because I'm calculating more than just hours and minutes and seconds, I'm going into years
-        # but be honest, how many of you guys have cooldowns lasting 5 decades?
         if years >= 1:
             times.append(str(years) + ' years')
         if months >= 1:

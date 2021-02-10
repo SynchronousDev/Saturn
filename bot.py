@@ -10,6 +10,7 @@ from assets import *
 logging.basicConfig(level=logging.INFO)
 default_prefix = "sl!"
 
+
 async def get_prefix(bot, message):
     if not message.guild:
         return commands.when_mentioned_or(default_prefix)(bot, message)
@@ -23,7 +24,7 @@ async def get_prefix(bot, message):
 
         return commands.when_mentioned_or(data["prefix"])(bot, message)
 
-    except:
+    except Exception:
         return commands.when_mentioned_or(default_prefix)(bot, message)
 
 bot = commands.Bot(
@@ -52,6 +53,7 @@ bot.mutes = bot.db["mutes"]
 bot.blacklists = bot.db["blacklists"]
 bot.tags = bot.db["tags"]
 
+
 @bot.event
 async def on_ready():
     # The on ready event. Fires when the bot is ready
@@ -67,9 +69,11 @@ async def on_ready():
 
     change_pres.start()
 
+
 @bot.event
 async def on_connect():
     print("------\nSelenium connected")
+
 
 @bot.event
 async def on_disconnect():
@@ -83,17 +87,20 @@ async def change_pres():
         activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users"
                                    f" | sl!help | Version {bot.version}"))
 
+
 @bot.before_invoke
 async def blacklist_check(ctx):
     if await bot.blacklists.find_one({"_id": ctx.author.id}) is not None:
         raise Blacklisted
 
     else:
-        pass 
+        pass
 
 if __name__ == '__main__':
     for file in os.listdir(bot.cwd + '/cogs'):
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
+
+    # bot.load_extension('jishaku') # don't use jishaku anymore because it's kinda pointless tbh
     bot.run(bot.config_token)
     print("Running Selenium")

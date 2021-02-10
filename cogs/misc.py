@@ -3,11 +3,12 @@ from aiohttp import request
 from assets import *
 import random
 
+log = logging.getLogger(__name__) 
+
 
 class Miscellaneous(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.logger = logging.getLogger(__name__) 
 
     @commands.command(
         name='echo',

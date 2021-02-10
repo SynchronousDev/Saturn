@@ -1,37 +1,31 @@
 import typing as t
 from assets import *
-from discord.ext import commands
+from discord.ext import commands, menus
 
-
-class Help(commands.Cog):
-    def __init__(self, bot):
+class HelpMenu(menus.ListPageSource):
+    def __init__(self, ctx, data, bot):
+        self.ctx = ctx
         self.bot = bot
-        self.bot.remove_command('help')
-        self.logger = logging.getLogger(__name__) 
 
-    @commands.command(
-        name='help',
-        aliases=['h', 'commands'],
-        description='The help command')
-    @commands.cooldown(1, 3, commands.BucketType.member)
-    async def help(self, ctx, *, entity: t.Optional[str]):
-        if not entity:
-            prefix = await retrieve_prefix(self.bot, ctx)
-            em = discord.Embed(
+        super().__init__(data, per_page=1)
+
+    async def write_help(self, menu, cogs, prefix):
+        offset = (menu.current_page * self.per_page) + 1
+        len_data = len(self.entries)
+        em = discord.Embed(
                 title="Selenium's Commands",
-                description=f'Prefix for this server: `{prefix}`',
+                description=f'Prefix for this server: `{prefix}` | '
+                            f'[Join the support server](https://discord.gg/HANGYrUF2y) | '
+                            f'[Invite Selenium (Administrator)](https://discord.com/oauth2/authorize?client_id=793572249059196959&permissions=8&scope=bot) | '
+                            f'[Invite Selenium (Recommended)](https://discord.com/oauth2/authorize?client_id=793572249059196959&permissions=501083383&scope) | ',
                 colour=MAIN,
                 timestamp=dt.utcnow())
+        em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} "
+                           f"of {len_data:,} cogs")
 
-            em.set_footer(text='Invoked by ' + ctx.author.name,
-                          icon_url=self.bot.user.avatar_url)
-            cogs = [c for c in self.bot.cogs.keys()]
-            cogs.remove('Events')
-            cogs.remove('Help')
-            cogs.remove('Dev')
-            cogs.remove('Reaction Roles')
-
-            for cog in cogs:
+        
+        try:
+            for cog in [c for c in cogs]:
                 text = "\n"
                 for command in self.bot.get_cog(cog).walk_commands():
                     if command.hidden:
@@ -45,17 +39,52 @@ class Help(commands.Cog):
 
                 em.add_field(name=cog, value=f"```{text}```", inline=True)
 
-            em.add_field(
-                name='Quick Links',
-                value='[Join the support server](https://discord.gg/HANGYrUF2y)\n'
-                      '[Invite Selenium (Administrator)]'
-                      '(https://discord.com/oauth2/authorize?client_id=793572249059196959&permissions=8&scope=bot)\n'
-                      '[Invite Selenium (Recommended)]'
-                      '(https://discord.com/oauth2/authorize?client_id=793572249059196959&permissions=501083383&scope'
-                      '=bot)',
-                inline=False)
+        except AttributeError:
+            text = "\n"
 
-            await ctx.send(embed=em)
+            for command in self.bot.get_cog(cogs).walk_commands():
+                if command.hidden:
+                    continue
+
+                elif command.parent is not None:
+                    text += f"   {command.name}\n"
+
+                else:
+                    text += f"{command.name}\n"
+
+            em.add_field(name=cogs, value=f"```{text}```", inline=False)
+
+        return em
+
+    async def format_page(self, menu, entries):
+        prefix = await retrieve_prefix(self.bot, self.ctx)
+        return await self.write_help(menu, entries, prefix)
+
+
+log = logging.getLogger(__name__) 
+
+
+class Help(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.bot.remove_command('help')
+
+    @commands.command(
+        name='help',
+        aliases=['h', 'commands'],
+        description='The help command')
+    @commands.cooldown(1, 3, commands.BucketType.member)
+    async def help(self, ctx, *, entity: t.Optional[str]):
+        if not entity:
+            cogs = [c for c in self.bot.cogs.keys()]
+            cogs.remove('Events')
+            cogs.remove('Help')
+            cogs.remove('Dev')
+            cogs.remove('Reaction Roles')
+
+            help_menu = menus.MenuPages(source=HelpMenu(ctx, cogs, self.bot))
+
+            await help_menu.start(ctx)
 
         else:
             cog = self.bot.get_cog(entity.capitalize())

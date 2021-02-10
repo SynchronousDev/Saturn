@@ -4,10 +4,11 @@ from discord.ext import commands
 import traceback
 import sys
 
+log = logging.getLogger(__name__) 
+
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.logger = logging.getLogger(__name__) 
 
     @commands.Cog.listener()
     async def on_member_join(self, member):

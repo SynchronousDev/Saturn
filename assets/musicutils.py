@@ -158,14 +158,14 @@ class Player(wavelink.Player):
                 em = discord.Embed(
                     description=
                         f'{SHARD} Now playing [`{tracks[0].title} ({get_track_length(tracks[0])})`]'
-                        f'(https://www.youtube.com/watch?v={tracks[0].ytid})',
+                        f'({tracks[0].uri})',
                     color=MAIN)
                 em.set_image(url=tracks[0].thumb)
                 await ctx.send(embed=em)
             else:
                 em = discord.Embed(
                     description=f"{SHARD} Added [`{tracks[0].title} ({get_track_length(tracks[0])})`]"
-                                f"(https://www.youtube.com/watch?v={tracks[0].ytid}) to the queue.",
+                                f"({tracks[0].uri}) to the queue.",
                     color=MAIN)
                 em.set_image(url=tracks[0].thumb)
                 await ctx.send(embed=em)

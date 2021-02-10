@@ -1,10 +1,10 @@
 from assets.utils import *
 
+log = logging.getLogger(__name__) 
 
 class Config(commands.Cog):
     def __init__(self, bot):
         self.bot = bot 
-        self.logger = logging.getLogger(__name__) 
 
     @commands.command(
         name="prefix",

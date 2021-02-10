@@ -6,12 +6,11 @@ import typing as t
 
 from assets import *
 
+log = logging.getLogger(__name__) 
 
 class Dev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot 
-        self.logger = logging.getLogger(__name__) 
-
 
     @commands.command(
         name='blacklist',

@@ -5,15 +5,17 @@ import typing as t
 
 import discord
 import wavelink
+import logging
 from assets import *
 from discord.ext import commands, menus
 import urllib.parse as urlparse
+
 
 class QueueMenu(menus.ListPageSource):
     def __init__(self, ctx, data):
         self.ctx = ctx
 
-        super().__init__(data, per_page=10)
+        super().__init__(data, per_page=6)
 
     async def write_queue(self, menu, queue):
         offset = (menu.current_page * self.per_page) + 1
@@ -27,19 +29,27 @@ class QueueMenu(menus.ListPageSource):
         if not queue:
             em.description = 'There are no more tracks in the queue.'
 
-        for track in queue:
-            em.add_field(name=BLANK, value=f"```{track.title} ({get_track_length(track)})```", inline=False)
-            em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} of {len_data:,} tracks.")
+        for i, track in enumerate(queue, offset):
+            em.add_field(name=f"Position {i} | {track.author}",
+                value=f"[`{track.title} ({get_track_length(track)})`]({track.uri})", inline=False)
+            em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} "
+                               f"of {len_data:,} tracks")
 
         return em
 
     async def format_page(self, menu, entries):
-        queue = [] 
+        queue = []
+        _queue = []
 
         for track in entries:
             queue.append(track)
 
+        # noinspection
+
         return await self.write_queue(menu, queue)
+
+
+log = logging.getLogger(__name__) 
 
 
 class Music(commands.Cog, wavelink.WavelinkMixin):
@@ -51,7 +61,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         self.sp = SpotifyClient(
             self.bot.configuration['spotify_client_id'],
             self.bot.configuration['spotify_client_secret'])
-        self.logger = logging.getLogger(__name__)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -303,24 +312,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if player.queue.is_empty:
             raise QueueIsEmpty
 
-        queue = menus.MenuPages(source=QueueMenu(ctx, player.queue.upcoming), delete_message_after=True)
+        queue = menus.MenuPages(source=QueueMenu(
+            ctx, player.queue.upcoming), delete_message_after=True)
         await queue.start(ctx)
-
-        # embed = discord.Embed()
-
-        # embed.add_field(    
-        #     name="Currently Playing",
-        #     value=f"[{player.queue.current_track.title}](https://www.youtube.com/watch?v="
-        #            f"{player.queue.current_track.ytid})"
-        #            if player.queue.current_track else "No tracks are playing right now.", inline=False
-        #  )
-        # if upcoming := player.queue.upcoming:
-        #     embed.add_field(
-        #         name="Upcoming Tracks",
-        #         value="\n".join(f"[{t.title}](https://www.youtube.com/watch?v={t.ytid})" for t in upcoming[:10]),
-        #         inline=False
-        #     )
-        # await ctx.send(embed=embed)
 
     @commands.command(
         name='search',
