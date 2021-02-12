@@ -16,9 +16,21 @@ class Miscellaneous(commands.Cog):
         description='Quote your message in chat for others to see!')
     @commands.cooldown(
         1, 3, commands.BucketType.member)
-    async def quote_cmd(self, ctx, *, quote: str):
+    async def quote_cmd(self, ctx, channel: t.Optional[discord.TextChannel], *, quote: str):
+        channel = channel or ctx.channel
         author = ctx.author
-        await ctx.send(f'*"{quote}"*\n\n - {author.mention}')
+        await channel.send(f'*"{quote}"*\n\n - {author.mention}')
+
+    @commands.command(
+        name='anonymousecho',
+        aliases=['aquote', 'asay', 'aecho'],
+        description='Quote your message in chat for others to see!')
+    @commands.cooldown(
+        1, 3, commands.BucketType.member)
+    async def anonymous_quote_cmd(self, ctx, channel: t.Optional[discord.TextChannel], *, quote: str):
+        channel = channel or ctx.channel
+        author = ctx.author
+        await channel.send(f'*"{quote}"*\n\n - Anonymous')
 
     @commands.command(
         name='fact',
@@ -200,7 +212,7 @@ class Miscellaneous(commands.Cog):
                      'My sources say no',
                      'Outlook is not so good',
                      'Very doubtful']
-        await ctx.send(f'{random.choice(responses)}')
+        await ctx.reply(f'{random.choice(responses)}')
 
 
 def setup(bot):

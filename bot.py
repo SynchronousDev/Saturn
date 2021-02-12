@@ -1,10 +1,12 @@
 import os
 
+import motor.motor_asyncio
 from discord.ext import tasks
 
-import motor.motor_asyncio
-
 from assets import *
+
+# import speed
+# can't forget to import speed guys
 
 
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +20,6 @@ async def get_prefix(bot, message):
     try:
         data = await bot.config.find_one({"_id": message.guild.id})
 
-        # Make sure we have a useable prefix
         if not data or "prefix" not in data:
             return commands.when_mentioned_or(default_prefix)(bot, message)
 
@@ -52,7 +53,7 @@ bot.config = bot.db["config"]
 bot.mutes = bot.db["mutes"]
 bot.blacklists = bot.db["blacklists"]
 bot.tags = bot.db["tags"]
-
+bot.mod = bot.db["mod"]
 
 @bot.event
 async def on_ready():
@@ -101,6 +102,4 @@ if __name__ == '__main__':
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
 
-    # bot.load_extension('jishaku') # don't use jishaku anymore because it's kinda pointless tbh
     bot.run(bot.config_token)
-    print("Running Selenium")

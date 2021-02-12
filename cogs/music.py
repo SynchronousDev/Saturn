@@ -15,7 +15,7 @@ class QueueMenu(menus.ListPageSource):
     def __init__(self, ctx, data):
         self.ctx = ctx
 
-        super().__init__(data, per_page=6)
+        super().__init__(data, per_page=10)
 
     async def write_queue(self, menu, queue):
         offset = (menu.current_page * self.per_page) + 1
@@ -31,7 +31,7 @@ class QueueMenu(menus.ListPageSource):
 
         for i, track in enumerate(queue, offset):
             em.add_field(name=f"Position {i} | {track.author}",
-                value=f"[`{track.title} ({get_track_length(track)})`]({track.uri})", inline=False)
+                         value=f"[`{track.title} ({get_track_length(track)})`]({track.uri})", inline=False)
             em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} "
                                f"of {len_data:,} tracks")
 
@@ -49,7 +49,7 @@ class QueueMenu(menus.ListPageSource):
         return await self.write_queue(menu, queue)
 
 
-log = logging.getLogger(__name__) 
+log = logging.getLogger(__name__)
 
 
 class Music(commands.Cog, wavelink.WavelinkMixin):

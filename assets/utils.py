@@ -43,34 +43,33 @@ def convert_time(time):
         times = []
         years = time // 31536000
         time %= 31536000
-        months = time // 2628000
-        time %= 2628000
-        weeks = time // 604800
-        time %= 604800
-        days = time // 86400
-        time %= 86400
-        hours = time // 3600
-        time %= 3600
-        minutes = time // 60
-        time %= 60
-        seconds = time
-        # this is a very slow and messy process but I can't seem to think of a better way to do it
-        # especially because I'm calculating more than just hours and minutes and seconds, I'm going into years
         if years >= 1:
             times.append(str(years) + ' years')
+        months = time // 2628000
+        time %= 2628000
         if months >= 1:
             times.append(str(months) + ' months')
+        weeks = time // 604800
+        time %= 604800
         if weeks >= 1:
             times.append(str(weeks) + ' weeks')
+        days = time // 86400
+        time %= 86400
         if days >= 1:
             times.append(str(days) + ' days')
+        hours = time // 3600
+        time %= 3600
         if hours >= 1:
             times.append(str(hours) + ' hours')
+        minutes = time // 60
+        time %= 60
         if minutes >= 1:
-            times.append(str(minutes) + ' mintues')
+            times.append(str(minutes) + ' minutes')
+        seconds = time
         if seconds >= 1:
             times.append(str(seconds) + ' seconds')
-        return f"`{' '.join(times) if len(times) else '0 seconds'}`"
+
+        return f"{' '.join(times) if len(times) else '0 seconds'}"
 
     except Exception:
         return '`indefinitely`'
@@ -123,7 +122,7 @@ async def create_mute_role(bot, ctx):
     return mute_role
 
 
-async def send_punishment(member, guild, action, moderator, reason, duration=None):
+async def send_punishment(bot, member, guild, action, moderator, reason, duration=None):
     try:
         if duration:
             em = discord.Embed(
@@ -152,6 +151,90 @@ async def send_punishment(member, guild, action, moderator, reason, duration=Non
     except discord.HTTPException:
         pass
 
+    _action = action + ((' lasting ' + duration) if duration else '')
+
+    await create_log(bot, member, guild, _action, moderator, reason)
+
+async def get_member_modlogs(bot, member, guild):
+    """
+    Fetch mod logs for a specific guild
+    Will only fetch the first 100 punishments, because ya know, operation times suck
+    """
+    logs = []
+    cursor = bot.mod.find({"member": member.id, "guild_id": guild.id})
+    for document in await cursor.to_list(length=100):
+        logs.append(document)
+
+    return logs
+
+async def get_guild_modlogs(bot, guild):
+    """
+    Fetch mod logs for a specific guild
+    """
+    logs = []
+    cursor = bot.mod.find({"guild_id": guild.id})
+    for document in await cursor.to_list(length=100):
+        logs.append(document)
+
+    return logs
+
+async def get_last_caseid(bot, guild):
+    logs = await get_guild_modlogs(bot, guild)
+    await update_log_caseids(bot, guild)
+
+    if not logs:
+        case_id = 1
+
+    else:
+        try:
+            case_id = int(logs[-1]["case_id"]) + 1
+
+        except KeyError:
+            case_id = 1
+
+    return case_id
+
+async def create_log(bot, member, guild, action, moderator, reason):
+    """
+    Create a new log object in the database
+    """
+    case_id = await get_last_caseid(bot, guild)
+
+    schema = {
+        "guild_id": guild.id,
+        "case_id": case_id,
+        "member": member.id,
+        "action": action,
+        "moderator": moderator.id,
+        "reason": reason,
+        "time": dt.utcnow()
+    }
+    await bot.mod.insert_one(schema)
+
+async def update_log(bot, case_id, guild, action, reason):
+    """
+    Update a mod log
+    Used to update reasons for punishments
+    """
+    logs = await get_guild_modlogs(bot, guild)
+
+    schema = {
+        "action": action,
+        "reason": reason
+    }
+    await bot.mod.update_one({"guild_id": guild.id, "case_id": case_id}, {"$set": schema}, upsert=True)
+
+async def update_log_caseids(bot, guild):
+    logs = await get_guild_modlogs(bot, guild)
+
+    for i, log in enumerate(logs, start=1):
+        if i != log['case_id']:
+            await bot.mod.update_one(
+                {"guild_id": guild.id, "case_id": log['case_id']}, {"$set": {"case_id": i}}, upsert=True)
+
+async def delete_log(bot, id, guild):
+    await bot.mod.delete_one({"guild_id": guild.id, "case_id": id})
+    await update_log_caseids(bot, guild)
 
 def clean_code(content):
     if content.startswith("```") and content.endswith("```"):

@@ -16,10 +16,11 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def add_roles(self, ctx, role: discord.Role, member: t.Optional[discord.Member], reason: t.Optional[str]='no reason provided'):
+    async def add_roles(self, ctx, role: discord.Role, member: t.Optional[discord.Member], 
+                        reason: t.Optional[str] = 'no reason provided'): 
         member = member or ctx.author
 
-        if ctx.guild.me.top_role > member.top_role and (member != ctx.author) and (role.position < ctx.guild.me.top_role.position):
+        if ctx.guild.me.top_role > member.top_role and (role.position < ctx.guild.me.top_role.position):
             if ctx.author.top_role > member.top_role and member != ctx.author:
                 await member.add_roles(role, reason=reason, atomic=True)
                 em = discord.Embed(
@@ -51,7 +52,8 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def mass_add_roles(self, ctx, role: discord.Role, has_role: discord.Role, reason: t.Optional[str]='no reason provided'):
+    async def mass_add_roles(self, ctx, role: discord.Role, has_role: discord.Role,
+                             reason: t.Optional[str] = 'no reason provided'):
         em = discord.Embed(
             description=f"{SHARD} This might take a while, please wait...",
             colour=MAIN)
@@ -80,7 +82,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, reason: t.Optional[str]='no reason provided'):
+    async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, ):
         em = discord.Embed(
             description=f"{SHARD} This might take a while, please wait...",
             colour=MAIN)
@@ -109,10 +111,11 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def remove_roles(self, ctx, role: discord.Role, member: t.Optional[discord.Member], reason: t.Optional[str]='no reason provided'):
+    async def remove_roles(self, ctx, role: discord.Role, member: t.Optional[discord.Member], ):
         member = member or ctx.author
 
-        if ctx.guild.me.top_role > member.top_role and (member != ctx.author) and (role.position < ctx.guild.me.top_role.position):
+        if ctx.guild.me.top_role > member.top_role and (member != ctx.author) \
+                and (role.position < ctx.guild.me.top_role.position):
             if ctx.author.top_role > member.top_role and member != ctx.author:
                 await member.remove_roles(role, reason=reason, atomic=True)
                 em = discord.Embed(
@@ -187,8 +190,10 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def create_role(self, ctx, name, colour: t.Optional[commands.ColourConverter], *, reason: t.Optional[str]='no reason provided'):
-        new_role = await ctx.guild.create_role(name=name, colour=colour if colour else discord.Color.default(), reason=reason)
+    async def create_role(self, ctx, name, colour: t.Optional[commands.ColourConverter], *,
+                          reason: str = 'no reason provided'):
+        new_role = await ctx.guild.create_role(
+            name=name, colour=colour if colour else discord.Color.default(), reason=reason)
         em = discord.Embed(
             description=f"{CHECK} Created role {new_role.mention}",
             colour=GREEN)

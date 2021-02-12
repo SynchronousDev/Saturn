@@ -7,27 +7,28 @@ class HelpMenu(menus.ListPageSource):
         self.ctx = ctx
         self.bot = bot
 
-        super().__init__(data, per_page=1)
+        super().__init__(data, per_page=1, )
 
     async def write_help(self, menu, cogs, prefix):
         offset = (menu.current_page * self.per_page) + 1
         len_data = len(self.entries)
         em = discord.Embed(
                 title="Selenium's Commands",
-                description=f'Prefix for this server: `{prefix}` | '
-                            f'[Join the support server](https://discord.gg/HANGYrUF2y) | '
-                            f'[Invite Selenium (Administrator)](https://discord.com/oauth2/authorize?client_id=793572249059196959&permissions=8&scope=bot) | '
-                            f'[Invite Selenium (Recommended)](https://discord.com/oauth2/authorize?client_id=793572249059196959&permissions=501083383&scope) | ',
+                description=f'Prefix for this server: `{prefix}`\n'
+                            f'[Support Server](https://discord.gg/HANGYrUF2y) • '
+                            f'[Invite Selenium (Administrator)](https://discord.com/oauth2/'
+                            f'authorize?client_id=793572249059196959&permissions=8&scope=bot) • '
+                            f'[Invite Selenium (Recommended)](https://discord.com/oauth2/'
+                            f'authorize?client_id=793572249059196959&permissions=501083383&scope)',
                 colour=MAIN,
                 timestamp=dt.utcnow())
-        em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} "
-                           f"of {len_data:,} cogs")
 
-        
         try:
             for cog in [c for c in cogs]:
                 text = "\n"
+                commands = 0
                 for command in self.bot.get_cog(cog).walk_commands():
+                    commands += 1
                     if command.hidden:
                         continue
 
@@ -38,11 +39,15 @@ class HelpMenu(menus.ListPageSource):
                         text += f"{command.name}\n"
 
                 em.add_field(name=cog, value=f"```{text}```", inline=True)
+                em.set_footer(text=f"{offset:,} of {len_data:,} cogs | "
+                                   f"{commands} commands in {cog} cog")
 
         except AttributeError:
             text = "\n"
 
+            commands = 0
             for command in self.bot.get_cog(cogs).walk_commands():
+                commands += 1
                 if command.hidden:
                     continue
 
@@ -53,9 +58,12 @@ class HelpMenu(menus.ListPageSource):
                     text += f"{command.name}\n"
 
             em.add_field(name=cogs, value=f"```{text}```", inline=False)
+            em.set_footer(text=f"{offset:,} of {len_data:,} cogs | "
+                               f"{commands} commands in {cogs} cog")
 
         return em
 
+    # noinspection PyTypeChecker
     async def format_page(self, menu, entries):
         prefix = await retrieve_prefix(self.bot, self.ctx)
         return await self.write_help(menu, entries, prefix)
@@ -82,7 +90,7 @@ class Help(commands.Cog):
             cogs.remove('Dev')
             cogs.remove('Reaction Roles')
 
-            help_menu = menus.MenuPages(source=HelpMenu(ctx, cogs, self.bot))
+            help_menu = menus.MenuPages(source=HelpMenu(ctx, cogs, self.bot), delete_message_after=True)
 
             await help_menu.start(ctx)
 

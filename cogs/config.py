@@ -150,8 +150,8 @@ class Config(commands.Cog):
             deafen_members=True,
             move_members=True
         )
-        mod_role = await ctx.guild.create_role(name='Moderator', permissions=perms,
-                                    reason='Could not find a muted role')
+        mod_role = await ctx.guild.create_role(
+            name='Moderator', permissions=perms, reason='Could not find a muted role')
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
                                          {'$set': {"moderator_role_id": mod_role.id}}, upsert=True)
@@ -277,8 +277,8 @@ class Config(commands.Cog):
             except discord.HTTPException:
                 continue
 
-        await self.bot.config.update_one({"_id": ctx.guild.id},
-                                         {'$set': {"mute_role_id": mute_role.id}}, upsert=True)
+        await self.bot.config.update_one(
+            {"_id": ctx.guild.id}, {'$set': {"mute_role_id": mute_role.id}}, upsert=True)
 
         em = discord.Embed(
                 description=f"{CHECK} The mute role was created.",

@@ -11,6 +11,7 @@ class AlreadyConnectedToChannel(commands.CommandError):
 class RoleNotHighEnough(commands.CommandError):
     pass
 
+
 class BotRoleNotHighEnough(commands.CommandError):
     pass
 

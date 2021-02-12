@@ -3,12 +3,21 @@ from assets import *
 from discord.ext import commands
 import traceback
 import sys
+import random
 
 log = logging.getLogger(__name__) 
 
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.cooldown_messages = [
+            "Too fast!",
+            "Woah, too quick there!",
+            "Slow down!",
+            "This command's on cooldown!",
+            "Why do I hear boss music?",
+            "Take a chill pill!"
+        ]
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -35,12 +44,7 @@ class Events(commands.Cog):
             await ctx.send(embed=em)
 
         elif isinstance(exc, commands.MissingRequiredArgument):
-            invalid_param = str(exc.param)
-            try:
-                parameter, param_type = invalid_param.split(':')
-
-            except ValueError:
-                parameter = invalid_param
+            parameter = str(exc.param.name)
 
             em = Embed(
                 description=f"{ERROR} Invalid argument `{parameter}` passed\n"
@@ -50,8 +54,8 @@ class Events(commands.Cog):
 
         elif isinstance(exc, commands.CommandOnCooldown):
             em = Embed(
-                description=f"{ERROR} This command is on cooldown. "
-                            f"Please try again in {(convert_time(round(exc.retry_after)))}",
+                description=f"{ERROR} {random.choice(self.cooldown_messages)} "
+                            f"Please try again in `{(convert_time(round(exc.retry_after)))}`",
                 colour=RED)
             await ctx.send(embed=em)
 
@@ -68,12 +72,7 @@ class Events(commands.Cog):
             await ctx.send(embed=em)
 
         elif isinstance(exc, commands.BadUnionArgument):
-            invalid_param = str(exc.param)
-            try:
-                parameter, param_type = invalid_param.split(':')
-
-            except ValueError:
-                parameter = invalid_param
+            parameter = str(exc.param.name)
 
             em = Embed(
                 description=f"{ERROR} Invalid argument `{parameter}` passed\n"
@@ -90,7 +89,7 @@ class Events(commands.Cog):
         elif isinstance(exc, commands.MissingPermissions):
             perms = str(', '.join(exc.missing_perms)).title().replace('_', ' ')
             em = Embed(
-                description=f"{ERROR} You do not have the required permissions to perform this action.\n"
+                description=f"{ERROR} You do not have the required permissions perform this action.\n"
                             f"```Missing {perms} permissions```",
                 colour=RED)
 
@@ -197,12 +196,21 @@ class Events(commands.Cog):
             await ctx.send(embed=em)
 
         elif hasattr(exc, "original"):
+            em = discord.Embed(
+                description=f"{ERROR} Something went wrong. Whoops!"
+                            f"```{exc}```",
+                color=RED)
+            await ctx.send(embed=em)
             raise exc.original
 
         else:
+            em = discord.Embed(
+                description=f"{ERROR} Something went wrong. Whoops!"
+                            f"```{exc}```",
+                color=RED)
+            await ctx.send(embed=em)
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
             traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
-            
 
 
 def setup(bot):
