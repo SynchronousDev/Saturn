@@ -103,8 +103,11 @@ async def retrieve_prefix(bot, message):
 async def create_mute_role(bot, ctx):
     perms = discord.Permissions(
         send_messages=False, read_messages=True)
-    mute_role = await ctx.guild.create_role(name='Muted', colour=RED, permissions=perms,
-                                            reason='Could not find a muted role')
+    mute_role = await ctx.guild.create_role(name='Muted', permissions=perms,
+                                            reason='Could not find a muted role in the process of muting or unmuting.')
+
+    await bot.config.update_one({"_id": ctx.guild.id},
+                                {'$set': {"mute_role_id": mute_role.id}}, upsert=True)
 
     for channel in ctx.guild.channels:
         try:
@@ -115,9 +118,6 @@ async def create_mute_role(bot, ctx):
 
         except discord.HTTPException:
             continue
-
-    await bot.config.update_one({"_id": ctx.guild.id},
-                                {'$set': {"mute_role_id": mute_role.id}}, upsert=True)
 
     return mute_role
 
@@ -132,7 +132,7 @@ async def send_punishment(bot, member, guild, action, moderator, reason, duratio
                             f"**Duration** - {duration}\n"
                             f"**Reason** - {reason}",
                 colour=RED,
-                timestamp=dt.now())
+                timestamp=dt.utcnow())
             await member.send(embed=em)
 
         else:
@@ -142,7 +142,7 @@ async def send_punishment(bot, member, guild, action, moderator, reason, duratio
                             f"**Action** - {action.title()}\n"
                             f"**Reason** - {reason}",
                 colour=RED,
-                timestamp=dt.now())
+                timestamp=dt.utcnow())
             await member.send(embed=em)
 
     except discord.Forbidden:

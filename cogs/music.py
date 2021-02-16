@@ -44,7 +44,7 @@ class QueueMenu(menus.ListPageSource):
         for track in entries:
             queue.append(track)
 
-        # noinspection
+        # noinspection PyTypeChecker
 
         return await self.write_queue(menu, queue)
 
@@ -82,20 +82,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         else:
             await payload.player.advance()
 
-    async def cog_check(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            if ctx.command in self.bot.get_cog('Music').walk_commands():
-                em = discord.Embed(
-                    description=f"{ERROR} Music commands are not available in DMs.",
-                    color=RED)
-                await ctx.send(embed=em)
-                return False
-
-            else:
-                return True
-
-        return True
-
     async def start_nodes(self):
         await self.bot.wait_until_ready()
 
@@ -123,6 +109,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="connect", aliases=["join", "c", 'conn'],
                       description='Connect to a voice channel.')
+    @commands.guild_only()
     async def connect_command(self, ctx, *, channel: t.Optional[discord.VoiceChannel]):
         player = self.get_player(ctx)
         channel = await player.connect(ctx)
@@ -133,6 +120,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="disconnect", aliases=["leave", 'd', 'dconn'],
                       description='Disconnect from a voice channel.')
+    @commands.guild_only()
     async def disconnect_command(self, ctx):
         player = self.get_player(ctx)
         await player.teardown()
@@ -143,6 +131,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="play", aliases=['pl'],
                       descrption='Play some music.')
+    @commands.guild_only()
     async def play_command(self, ctx, *, query: t.Optional[str]):
         player = self.get_player(ctx)
         if not player.is_connected:
@@ -162,17 +151,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             if re.search(SPOTIFY_URL_REGEX, query):
                 track = await self.sp.get_track(query)
                 query = f"ytsearch:{track}"
-                self.logger.debug("Found tracks with a Spotify Link")
+                log.debug("Found tracks with a Spotify Link")
 
             elif not re.search(YOUTUBE_URL_REGEX, query):
                 query = query.strip("<>")
                 query = f"ytsearch:{query}"
-                self.logger.debug("Found tracks with a Youtube Link")
+                log.debug("Found tracks with a Youtube Link")
 
             await player.add_tracks(ctx, await self.wavelink.get_tracks(query, retry_on_failure=True))
 
     @commands.command(name="pause", aliases=['ps'],
                       description='Pause the currently playing music.')
+    @commands.guild_only()
     async def pause_command(self, ctx):
         player = self.get_player(ctx)
 
@@ -190,6 +180,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                                   'to the `pause` command, this one clears the queue. If you '
                                   'want to only pause music, consider using the `pause` command'
                                   'instead of this one.')
+    @commands.guild_only()
     async def stop_command(self, ctx):
         player = self.get_player(ctx)
         player.queue.empty()
@@ -201,6 +192,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="next", aliases=["skip", 'n', 'nxt'],
                       description='Skip to the next song in the queue.')
+    @commands.guild_only()
     async def next_command(self, ctx):
         player = self.get_player(ctx)
 
@@ -215,6 +207,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="previous", aliases=['prev', 'prvs'],
                       description='Play the previous song in the queue.')
+    @commands.guild_only()
     async def previous_command(self, ctx):
         player = self.get_player(ctx)
 
@@ -230,6 +223,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="shuffle", aliases=['shffl', 'sf'],
                       description='Shuffles the queue.')
+    @commands.guild_only()
     async def shuffle_command(self, ctx):
         player = self.get_player(ctx)
         player.queue.shuffle()
@@ -240,6 +234,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="repeat", aliases=['r', 'rpt'],
                       description='Set a song\'s repeat mode.')
+    @commands.guild_only()
     async def repeat(self, ctx, mode: t.Optional[str]):
         player = self.get_player(ctx)
 
@@ -306,6 +301,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="queue", aliases=['q'],
                       description='See your song queue.')
+    @commands.guild_only()
     async def queue_command(self, ctx):
         player = self.get_player(ctx)
 
@@ -331,6 +327,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @commands.command(
         name='remove',
         description='Removes a track from the queue.')
+    @commands.guild_only()
     async def remove_tracks(self, ctx, track_id: int):
         player = self.get_player(ctx)
         await player.remove_track(track_id)

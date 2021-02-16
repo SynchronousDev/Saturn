@@ -42,6 +42,7 @@ bot.configuration = json.load(open(bot.cwd + '/assets/configuration.json'))
 print('{}\n------'.format(bot.cwd))
 
 bot.muted_users = {}
+bot.banned_users = {}
 bot.config_token = bot.configuration['token']
 bot.connection_url = bot.configuration['mongo']
 bot.spotify_client_id = bot.configuration['spotify_client_id']
@@ -54,6 +55,7 @@ bot.mutes = bot.db["mutes"]
 bot.blacklists = bot.db["blacklists"]
 bot.tags = bot.db["tags"]
 bot.mod = bot.db["mod"]
+bot.bans = bot.db["bans"]
 
 @bot.event
 async def on_ready():
@@ -68,11 +70,17 @@ async def on_ready():
     for mute in data:
         bot.muted_users[mute["_id"]] = mute
 
-    change_pres.start()
+    bans = []
+    async for document in bot.bans.find({}):
+        bans.append(document)
+
+    for ban in bans:
+        bot.banned_users[ban["_id"]] = ban
 
 
 @bot.event
 async def on_connect():
+    change_pres.start()
     print("------\nSelenium connected")
 
 

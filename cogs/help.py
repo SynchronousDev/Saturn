@@ -9,7 +9,7 @@ class HelpMenu(menus.ListPageSource):
 
         super().__init__(data, per_page=1, )
 
-    async def write_help(self, menu, cogs, prefix):
+    async def write_help(self, menu, cog, prefix):
         offset = (menu.current_page * self.per_page) + 1
         len_data = len(self.entries)
         em = discord.Embed(
@@ -23,43 +23,25 @@ class HelpMenu(menus.ListPageSource):
                 colour=MAIN,
                 timestamp=dt.utcnow())
 
-        try:
-            for cog in [c for c in cogs]:
-                text = "\n"
-                commands = 0
-                for command in self.bot.get_cog(cog).walk_commands():
-                    commands += 1
-                    if command.hidden:
-                        continue
+        desc = self.bot.get_cog(cog).description
 
-                    elif command.parent is not None:
-                        text += f"   {command.name}\n"
+        text = f"{desc if desc else 'No description provided.'}```\n**Commands**```\n"
 
-                    else:
-                        text += f"{command.name}\n"
+        commands = 0
+        for command in self.bot.get_cog(cog).walk_commands():
+            commands += 1
+            if command.hidden:
+                continue
 
-                em.add_field(name=cog, value=f"```{text}```", inline=True)
-                em.set_footer(text=f"{offset:,} of {len_data:,} cogs | "
-                                   f"{commands} commands in {cog} cog")
+            elif command.parent is not None:
+                text += f"   {command.name}\n"
 
-        except AttributeError:
-            text = "\n"
+            else:
+                text += f"{command.name}\n"
 
-            commands = 0
-            for command in self.bot.get_cog(cogs).walk_commands():
-                commands += 1
-                if command.hidden:
-                    continue
-
-                elif command.parent is not None:
-                    text += f"   {command.name}\n"
-
-                else:
-                    text += f"{command.name}\n"
-
-            em.add_field(name=cogs, value=f"```{text}```", inline=False)
-            em.set_footer(text=f"{offset:,} of {len_data:,} cogs | "
-                               f"{commands} commands in {cogs} cog")
+        em.add_field(name=cog, value=f"```{text}```", inline=False)
+        em.set_footer(text=f"{offset:,} of {len_data:,} cogs | "
+                           f"{commands} commands in {cog} cog")
 
         return em
 
@@ -89,6 +71,7 @@ class Help(commands.Cog):
             cogs.remove('Help')
             cogs.remove('Dev')
             cogs.remove('Reaction Roles')
+            cogs.remove('ErrorHandler')
 
             help_menu = menus.MenuPages(source=HelpMenu(ctx, cogs, self.bot), delete_message_after=True)
 
@@ -102,13 +85,12 @@ class Help(commands.Cog):
             else:
                 command = self.bot.get_command(entity)
                 if command:
+                    cog_name = command.cog.qualified_name.title() + \
+                               ":open_file_folder:" if command.cog.qualified_name else None
+                    parent_name = command.parent.name.title() + ":open_file_folder:" if command.parent.name else None
+                    command_name = command.name.title() + ":open_file_folder:" if command.name else None
                     em = discord.Embed(
-                        title='{0}{1}{2}'.format(
-                            str(command.cog.qualified_name).title() + ' ▸ '
-                            if command.cog.qualified_name else '',
-                            str(command.parent.name).title() + ' ▸ '
-                            if command.parent else '',
-                            str(command.name).title()),
+                        title='{0}{1}{2}'.format(cog_name, parent_name, command_name),
                         colour=MAIN,
                         timestamp=dt.now())
                     em.add_field(name='Description',
