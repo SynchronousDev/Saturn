@@ -6,6 +6,11 @@ from assets import *
 log = logging.getLogger(__name__) 
 
 class Tags(commands.Cog):
+    """
+    The Tags cog. Includes all commands that are related to making tags.
+
+    Not much else other than tags in this cog.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.accepted_chars = string.ascii_letters + string.digits + '_-'

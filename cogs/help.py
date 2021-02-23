@@ -13,12 +13,12 @@ class HelpMenu(menus.ListPageSource):
         offset = (menu.current_page * self.per_page) + 1
         len_data = len(self.entries)
         em = discord.Embed(
-                title="Selenium's Commands",
+                title="Saturn's Commands",
                 description=f'Prefix for this server: `{prefix}`\n'
                             f'[Support Server](https://discord.gg/HANGYrUF2y) • '
-                            f'[Invite Selenium (Administrator)](https://discord.com/oauth2/'
+                            f'[Invite Saturn (Administrator)](https://discord.com/oauth2/'
                             f'authorize?client_id=793572249059196959&permissions=8&scope=bot) • '
-                            f'[Invite Selenium (Recommended)](https://discord.com/oauth2/'
+                            f'[Invite Saturn (Recommended)](https://discord.com/oauth2/'
                             f'authorize?client_id=793572249059196959&permissions=501083383&scope)',
                 colour=MAIN,
                 timestamp=dt.utcnow())
@@ -86,9 +86,9 @@ class Help(commands.Cog):
                 command = self.bot.get_command(entity)
                 if command:
                     cog_name = command.cog.qualified_name.title() + \
-                               ":open_file_folder:" if command.cog.qualified_name else None
-                    parent_name = command.parent.name.title() + ":open_file_folder:" if command.parent.name else None
-                    command_name = command.name.title() + ":open_file_folder:" if command.name else None
+                               " :open_file_folder: " if command.cog else ''
+                    parent_name = command.parent.name.title() + " :open_file_folder: " if command.parent else ''
+                    command_name = command.name.title()
                     em = discord.Embed(
                         title='{0}{1}{2}'.format(cog_name, parent_name, command_name),
                         colour=MAIN,

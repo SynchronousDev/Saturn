@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 
 import discord
 from discord import Color
@@ -12,28 +12,40 @@ import functools
 
 # Colours, emotes, and useful stuff
 
-MAIN = 0x660dd9
+MAIN = 0x5A00D8
 RED = Color.red()
 GREEN = Color.green()
 GOLD = Color.gold()
 
-ERROR = '<:SelError:804756495044444160>'
-CHECK = '<:SelCheck:804756481831993374>'
+ERROR = '<:SatError:804756495044444160>'
+CHECK = '<:SatCheck:804756481831993374>'
 BLANK = '\uFEFF'
 LOCK = ':lock:'
 UNLOCK = ':unlock:'
 WEAK_SIGNAL = ':red_circle:'
 MEDIUM_SIGNAL = ':yellow_circle:'
 STRONG_SIGNAL = ':green_circle:'
-SHARD = '<:SeleniumShard:806598937381306418>'
+SATURN = '<:Saturn:813806979847421983>'
 NO_REPEAT = '⏭'
 REPEAT_ONE = '🔂'
 REPEAT_ALL = '🔁'
+MUTE = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
+       'speaker-with-cancellation-stroke_1f507.png'
+UNMUTE = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
+         'speaker-with-three-sound-waves_1f50a.png'
+WARN = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
+       'warning-sign_26a0.png'
+NO_ENTRY = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
+      'no-entry_26d4.png'
+UNBAN = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
+        'door_1f6aa.png'
+
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s(" \
-            r")<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’])) "
+            r")<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 SPOTIFY_URL_REGEX = r"[\bhttps://open.\b]*spotify[\b.com\b]*[/:]*track[/:]*[A-Za-z0-9?=]+"
-YOUTUBE_URL_REGEX = r"(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/"\
+YOUTUBE_URL_REGEX = r"(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/" \
                     r"(?:watch|v|embed)(?:\.php)?(?:\?.*v=|\/))([a-zA-Z0-9\_-]+)"
+INVITE_URL_REGEX = r"discord(?:\.com|app\.com|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})"
 
 
 def convert_time(time):
@@ -72,7 +84,8 @@ def convert_time(time):
         return f"{' '.join(times) if len(times) else '0 seconds'}"
 
     except Exception:
-        return '`indefinitely`'
+        return 'indefinitely'
+
 
 async def syntax(command):
     params = []
@@ -83,7 +96,7 @@ async def syntax(command):
                 value) else f"<{key}>")
 
     params = " ".join(params)
-    return f"```{str(command)} {params}```"
+    return f"```{str(command.qualified_name)} {params}```"
 
 
 async def retrieve_prefix(bot, message):
@@ -92,12 +105,32 @@ async def retrieve_prefix(bot, message):
 
         # Make sure we have a useable prefix
         if not data or not data["prefix"]:
-            return "sl!"
+            return "s."
 
         else:
             return data["prefix"]
     except Exception as e:
-        return "sl!"
+        return "s."
+
+
+async def purge_msgs(bot, ctx, limit, check):
+    await ctx.message.delete()
+    deleted = await ctx.channel.purge(
+        limit=limit,
+        after=dt.utcnow() - timedelta(weeks=2),
+        check=check)
+
+    if not len(deleted):
+        em = discord.Embed(
+            description=f"{ERROR} Could not find any messages to delete.\n"
+                        f"```Messages older than 2 weeks cannot be deleted```",
+            color=RED)
+        return await ctx.send(embed=em)
+
+    em = discord.Embed(
+        description=f"{CHECK} Deleted {len(deleted, )} messages in {ctx.channel.mention}",
+        color=GREEN)
+    await ctx.send(embed=em, delete_after=2)
 
 
 async def create_mute_role(bot, ctx):
@@ -123,6 +156,9 @@ async def create_mute_role(bot, ctx):
 
 
 async def send_punishment(bot, member, guild, action, moderator, reason, duration=None):
+    """
+    Send details about a punishment and log it in the mod logs channel.
+    """
     try:
         if duration:
             em = discord.Embed(
@@ -145,15 +181,60 @@ async def send_punishment(bot, member, guild, action, moderator, reason, duratio
                 timestamp=dt.utcnow())
             await member.send(embed=em)
 
-    except discord.Forbidden:
+    except Exception as e:
         pass
 
-    except discord.HTTPException:
-        pass
+    # send it to the log channel because why not lol
+    data = await bot.config.find_one({"_id": guild.id})
+    mod_logs = guild.get_channel(data['mod_logs'])
+    colours = {
+        "kick": {"colour": discord.Colour.orange(), "emote": NO_ENTRY},
+        "ban": {"colour": discord.Colour.red(), "emote": NO_ENTRY},
+        "mute": {"colour": discord.Colour.orange(), "emote": MUTE},
+        "unmute": {"colour": discord.Colour.green(), "emote": UNMUTE},
+        "warn": {"colour": discord.Colour.gold(), "emote": WARN},
+        "unban": {"colour": discord.Colour.gold(), "emote": UNBAN},
+        "softban": {"colour": discord.Colour.red(), "emote": NO_ENTRY},
+        "tempban": {"colour": discord.Colour.red(), "emote": NO_ENTRY}
+    }
+    colour = GOLD
+    emote = None
+    for key, value in colours.items():
+        if str(key) == str(action.lower()):
+            colour, emote = value["colour"], value["emote"]
+
+    action_ = action
+    if action.find("ban") != -1:
+        action_ += "ned"
+
+    elif action in ("mute", "unmute"):
+        action_ += "d"
+
+    else:
+        action_ += "ed"
+
+    em = discord.Embed(
+        title=f'Member {action_.title()}',
+        colour=colour,
+        timestamp=dt.utcnow()
+    )
+    em.set_thumbnail(url=emote)
+    em.set_footer(text='Case no. {}'.format(await get_last_caseid(bot, guild)))
+    em.add_field(name='Member', value=member.mention, inline=False)
+    em.add_field(name='Moderator', value=moderator.mention, inline=False)
+    if duration:
+        em.add_field(name='Duration', value=duration, inline=False)
+
+    if reason:
+        em.add_field(name='Reason', value=reason, inline=False)
+
+    await mod_logs.send(embed=em)
 
     _action = action + ((' lasting ' + duration) if duration else '')
+    # get the action + duration for formatting purposes
 
-    await create_log(bot, member, guild, _action, moderator, reason)
+    await create_log(bot, member, guild, _action, moderator, reason)  # create the log
+
 
 async def get_member_modlogs(bot, member, guild):
     """
@@ -167,6 +248,7 @@ async def get_member_modlogs(bot, member, guild):
 
     return logs
 
+
 async def get_guild_modlogs(bot, guild):
     """
     Fetch mod logs for a specific guild
@@ -177,6 +259,7 @@ async def get_guild_modlogs(bot, guild):
         logs.append(document)
 
     return logs
+
 
 async def get_last_caseid(bot, guild):
     logs = await get_guild_modlogs(bot, guild)
@@ -193,6 +276,7 @@ async def get_last_caseid(bot, guild):
             case_id = 1
 
     return case_id
+
 
 async def create_log(bot, member, guild, action, moderator, reason):
     """
@@ -211,6 +295,7 @@ async def create_log(bot, member, guild, action, moderator, reason):
     }
     await bot.mod.insert_one(schema)
 
+
 async def update_log(bot, case_id, guild, action, reason):
     """
     Update a mod log
@@ -224,6 +309,7 @@ async def update_log(bot, case_id, guild, action, reason):
     }
     await bot.mod.update_one({"guild_id": guild.id, "case_id": case_id}, {"$set": schema}, upsert=True)
 
+
 async def update_log_caseids(bot, guild):
     logs = await get_guild_modlogs(bot, guild)
 
@@ -232,9 +318,11 @@ async def update_log_caseids(bot, guild):
             await bot.mod.update_one(
                 {"guild_id": guild.id, "case_id": log['case_id']}, {"$set": {"case_id": i}}, upsert=True)
 
+
 async def delete_log(bot, id, guild):
     await bot.mod.delete_one({"guild_id": guild.id, "case_id": id})
     await update_log_caseids(bot, guild)
+
 
 def clean_code(content):
     if content.startswith("```") and content.endswith("```"):

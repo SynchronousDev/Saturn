@@ -90,7 +90,7 @@ class Dev(commands.Cog):
             description=f"```py\n{code}``````py\n{result}```",
             color=color,
             timestamp=dt.utcnow())
-        em.set_footer(text='Selenium Eval Command')
+        em.set_footer(text='Saturn Eval Command')
         await ctx.send(embed=em)
 
     @commands.command(
@@ -116,15 +116,13 @@ class Dev(commands.Cog):
             em = discord.Embed(
                 description=f"{ERROR} Command `{command}` does not exist.",
                 colour=RED)
-            await ctx.send(embed=em)
-            return
+            return await ctx.send(embed=em)
 
         elif ctx.command == command or command in [c for c in self.bot.get_cog('Dev').walk_commands()]:
             em = discord.Embed(
                 description=f"{ERROR} This command cannot be disabled.",
                 colour=RED)
-            await ctx.send(embed=em)
-            return
+            return await ctx.send(embed=em)
 
         else:
             command.enabled = not command.enabled

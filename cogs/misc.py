@@ -7,6 +7,11 @@ log = logging.getLogger(__name__)
 
 
 class Miscellaneous(commands.Cog):
+    """
+    The Miscellaneous cog. These are commands that are just fun, and can spice up the chat.
+
+    Warning: The commands in the Miscellaneous cog are not the same as the commands in the Utility cog.
+    """
     def __init__(self, bot):
         self.bot = bot
 
@@ -133,14 +138,14 @@ class Miscellaneous(commands.Cog):
             if winning_choice:
                 if winning_choice == choice:
                     win = discord.Embed(
-                        description=f"```You chose {choice}\nSelenium chose {computer_choice}```",
+                        description=f"```You chose {choice}\nSaturn chose {computer_choice}```",
                         color=GREEN)
                     win.set_author(icon_url=ctx.author.avatar_url, name='You won!')
                     await ctx.send(embed=win)
 
                 elif winning_choice == computer_choice:
                     loss = discord.Embed(
-                        description=f"```You chose {choice}\nSelenium chose {computer_choice}```",
+                        description=f"```You chose {choice}\nSaturn chose {computer_choice}```",
                         color=RED)
                     loss.set_author(icon_url=ctx.author.avatar_url, name='You lost!')
                     await ctx.send(embed=loss)

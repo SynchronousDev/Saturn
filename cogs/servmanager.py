@@ -4,6 +4,11 @@ from discord.ext import commands
 import discord
 
 class Management(commands.Cog, name='Server Management'):
+    """
+    The Server Management cog. Useful for quickly doing things like addinig roles and deleting channels and such.
+
+    Essentially does most of the things that will usually take time or are annoying, like mass adding roles.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.logger = logging.getLogger(__name__) 
@@ -55,7 +60,7 @@ class Management(commands.Cog, name='Server Management'):
     async def mass_add_roles(self, ctx, role: discord.Role, has_role: discord.Role,
                              reason: t.Optional[str] = 'no reason provided'):
         em = discord.Embed(
-            description=f"{SHARD} This might take a while, please wait...",
+            description=f"{SATURN} This might take a while, please wait...",
             colour=MAIN)
         msg = await ctx.send(embed=em)
         added_roles = []
@@ -84,7 +89,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, ):
         em = discord.Embed(
-            description=f"{SHARD} This might take a while, please wait...",
+            description=f"{SATURN} This might take a while, please wait...",
             colour=MAIN)
         msg = await ctx.send(embed=em)
         removed_roles = []

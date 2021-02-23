@@ -147,7 +147,7 @@ class Player(wavelink.Player):
             for track in tracks.tracks:
                 queue.append(track)
             em = discord.Embed(
-                description=f"{SHARD} Added `{len(queue)} tracks` to the queue.",
+                description=f"{SATURN} Added `{len(queue)} tracks` to the queue.",
                 color=MAIN)
             em.set_image(url=queue[0].thumb)
             await ctx.send(embed=em)
@@ -157,14 +157,14 @@ class Player(wavelink.Player):
             if self.queue.length == 0:
                 em = discord.Embed(
                     description=
-                        f'{SHARD} Now playing [`{tracks[0].title} ({get_track_length(tracks[0])})`]'
+                        f'{SATURN} Now playing [`{tracks[0].title} ({get_track_length(tracks[0])})`]'
                         f'({tracks[0].uri})',
                     color=MAIN)
                 em.set_image(url=tracks[0].thumb)
                 await ctx.send(embed=em)
             else:
                 em = discord.Embed(
-                    description=f"{SHARD} Added [`{tracks[0].title} ({get_track_length(tracks[0])})`]"
+                    description=f"{SATURN} Added [`{tracks[0].title} ({get_track_length(tracks[0])})`]"
                                 f"({tracks[0].uri}) to the queue.",
                     color=MAIN)
                 em.set_image(url=tracks[0].thumb)

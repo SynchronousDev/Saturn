@@ -10,7 +10,7 @@ from assets import *
 
 
 logging.basicConfig(level=logging.INFO)
-default_prefix = "sl!"
+default_prefix = "s."
 
 
 async def get_prefix(bot, message):
@@ -43,13 +43,14 @@ print('{}\n------'.format(bot.cwd))
 
 bot.muted_users = {}
 bot.banned_users = {}
-bot.config_token = bot.configuration['token']
+bot.snipes = {}
+bot.config_token = bot.configuration[   'token']
 bot.connection_url = bot.configuration['mongo']
 bot.spotify_client_id = bot.configuration['spotify_client_id']
 bot.spotify_client_secret = bot.configuration['spotify_client_secret']
 
 bot.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(bot.connection_url))
-bot.db = bot.mongo["seleniumV2"]
+bot.db = bot.mongo["saturn"]
 bot.config = bot.db["config"]
 bot.mutes = bot.db["mutes"]
 bot.blacklists = bot.db["blacklists"]
@@ -61,7 +62,7 @@ bot.bans = bot.db["bans"]
 async def on_ready():
     # The on ready event. Fires when the bot is ready
     print(f"------\nLogged in as {bot.user.name}"
-          f" (ID {bot.user.id})\n------\nTime: {dt.now()}")
+          f" (ID {bot.user.id})\n------\nTime: {dt.now()}\n------")
 
     data = []
     async for document in bot.mutes.find({}):
@@ -81,12 +82,12 @@ async def on_ready():
 @bot.event
 async def on_connect():
     change_pres.start()
-    print("------\nSelenium connected")
+    print("------\nSaturn connected")
 
 
 @bot.event
 async def on_disconnect():
-    print("------\nSelenium disconnected")
+    print("------\nSaturn disconnected")
     change_pres.cancel()
 
 
@@ -94,7 +95,7 @@ async def on_disconnect():
 async def change_pres():
     await bot.change_presence(
         activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users"
-                                   f" | sl!help | Version {bot.version}"))
+                                   f" | {default_prefix}help | Version {bot.version}"))
 
 
 @bot.before_invoke

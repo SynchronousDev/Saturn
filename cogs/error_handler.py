@@ -99,6 +99,13 @@ class ErrorHandler(commands.Cog):
                 colour=RED)
             await ctx.send(embed=em)
 
+        elif isinstance(exc, commands.InvalidEndOfQuotedStringError):
+            em = Embed(
+                description=f"{ERROR} Invalid argument passed\n"
+                            f"{await syntax(ctx.command)}",
+                colour=RED)
+            await ctx.send(embed=em)
+
         elif isinstance(exc, commands.NotOwner):
             em = Embed(
                 description=f"{ERROR} You are not a developer of this bot.",
@@ -180,6 +187,19 @@ class ErrorHandler(commands.Cog):
         elif isinstance(exc, BotRoleNotHighEnough):
             em = discord.Embed(
                     description=f"{ERROR} I am not high enough in the role hierarchy to perform this action.",
+                    color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, InvalidLimit):
+            em = discord.Embed(
+                description=f"{ERROR} The limit provided is not within acceptable boundaries.\n"
+                            f"```Limit must be in between 1 and 1000 messages```",
+                color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, IsAdministrator):
+            em = discord.Embed(
+                    description=f"{ERROR} This member has the `administrator` permission.",
                     color=RED)
             await ctx.send(embed=em)
 

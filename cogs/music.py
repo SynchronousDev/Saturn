@@ -53,6 +53,12 @@ log = logging.getLogger(__name__)
 
 
 class Music(commands.Cog, wavelink.WavelinkMixin):
+    """
+    The Music cog. Has all the commands that can play some beats.
+
+    Includes playing, pausing, stopping, playlists, etc...
+    Made with Wavelink and Lavalink. Check credits for more information.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.wavelink = wavelink.Client(bot=bot)
@@ -70,7 +76,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @wavelink.WavelinkMixin.listener()
     async def on_node_ready(self, node):
-        print(f"Wavelink node [{node.identifier}] ready.")
+        log.info(msg=f'Wavelink node {node.identifier} ready')
 
     @wavelink.WavelinkMixin.listener("on_track_stuck")
     @wavelink.WavelinkMixin.listener("on_track_end")
@@ -114,7 +120,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         channel = await player.connect(ctx)
         em = discord.Embed(
-            description=f"{SHARD} Connected to `{channel.name}`",
+            description=f"{SATURN} Connected to `{channel.name}`",
             color=MAIN)
         await ctx.send(embed=em)
 
@@ -125,7 +131,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         await player.teardown()
         em = discord.Embed(
-            description=f"{SHARD} Disconnected.",
+            description=f"{SATURN} Disconnected.",
             color=MAIN)
         await ctx.send(embed=em)
 
@@ -143,7 +149,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
             await player.set_pause(False)
             em = discord.Embed(
-                description=f"{SHARD} Playing.",
+                description=f"{SATURN} Playing.",
                 color=MAIN)
             await ctx.send(embed=em)
 
@@ -171,7 +177,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await player.set_pause(True)
         em = discord.Embed(
-            description=f"{SHARD} Paused.",
+            description=f"{SATURN} Paused.",
             color=MAIN)
         await ctx.send(embed=em)
 
@@ -186,7 +192,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player.queue.empty()
         await player.stop()
         em = discord.Embed(
-            description=f"{SHARD} Stopped playing music.",
+            description=f"{SATURN} Stopped playing music.",
             color=MAIN)
         await ctx.send(embed=em)
 
@@ -201,7 +207,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await player.stop()
         em = discord.Embed(
-            description=f"{SHARD} Skipped to next track.",
+            description=f"{SATURN} Skipped to next track.",
             color=MAIN)
         await ctx.send(embed=em)
 
@@ -217,7 +223,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player.queue.position -= 2
         await player.stop()
         em = discord.Embed(
-            description=f"{SHARD} Playing previous track in the queue.",
+            description=f"{SATURN} Playing previous track in the queue.",
             color=MAIN)
         await ctx.send(embed=em)
 
@@ -228,7 +234,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         player = self.get_player(ctx)
         player.queue.shuffle()
         em = discord.Embed(
-            description=f"{SHARD} Shuffled the queue.",
+            description=f"{SATURN} Shuffled the queue.",
             color=MAIN)
         await ctx.send(embed=em)
 
@@ -254,7 +260,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             else:
                 player.queue.set_repeat_mode(mode)
                 em = discord.Embed(
-                    description=f"{SHARD} Set repeat mode to `{mode}`",
+                    description=f"{SATURN} Set repeat mode to `{mode}`",
                     color=MAIN)
                 await ctx.send(embed=em)
                 return
@@ -295,7 +301,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 mode = "all"
 
         em = discord.Embed(
-            description=f"{SHARD} Set repeat mode to `{mode}`",
+            description=f"{SATURN} Set repeat mode to `{mode}`",
             color=MAIN)
         await ctx.send(embed=em)
 
@@ -333,7 +339,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await player.remove_track(track_id)
 
         em = discord.Embed(
-            description=f"{SHARD} Removed track number `{track_id}`",
+            description=f"{SATURN} Removed track number `{track_id}`",
             color=GREEN)
         await ctx.send(embed=em)
 

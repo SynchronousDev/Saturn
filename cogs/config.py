@@ -3,6 +3,11 @@ from assets.utils import *
 log = logging.getLogger(__name__) 
 
 class Config(commands.Cog):
+    """
+    The Configuration cog. All commands that can help you set up or customize Saturn are included here.
+
+    This includes changing the prefix, setting moderator and muting roles, logging, and others.
+    """
     def __init__(self, bot):
         self.bot = bot 
 
@@ -13,7 +18,9 @@ class Config(commands.Cog):
     @commands.has_guild_permissions(manage_guild=True)
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
-    async def prefix(self, ctx, *, prefix="sl!"):
+    async def prefix(self, ctx, *, prefix):
+        if prefix != "--":
+            prefix = prefix.replace("--", " ")
         await self.bot.config.update_one({"_id": ctx.guild.id}, {'$set': {"prefix": prefix}}, upsert=True)
         em = discord.Embed(
                 description=f"{CHECK} Prefix has been set to `{prefix}`",
@@ -30,7 +37,7 @@ class Config(commands.Cog):
     async def deleteprefix(self, ctx):
         await self.bot.config.update_one({"_id": ctx.guild.id}, {"$unset": {"prefix": 1}})
         em = discord.Embed(
-                description=f"{CHECK} Prefix has been reset to the default `sl!`",
+                description=f"{CHECK} Prefix has been reset to the default `s.`",
                 colour=GREEN)
         await ctx.send(embed=em)
 
@@ -285,6 +292,47 @@ class Config(commands.Cog):
                 colour=GREEN)
         await ctx.send(embed=em)
 
+    @commands.command(
+        name='messagelogs',
+        aliases=['msglogs'],
+        description='The command to change the settings for the message log channel.',
+    )
+    async def message_logs(self, ctx, channel: discord.TextChannel):
+        await self.bot.config.update_one(
+            {"_id": ctx.guild.id}, {'$set': {"message_logs": channel.id}}, upsert=True)
+
+        em = discord.Embed(
+                description=f"{CHECK} The `message logs` channel was set to {channel.mention}.",
+                colour=GREEN)
+        await ctx.send(embed=em)
+
+    @commands.command(
+        name='modlogs',
+        aliases=['moderationlogs'],
+        description='The command to change the settings for the moderation log channel.',
+    )
+    async def mod_logs(self, ctx, channel: discord.TextChannel):
+        await self.bot.config.update_one(
+            {"_id": ctx.guild.id}, {'$set': {"mod_logs": channel.id}}, upsert=True)
+
+        em = discord.Embed(
+                description=f"{CHECK} The `moderation logs` channel was set to {channel.mention}.",
+                colour=GREEN)
+        await ctx.send(embed=em)
+
+    @commands.command(
+        name='memberlogs',
+        aliases=['userlogs'],
+        description='The command to change the settings for the member log channel.',
+    )
+    async def member_logs(self, ctx, channel: discord.TextChannel):
+        await self.bot.config.update_one(
+            {"_id": ctx.guild.id}, {'$set': {"member_logs": channel.id}}, upsert=True)
+
+        em = discord.Embed(
+                description=f"{CHECK} The `member logs` channel was set to {channel.mention}.",
+                colour=GREEN)
+        await ctx.send(embed=em)
 
 def setup(bot):
     bot.add_cog(Config(bot))
