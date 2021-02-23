@@ -1,2 +1,2 @@
-# SeleniumV2
+# Saturn
 ![Saturn](assets/SaturnButWithSmallerRings.png)
