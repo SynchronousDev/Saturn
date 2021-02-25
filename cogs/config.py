@@ -1,6 +1,7 @@
 from assets.utils import *
 
-log = logging.getLogger(__name__) 
+log = logging.getLogger(__name__)
+
 
 class Config(commands.Cog):
     """
@@ -8,8 +9,9 @@ class Config(commands.Cog):
 
     This includes changing the prefix, setting moderator and muting roles, logging, and others.
     """
+
     def __init__(self, bot):
-        self.bot = bot 
+        self.bot = bot
 
     @commands.command(
         name="prefix",
@@ -23,8 +25,8 @@ class Config(commands.Cog):
             prefix = prefix.replace("--", " ")
         await self.bot.config.update_one({"_id": ctx.guild.id}, {'$set': {"prefix": prefix}}, upsert=True)
         em = discord.Embed(
-                description=f"{CHECK} Prefix has been set to `{prefix}`",
-                colour=GREEN)
+            description=f"{CHECK} Prefix has been set to `{prefix}`",
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.command(
@@ -37,8 +39,8 @@ class Config(commands.Cog):
     async def deleteprefix(self, ctx):
         await self.bot.config.update_one({"_id": ctx.guild.id}, {"$unset": {"prefix": 1}})
         em = discord.Embed(
-                description=f"{CHECK} Prefix has been reset to the default `s.`",
-                colour=GREEN)
+            description=f"{CHECK} Prefix has been reset to the default `s.`",
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.group(
@@ -244,8 +246,8 @@ class Config(commands.Cog):
             {"_id": ctx.guild.id}, {'$unset': {"mute_role_id": None}})
 
         em = discord.Embed(
-                description=f"{CHECK} The mute role has been deleted.",
-                colour=GREEN)
+            description=f"{CHECK} The mute role has been deleted.",
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @mute_role.command(
@@ -270,7 +272,7 @@ class Config(commands.Cog):
             pass
 
         perms = discord.Permissions(
-                send_messages=False, read_messages=True)
+            send_messages=False, read_messages=True)
         mute_role = await ctx.guild.create_role(name='Muted', colour=RED, permissions=perms,
                                                 reason='Could not find a muted role')
 
@@ -288,8 +290,8 @@ class Config(commands.Cog):
             {"_id": ctx.guild.id}, {'$set': {"mute_role_id": mute_role.id}}, upsert=True)
 
         em = discord.Embed(
-                description=f"{CHECK} The mute role was created.",
-                colour=GREEN)
+            description=f"{CHECK} The mute role was created.",
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.command(
@@ -302,8 +304,8 @@ class Config(commands.Cog):
             {"_id": ctx.guild.id}, {'$set': {"message_logs": channel.id}}, upsert=True)
 
         em = discord.Embed(
-                description=f"{CHECK} The `message logs` channel was set to {channel.mention}.",
-                colour=GREEN)
+            description=f"{CHECK} The `message logs` channel was set to {channel.mention}.",
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.command(
@@ -316,8 +318,8 @@ class Config(commands.Cog):
             {"_id": ctx.guild.id}, {'$set': {"mod_logs": channel.id}}, upsert=True)
 
         em = discord.Embed(
-                description=f"{CHECK} The `moderation logs` channel was set to {channel.mention}.",
-                colour=GREEN)
+            description=f"{CHECK} The `moderation logs` channel was set to {channel.mention}.",
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.command(
@@ -330,9 +332,10 @@ class Config(commands.Cog):
             {"_id": ctx.guild.id}, {'$set': {"member_logs": channel.id}}, upsert=True)
 
         em = discord.Embed(
-                description=f"{CHECK} The `member logs` channel was set to {channel.mention}.",
-                colour=GREEN)
+            description=f"{CHECK} The `member logs` channel was set to {channel.mention}.",
+            colour=GREEN)
         await ctx.send(embed=em)
+
 
 def setup(bot):
     bot.add_cog(Config(bot))

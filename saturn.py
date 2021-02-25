@@ -32,10 +32,10 @@ bot = commands.Bot(
     command_prefix=get_prefix,
     intents=discord.Intents.all(),
     case_insensitive=True,
-    owner_id=531501355601494026)
+    owner_ids=[531501355601494026])
 bot.cwd = Path(__file__).parents[0]
 bot.cwd = str(bot.cwd)
-bot.version = '0.0.1'
+bot.version = '1.0.0'
 
 bot.configuration = json.load(open(bot.cwd + '/assets/configuration.json'))
 
@@ -48,15 +48,6 @@ bot.config_token = bot.configuration[   'token']
 bot.connection_url = bot.configuration['mongo']
 bot.spotify_client_id = bot.configuration['spotify_client_id']
 bot.spotify_client_secret = bot.configuration['spotify_client_secret']
-
-bot.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(bot.connection_url))
-bot.db = bot.mongo["saturn"]
-bot.config = bot.db["config"]
-bot.mutes = bot.db["mutes"]
-bot.blacklists = bot.db["blacklists"]
-bot.tags = bot.db["tags"]
-bot.mod = bot.db["mod"]
-bot.bans = bot.db["bans"]
 
 @bot.event
 async def on_ready():
@@ -107,8 +98,19 @@ async def blacklist_check(ctx):
         pass
 
 if __name__ == '__main__':
+    """Load all of the cogs and initialize the databases"""
+    bot.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(bot.connection_url))
+    bot.db = bot.mongo["saturn"]
+    bot.config = bot.db["config"]
+    bot.mutes = bot.db["mutes"]
+    bot.blacklists = bot.db["blacklists"]
+    bot.tags = bot.db["tags"]
+    bot.mod = bot.db["mod"]
+    bot.bans = bot.db["bans"]
+
     for file in os.listdir(bot.cwd + '/cogs'):
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
 
-    bot.run(bot.config_token)
+    bot.run(bot.config_token) # run the bot
+    # all processes after this will not be run until the bot stops so oof

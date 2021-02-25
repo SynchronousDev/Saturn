@@ -9,6 +9,7 @@ from assets import *
 import pytimeparse as pytp
 import asyncio
 from datetime import datetime as dt, timedelta
+from collections import Counter
 
 
 # noinspection PyTypeChecker
@@ -93,14 +94,15 @@ class PunishmentsMenu(menus.ListPageSource):
 
 # noinspection PyTypeChecker, PyAbstractClass
 class ActiveModerationsMenu(menus.ListPageSource):
-    def __init__(self, ctx, data, bot, member):
+    def __init__(self, ctx, data, bot):
         self.ctx = ctx
         self.bot = bot
-        self.member = member
-
         super().__init__(data, per_page=10)
 
     async def write_cases(self, menu, active_mods):
+        offset = (menu.current_page * self.per_page) + 1
+        len_data = len(self.entries)
+
         em = discord.Embed(
             title='Active Moderation Cases',
             colour=MAIN,
@@ -110,10 +112,35 @@ class ActiveModerationsMenu(menus.ListPageSource):
         if not len(active_mods):
             em.description = "There are currently no active moderation cases in this guild! Hooray!"
 
-        for key, value in active_mods.items():
-            if not value["ban_duration"]:
-                em.add_field(name=f'Mute on {self.bot.get_user(value["_id"])}',
-                             value=f"")
+        else:
+            em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} "
+                               f"of {len_data:,} active punishments")
+            for item in active_mods:
+                for key, value in item.items():
+                    user = self.bot.get_user(value["_id"]) or await self.bot.fetch_user(value['_id'])
+                    try:
+                        end_time = value["at"] + relativedelta(seconds=value["duration"])
+
+                    except TypeError:
+                        end_time = "Never"
+
+                    until_end = "Indefinite"
+
+                    if value['duration']:
+                        try:
+                            until_end = str(end_time - dt.utcnow())[:-7]
+
+                        except AttributeError:
+                            until_end = 'Indefinite'
+
+                    em.add_field(name=f'{str(value["type"]).title()}',
+                                 value=f"**Member** - {user.mention}\n"
+                                       f"**Ends at** - "
+                                       f"{str(end_time)[:-7] if not str(end_time).isalpha() else end_time}\n"
+                                       f"**Time left** - {until_end}",
+                                 inline=False)
+
+        return em
 
     async def format_page(self, menu, entries):
         return await self.write_cases(menu, entries)
@@ -166,46 +193,52 @@ class Mod(commands.Cog, name='Moderation'):
         for key, value in mutes.items():
             guild = self.bot.get_guild(value['guild_id'])
 
-            member = guild.get_member(value['_id'])
+            member = guild.get_member(value['_id']) or await self.bot.fetch_user(value['_id'])
 
             data = await self.bot.config.find_one({"_id": guild.id})
             mute_role = guild.get_role(data['mute_role_id'])
 
-            if value['mute_duration'] is None:
-                print('value has no duration')
-                if self.bot.muted_users[member.id] and (mute_role not in member.roles) and member in guild.members:
-                    await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
+            if value['duration'] is None:
+                if member in guild.members:
+                    if self.bot.muted_users[member.id] and (mute_role not in member.roles):
+                        await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
 
-                    try:
-                        self.bot.muted_users.pop(member.id)
-
-                    except KeyError:
-                        pass
-
-                continue
-
-            unmute_time = value['muted_at'] + relativedelta(seconds=value['mute_duration'])
-
-            if current_time >= unmute_time:
-                if not member:
-                    if self.bot.muted_users[member.id] and (mute_role not in member.roles) and member in guild.members:
                         try:
                             self.bot.muted_users.pop(member.id)
 
                         except KeyError:
                             pass
 
-                    else:
-                        continue
+                continue
+
+            unmute_time = value['at'] + relativedelta(seconds=value['duration'])
+
+            if current_time >= unmute_time:
+                if member:
+                    try:
+                        if self.bot.muted_users[member.id] and (mute_role not in member.roles) \
+                                and member in guild.members:
+                            try:
+                                self.bot.muted_users.pop(member.id)
+
+                            except KeyError:
+                                pass
+
+                        else:
+                            pass
+
+                    except AttributeError:
+                        pass
 
                 try:
                     await self.bot.mutes.delete_one({"_id": member.id})
 
                 except commands.MemberNotFound:
                     pass
-
-                if mute_role in member.roles:
-                    await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
+                
+                if isinstance(member, discord.Member):
+                    if mute_role in member.roles:
+                        await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
 
                 try:
                     self.bot.muted_users.pop(member.id)
@@ -214,12 +247,15 @@ class Mod(commands.Cog, name='Moderation'):
                     pass
 
             else:
-                if self.bot.muted_users[member.id] and (mute_role not in member.roles) and member in guild.members:
-                    try:
-                        self.bot.muted_users.pop(member.id)
+                if member in guild.members:
+                    if self.bot.muted_users[member.id] and (mute_role not in member.roles):
+                        await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
 
-                    except KeyError:
-                        pass
+                        try:
+                            self.bot.muted_users.pop(member.id)
+
+                        except KeyError:
+                            pass
 
                 else:
                     if member in guild.members:
@@ -232,10 +268,10 @@ class Mod(commands.Cog, name='Moderation'):
         bans = deepcopy(self.bot.banned_users)
 
         for key, value in bans.items():
-            if value['ban_duration'] is None:
+            if value['duration'] is None:
                 continue
 
-            unban_time = value['banned_at'] + relativedelta(seconds=value['ban_duration'])
+            unban_time = value['at'] + relativedelta(seconds=value['duration'])
 
             guild = self.bot.get_guild(value['guild_id'])
             member = self.bot.get_user(value['_id']) or await self.bot.fetch_user(value['_id'])
@@ -301,6 +337,7 @@ class Mod(commands.Cog, name='Moderation'):
         description='Delete a moderation case by ID.'
     )
     @commands.cooldown(1, 3, commands.BucketType.member)
+    @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     async def delete_punishment(self, ctx, case_id: int):
         logs = await get_guild_modlogs(self.bot, ctx.guild)
@@ -364,41 +401,14 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.guild_only()
     async def view_moderations(self, ctx):
-        active = {}
-        bans = deepcopy(self.bot.banned_users)
-        mutes = deepcopy(self.bot.muted_users)
+        bans, mutes = deepcopy(self.bot.banned_users), deepcopy(self.bot.muted_users)
+        cases = bans | mutes
+        active = []
+        for key, value in cases.items():
+            active.append({key: value})
 
-        em = discord.Embed(
-            title='Active Moderation Cases',
-            colour=MAIN,
-            timestamp=dt.utcnow()
-        )
-
-        if not bans and not mutes:
-            em.description = "There are currently no active moderation cases in this guild! Hooray!"
-
-        else:
-            for key, value in bans.items():
-                try:
-                    text = f"Duration - `{convert_time(value['ban_duration'])}`\n"
-                    text += f"End time - " \
-                            f"`{str(value['banned_at'] + relativedelta(seconds=value['ban_duration']))[:-7]} UTC`"
-                    em.add_field(name=self.bot.get_user(value['_id']), value=text)
-
-                except Exception as e:
-                    em.add_field(name=self.bot.get_user(value['_id']), value="Indefinite ban")
-
-            for key, value in mutes.items():
-                try:
-                    text = f"Duration - `{convert_time(value['mute_duration'])}`\n"
-                    text += f"End time - " \
-                            f"`{str(value['muted_at'] + relativedelta(seconds=value['mute_duration']))[:-7]} UTC`"
-                    em.add_field(name=self.bot.get_user(value['_id']), value=text)
-
-                except Exception as e:
-                    em.add_field(name=self.bot.get_user(value['_id']), value="Indefinite mute")
-
-        await ctx.send(embed=em)
+        menu = menus.MenuPages(source=ActiveModerationsMenu(ctx, active, self.bot), delete_message_after=True)
+        await menu.start(ctx)
 
     @commands.command(
         name='kick',
@@ -503,6 +513,15 @@ class Mod(commands.Cog, name='Moderation'):
         if not reason:
             reason = 'no reason provided'
 
+        schema = {
+            '_id': member.id,
+            'at': dt.utcnow(),
+            'duration': time or None,
+            'moderator': ctx.author.id,
+            'guild_id': ctx.guild.id,
+            'type': 'ban'
+        }
+
         if isinstance(member, discord.Member):
             if await mod_check(ctx, member):
                 try:
@@ -516,21 +535,13 @@ class Mod(commands.Cog, name='Moderation'):
                 except KeyError:
                     pass
 
-                schema = {
-                    '_id': member.id,
-                    'banned_at': dt.utcnow(),
-                    'ban_duration': time or None,
-                    'banned_by': ctx.author.id,
-                    'guild_id': ctx.guild.id
-                }
-
                 await self.bot.bans.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
                 self.bot.banned_users[member.id] = schema
                 await send_punishment(self.bot, member, ctx.guild, 'tempban',
                                       ctx.author, reason, convert_time(time))
                 await member.ban(reason=f"{ctx.author}" + reason)
                 em = discord.Embed(
-                    description=f"{CHECK} Tempbanned {member.mention} lasting `{str(convert_time(time))}`"
+                    description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
                                 f", for `{reason}`", timestamp=dt.utcnow(),
                     colour=GREEN)
                 em.set_footer(text=f"Case no. {await get_last_caseid(self.bot, ctx.guild)}")
@@ -548,21 +559,13 @@ class Mod(commands.Cog, name='Moderation'):
             except KeyError:
                 pass
 
-            schema = {
-                '_id': member.id,
-                'banned_at': dt.utcnow(),
-                'ban_duration': time or None,
-                'banned_by': ctx.author.id,
-                'guild_id': ctx.guild.id
-            }
-
             await self.bot.bans.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
             self.bot.banned_users[member.id] = schema
-            await ctx.guild.ban(user=member, reason=f"{ctx.author}" + reason)
             await send_punishment(self.bot, member, ctx.guild, 'tempban',
                                   ctx.author, reason, convert_time(time))
+            await ctx.guild.ban(user=member, reason=f"{ctx.author}" + reason)
             em = discord.Embed(
-                description=f"{CHECK} Tempbanned {member.mention} lasting `{str(convert_time(time))}`"
+                description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
                             f", for `{reason}`", timestamp=dt.utcnow(),
                 colour=GREEN)
             em.set_footer(text=f"Case no. {await get_last_caseid(self.bot, ctx.guild)}")
@@ -696,23 +699,24 @@ class Mod(commands.Cog, name='Moderation'):
 
                 schema = {
                     '_id': member.id,
-                    'muted_at': dt.utcnow(),
-                    'mute_duration': time or None,
-                    'muted_by': ctx.author.id,
-                    'guild_id': ctx.guild.id
+                    'at': dt.utcnow(),
+                    'duration': time or None,
+                    'moderator': ctx.author.id,
+                    'guild_id': ctx.guild.id,
+                    'type': 'mute'
                 }
+                await member.add_roles(
+                    mute_role, reason=f"{ctx.author}" + f'Muted by {ctx.author} lasting `{convert_time(time)}`'
+                                                        f', for {reason}.', atomic=True)
 
                 await self.bot.mutes.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
                 self.bot.muted_users[member.id] = schema
                 em = discord.Embed(
-                    description=f"{CHECK} Muted {member.mention} lasting `{str(convert_time(time))}`"
+                    description=f"{CHECK} Muted {member.mention} lasting `{convert_time(time)}`"
                                 f", for `{reason}`", timestamp=dt.utcnow(),
                     colour=GREEN)
                 em.set_footer(text=f"Case no. {await get_last_caseid(self.bot, ctx.guild)}")
                 await ctx.send(embed=em)
-                await member.add_roles(
-                    mute_role, reason=f"{ctx.author}" + f'Muted by {ctx.author} lasting `{str(convert_time(time))}`'
-                                                        f', for {reason}.', atomic=True)
 
                 await send_punishment(
                     self.bot, member, ctx.guild, 'mute', ctx.author, reason, convert_time(time))
@@ -868,7 +872,7 @@ class Mod(commands.Cog, name='Moderation'):
         await channel.edit(slowmode_delay=time,
                            reason=f"{ctx.author}" + 'Slowmode delay edited by {ctx.author} via slowmode command')
         em = discord.Embed(
-            description=f"{CHECK} Slowmode delay for {channel.mention} was set to `{str(convert_time(time))}`",
+            description=f"{CHECK} Slowmode delay for {channel.mention} was set to `{convert_time(time)}`",
             colour=GREEN)
         await ctx.send(embed=em)
 

@@ -39,6 +39,7 @@ NO_ENTRY = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/12
       'no-entry_26d4.png'
 UNBAN = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
         'door_1f6aa.png'
+# weird emotes and stuff yay?
 
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s(" \
             r")<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
@@ -46,44 +47,36 @@ SPOTIFY_URL_REGEX = r"[\bhttps://open.\b]*spotify[\b.com\b]*[/:]*track[/:]*[A-Za
 YOUTUBE_URL_REGEX = r"(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/" \
                     r"(?:watch|v|embed)(?:\.php)?(?:\?.*v=|\/))([a-zA-Z0-9\_-]+)"
 INVITE_URL_REGEX = r"discord(?:\.com|app\.com|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})"
-
+# i barely understand these regexes omg
 
 def convert_time(time):
-    try:
-        # not exactly what I would call the most efficient process
-        # but it gets the job done
-        times = []
-        years = time // 31536000
-        time %= 31536000
-        if years >= 1:
-            times.append(str(years) + ' years')
-        months = time // 2628000
-        time %= 2628000
-        if months >= 1:
-            times.append(str(months) + ' months')
-        weeks = time // 604800
-        time %= 604800
-        if weeks >= 1:
-            times.append(str(weeks) + ' weeks')
-        days = time // 86400
-        time %= 86400
-        if days >= 1:
-            times.append(str(days) + ' days')
-        hours = time // 3600
-        time %= 3600
-        if hours >= 1:
-            times.append(str(hours) + ' hours')
-        minutes = time // 60
-        time %= 60
-        if minutes >= 1:
-            times.append(str(minutes) + ' minutes')
-        seconds = time
-        if seconds >= 1:
-            times.append(str(seconds) + ' seconds')
+    # much better than the original one lol
+    try:        
+        times = {}
+        return_times = []
+        time_dict = {
+            "years": 31536000,
+            "months": 2628000,
+            "weeks": 604800,
+            "days": 86400,
+            "hours": 3600,
+            "minutes": 60,
+            "seconds": 1
+        }
+        for key, value in time_dict.items():
+            times[str(key)] = {}
+            times[str(key)]["value"] = time // value
+            time %= value
 
-        return f"{' '.join(times) if len(times) else '0 seconds'}"
+        for key, value in times.items():
+            if not value['value']:
+                continue
 
-    except Exception:
+            return_times.append("{0} {1}".format(value['value'], key))
+
+        return ' '.join(return_times)
+
+    except Exception as e:
         return 'indefinitely'
 
 
@@ -159,34 +152,6 @@ async def send_punishment(bot, member, guild, action, moderator, reason, duratio
     """
     Send details about a punishment and log it in the mod logs channel.
     """
-    try:
-        if duration:
-            em = discord.Embed(
-                description=f"**Guild** - {guild}\n"
-                            f"**Moderator** - {moderator.mention}\n"
-                            f"**Action** - {action.title()}\n"
-                            f"**Duration** - {duration}\n"
-                            f"**Reason** - {reason}",
-                colour=RED,
-                timestamp=dt.utcnow())
-            await member.send(embed=em)
-
-        else:
-            em = discord.Embed(
-                description=f"**Guild** - {guild}\n"
-                            f"**Moderator** - {moderator.mention}\n"
-                            f"**Action** - {action.title()}\n"
-                            f"**Reason** - {reason}",
-                colour=RED,
-                timestamp=dt.utcnow())
-            await member.send(embed=em)
-
-    except Exception as e:
-        pass
-
-    # send it to the log channel because why not lol
-    data = await bot.config.find_one({"_id": guild.id})
-    mod_logs = guild.get_channel(data['mod_logs'])
     colours = {
         "kick": {"colour": discord.Colour.orange(), "emote": NO_ENTRY},
         "ban": {"colour": discord.Colour.red(), "emote": NO_ENTRY},
@@ -202,6 +167,37 @@ async def send_punishment(bot, member, guild, action, moderator, reason, duratio
     for key, value in colours.items():
         if str(key) == str(action.lower()):
             colour, emote = value["colour"], value["emote"]
+
+    try:
+        if duration:
+            em = discord.Embed(
+                description=f"**Guild** - {guild}\n"
+                            f"**Moderator** - {moderator.mention}\n"
+                            f"**Action** - {action.title()}\n"
+                            f"**Duration** - {duration}\n"
+                            f"**Reason** - {reason}",
+                colour=colour,
+                timestamp=dt.utcnow())
+            em.set_thumbnail(url=emote)
+            await member.send(embed=em)
+
+        else:
+            em = discord.Embed(
+                description=f"**Guild** - {guild}\n"
+                            f"**Moderator** - {moderator.mention}\n"
+                            f"**Action** - {action.title()}\n"
+                            f"**Reason** - {reason}",
+                colour=colour,
+                timestamp=dt.utcnow())
+            em.set_thumbnail(url=emote)
+            await member.send(embed=em)
+
+    except Exception as e:
+        pass
+
+    # send it to the log channel because why not lol
+    data = await bot.config.find_one({"_id": guild.id})
+    mod_logs = guild.get_channel(data['mod_logs'])
 
     action_ = action
     if action.find("ban") != -1:

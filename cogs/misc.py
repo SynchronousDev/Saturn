@@ -176,19 +176,21 @@ class Miscellaneous(commands.Cog):
                 em = discord.Embed(
                     description=('\n'.join(f"**Dice {i + 1}** rolled a **{roll}**"
                                            for i, roll in enumerate(rolls))
-                                 + f"```Total !sum - {sum(rolls)}```"),
+                                 + f"```Total sum - {sum(rolls)}```"),
                     color=MAIN)
                 em.set_author(icon_url=ctx.author.avatar_url, name=f"{ctx.author.name}'s Dice Roll")
                 await ctx.send(embed=em)
 
             else:
                 em = discord.Embed(
-                    description=f"{ERROR} Cannot roll that many dice. Maximum number of dice is `10`",
+                    description=f"{ERROR} Saturn tries to roll `{amount}` dice but gets confused and fails.",
                     color=RED)
                 await ctx.send(embed=em)
 
         elif amount.isalpha():
-            await ctx.send("https://www.youtube.com/watch?v=dQw4w9WgXcQ Well, you asked for it!")
+            em = discord.Embed(description="[Click me!](https://www.youtube.com/watch?v=dQw4w9WgXcQ)",
+                               colour=MAIN)
+            await ctx.send(embed=em)
 
     @commands.command(
         name="8ball",

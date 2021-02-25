@@ -25,7 +25,7 @@ class HelpMenu(menus.ListPageSource):
 
         desc = self.bot.get_cog(cog).description
 
-        text = f"{desc if desc else 'No description provided.'}```\n**Commands**```\n"
+        text = f"{desc if desc else 'No description provided.'}```\n**Commands in the {cog} cog**```\n"
 
         commands = 0
         for command in self.bot.get_cog(cog).walk_commands():
@@ -39,7 +39,7 @@ class HelpMenu(menus.ListPageSource):
             else:
                 text += f"{command.name}\n"
 
-        em.add_field(name=cog, value=f"```{text}```", inline=False)
+        em.add_field(name="Description", value=f"```{text}```", inline=False)
         em.set_footer(text=f"{offset:,} of {len_data:,} cogs | "
                            f"{commands} commands in {cog} cog")
 

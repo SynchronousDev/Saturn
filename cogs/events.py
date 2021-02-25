@@ -4,6 +4,7 @@ from discord.ext import commands
 import traceback
 import sys
 import random
+import DiscordUtils
 
 log = logging.getLogger(__name__)
 
@@ -19,9 +20,27 @@ class Events(commands.Cog):
             "Why do I hear boss music?",
             "Take a chill pill!"
         ]
-        # member logs: 812881787112914954
-        # message logs 812881774073479178
-        # mod logs: 812881839902949478
+        self.tracker = DiscordUtils.InviteTracker(self.bot)
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.tracker.cache_invites()
+
+    @commands.Cog.listener()
+    async def on_invite_create(self, invite):
+        await self.tracker.update_invite_cache(invite)
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild):
+        await self.tracker.update_guild_cache(guild)
+
+    @commands.Cog.listener()
+    async def on_invite_delete(self, invite):
+        await self.tracker.remove_invite_cache(invite)
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild):
+        await self.tracker.remove_guild_cache(guild)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -34,33 +53,63 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        guild = member.guild
-        try:
-            if self.bot.muted_users[member.id]:
-                data = await self.bot.config.find_one({"_id": guild.id})
-                mute_role = guild.get_role(data['mute_role_id'])
-                if mute_role:
-                    await member.add_roles(mute_role, reason='Role Persists', atomic=True)
+        if not member.bot:
+            inviter = await self.tracker.fetch_inviter(member)
+            guild = member.guild
+            try:
+                if self.bot.muted_users[member.id]:
+                    data = await self.bot.config.find_one({"_id": guild.id})
+                    mute_role = guild.get_role(data['mute_role_id'])
+                    if mute_role:
+                        await member.add_roles(mute_role, reason='Role Persists', atomic=True)
 
-        except KeyError:
-            pass
+            except KeyError:
+                pass
 
-        data = await self.bot.config.find_one({"_id": guild.id})
-        member_logs = guild.get_channel(data['member_logs'])
+            data = await self.bot.config.find_one({"_id": guild.id})
+            member_logs = None
+            try:
+                member_logs = member.guild.get_channel(data['member_logs'])
 
-        em = discord.Embed(
-            title='Member Joined',
-            description=f"{member.mention} `({member})`",
-            colour=GREEN,
-            timestamp=dt.utcnow()
-        )
-        em.set_thumbnail(url=member.avatar_url)
-        em.set_footer(text=f"Member no. {len(guild.members)} | ID - {member.id}")
-        await member_logs.send(embed=em)
+            except KeyError:
+                pass
+
+            if not member_logs:
+                return
+
+            em = discord.Embed(
+                title='Member Joined',
+                description=f"{member.mention} `({member})`",
+                colour=GREEN,
+                timestamp=dt.utcnow()
+            )
+            em.set_thumbnail(url=member.avatar_url)
+            em.set_footer(text=f"Member no. {len(guild.members)} | Invited by {inviter}")
+            await member_logs.send(embed=em)
 
     @commands.Cog.listener()
-    async def on_member_leave(self, member):
-        pass
+    async def on_member_remove(self, member):
+        if not member.bot:
+            data = await self.bot.config.find_one({"_id": member.guild.id})
+            member_logs = None
+            try:
+                member_logs = member.guild.get_channel(data['member_logs'])
+
+            except KeyError:
+                pass
+
+            if not member_logs:
+                return
+
+            em = discord.Embed(
+                title='Member Left',
+                description=f"{member.mention} `({member})`",
+                colour=RED,
+                timestamp=dt.utcnow()
+            )
+            em.set_thumbnail(url=member.avatar_url)
+            em.set_footer(text=f"Only {len(member.guild.members)} members left in {member.guild}")
+            await member_logs.send(embed=em)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -122,21 +171,6 @@ class Events(commands.Cog):
 
             except Exception as e:
                 pass
-
-    @commands.Cog.listener()
-    async def on_member_leave(self, member):
-        data = await self.bot.config.find_one({"_id": member.guild.id})
-        member_logs = member.guild.get_channel(data['member_logs'])
-
-        em = discord.Embed(
-            title='Member Left',
-            description=f"{member.mention} `({member})`",
-            colour=RED,
-            timestamp=dt.utcnow()
-        )
-        em.set_thumbnail(url=member.avatar_url)
-        em.set_footer(text=f"ID - {member.id}")
-        await member_logs.send(embed=em)
 
 
 def setup(bot):
