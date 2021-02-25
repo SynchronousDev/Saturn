@@ -142,10 +142,6 @@ class Events(commands.Cog):
             except Exception as e:
                 pass
 
-            # I had some issues with how on_message_delete and on_mesage_edit are triggered
-            # cough cough discord
-            # needed to check if the message was sent by a bot
-
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if not after.author.bot:
