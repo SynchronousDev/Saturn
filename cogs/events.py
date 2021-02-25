@@ -81,7 +81,7 @@ class Events(commands.Cog):
                 title='Member Joined',
                 description=f"{member.mention} `({member})`",
                 colour=GREEN,
-                timestamp=dt.utcnow()
+                timestamp=dt.utcnow() 
             )
             em.set_thumbnail(url=member.avatar_url)
             em.set_footer(text=f"Member no. {len(guild.members)} | Invited by {inviter}")
