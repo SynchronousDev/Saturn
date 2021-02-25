@@ -392,8 +392,6 @@ class Mod(commands.Cog, name='Moderation'):
                 colour=RED)
             await ctx.send(embed=em)
 
-    # TODO make a menus for the moderations command and fix the inline lol
-
     @commands.command(
         name='moderations',
         aliases=['mods', 'activemods', 'activemoderations'],

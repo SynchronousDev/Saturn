@@ -127,6 +127,7 @@ async def purge_msgs(bot, ctx, limit, check):
 
 
 async def create_mute_role(bot, ctx):
+    """Create the mute role for a guild"""
     perms = discord.Permissions(
         send_messages=False, read_messages=True)
     mute_role = await ctx.guild.create_role(name='Muted', permissions=perms,
@@ -169,28 +170,19 @@ async def send_punishment(bot, member, guild, action, moderator, reason, duratio
             colour, emote = value["colour"], value["emote"]
 
     try:
+        em = discord.Embed(
+            colour=colour,
+            timestamp=dt.utcnow()
+        )
+        em.set_thumbnail(url=emote)
+        desc = f"**Guild** - {guild}\n" \
+               f"**Moderator** - {moderator.mention}\n" \
+               f"**Action** - {action.title()}\n" \
+               f"**Reason** - {reason}"
         if duration:
-            em = discord.Embed(
-                description=f"**Guild** - {guild}\n"
-                            f"**Moderator** - {moderator.mention}\n"
-                            f"**Action** - {action.title()}\n"
-                            f"**Duration** - {duration}\n"
-                            f"**Reason** - {reason}",
-                colour=colour,
-                timestamp=dt.utcnow())
-            em.set_thumbnail(url=emote)
-            await member.send(embed=em)
+            desc += f"**Duration** - {duration}\n"
 
-        else:
-            em = discord.Embed(
-                description=f"**Guild** - {guild}\n"
-                            f"**Moderator** - {moderator.mention}\n"
-                            f"**Action** - {action.title()}\n"
-                            f"**Reason** - {reason}",
-                colour=colour,
-                timestamp=dt.utcnow())
-            em.set_thumbnail(url=emote)
-            await member.send(embed=em)
+        await member.send(embed=em)
 
     except Exception as e:
         pass

@@ -44,7 +44,7 @@ print('{}\n------'.format(bot.cwd))
 bot.muted_users = {}
 bot.banned_users = {}
 bot.snipes = {}
-bot.config_token = bot.configuration[   'token']
+bot.config_token = bot.configuration['token']
 bot.connection_url = bot.configuration['mongo']
 bot.spotify_client_id = bot.configuration['spotify_client_id']
 bot.spotify_client_secret = bot.configuration['spotify_client_secret']
@@ -112,5 +112,5 @@ if __name__ == '__main__':
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
 
-    bot.run(bot.config_token) # run the bot
+    bot.run(bot.config_token)  # run the bot
     # all processes after this will not be run until the bot stops so oof
