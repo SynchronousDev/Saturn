@@ -2,16 +2,16 @@ import typing as t
 from aiohttp import request
 from assets import *
 import random
+import asyncio
 
-log = logging.getLogger(__name__) 
+log = logging.getLogger(__name__)
 
 
-class Miscellaneous(commands.Cog):
+class Fun(commands.Cog):
     """
-    The Miscellaneous cog. These are commands that are just fun, and can spice up the chat.
-
-    Warning: The commands in the Miscellaneous cog are not the same as the commands in the Utility cog.
+    The Fun cog. These are commands that are just fun, and can spice up the chat.
     """
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -100,10 +100,11 @@ class Miscellaneous(commands.Cog):
         elif choice.startswith('p'):
             choice = 'paper'
 
-        def random_choice(options=None):
-            if options is None:
-                options = ["rock", "paper", "scissors"]
-            return random.choice(options)
+        def random_choice(opts=None):
+            if opts is None:
+                opts = ["rock", "paper", "scissors"]
+
+            return random.choice(opts)
 
         def determine_winner(choice1, choice2):
             winners = {
@@ -170,16 +171,14 @@ class Miscellaneous(commands.Cog):
         if amount.isdigit():
             amount = int(amount)
 
-            if amount <= 10:
+            if amount <= 100:
                 rolls = [random.randint(1, value) for i in range(amount)]
 
                 em = discord.Embed(
-                    description=('\n'.join(f"**Dice {i + 1}** rolled a **{roll}**"
-                                           for i, roll in enumerate(rolls))
-                                 + f"```Total sum - {sum(rolls)}```"),
+                    description=f"```You rolled a {sum(rolls)}!```",
                     color=MAIN)
                 em.set_author(icon_url=ctx.author.avatar_url, name=f"{ctx.author.name}'s Dice Roll")
-                await ctx.send(embed=em)
+                return await ctx.send(embed=em)
 
             else:
                 em = discord.Embed(
@@ -188,15 +187,23 @@ class Miscellaneous(commands.Cog):
                 await ctx.send(embed=em)
 
         elif amount.isalpha():
-            em = discord.Embed(description="[Click me!](https://www.youtube.com/watch?v=dQw4w9WgXcQ)",
-                               colour=MAIN)
+            em = discord.Embed(
+                title="Definitely not a suspicious link!",
+                description="[Click me!](https://www.youtube.com/watch?v=dQw4w9WgXcQ)",
+                colour=MAIN)
+            await ctx.send(embed=em)
+
+        else:
+            em = discord.Embed(
+                description=f"{ERROR} Saturn tries to roll `{amount}` dice but gets confused and fails.",
+                color=RED)
             await ctx.send(embed=em)
 
     @commands.command(
         name="8ball",
         aliases=['8b'],
         description='Ask the magic 8 ball a question, and you will get an answer! Not the most reliable psychic.')
-    async def _8ball(self, ctx):
+    async def _8ball(self, ctx, *, question):
         # Define possible responses
         responses = ['It is certain',
                      'It is decidedly so',
@@ -219,8 +226,81 @@ class Miscellaneous(commands.Cog):
                      'My sources say no',
                      'Outlook is not so good',
                      'Very doubtful']
-        await ctx.reply(f'{random.choice(responses)}')
+        em = discord.Embed(
+            title='The Magic Saturn Ball',
+            colour=ctx.author.colour,
+            timestamp=dt.utcnow()
+        )
 
+        em.add_field(name=question + '?', value=random.choice(responses) + '.')
+        em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36"
+                             "/billiards_1f3b1.png")
+        await ctx.reply(embed=em)
+
+    @commands.command(
+        name='duel',
+        aliases=['fight'],
+        description='Duel another person! Attacks are random.'
+    )
+    async def duel_member(self, ctx, member: discord.Member):
+        p1, p2, play = Dueler(ctx.author), Dueler(member), True
+        order = [(p1, p2), (p2, p1)]
+
+        em = discord.Embed(
+            title=f'Duel between {ctx.author.name} and {member.name}',
+            timestamp=dt.utcnow(),
+            colour=MAIN
+        )
+        em.set_footer(text='Damage amounts are generated via the random module.')
+        msg = await ctx.send(embed=em)
+        _text = ""
+        for i in range(3):
+            _text += f"Duel starting in {3 - i}\n"
+            em.description = f"```{_text}```"
+            await msg.edit(embed=em)
+            await asyncio.sleep(1)
+
+        text = []
+        while play:
+            for attacker, defender in order:
+                if attacker.health < 1:
+                    play = False
+                    break
+
+                elif defender.health < 1:
+                    play = False
+                    break
+
+                amount = random.randint(1, 50)
+                will_attack = random.choice([True, False, True])
+
+                # if it returns True then member attacks
+                # it's a 2/3 chance that the member will attack
+                symbol, colour = '+' if not will_attack else '-', \
+                                 DIFF_GREEN if not will_attack else DIFF_RED
+                if not will_attack:
+                    text.append("{} {}".format(symbol, random.choice(DUEL_HEAL_MESSAGES).format(attacker.name, amount)))
+                    attacker.heal(amount if not (attacker.health + amount > 100) else (100 - attacker.health))
+
+                else:
+                    text.append("{} {}".format(
+                        symbol, random.choice(DUEL_ATTACK_MESSAGES).format(attacker.name, defender.name, amount)))
+                    defender.damage(amount if not (defender.health - amount < 0) else defender.health)
+
+                em.description = "**{}** - {} HP\n**{}** - {} HP\n```diff\n{}```".format(
+                    p1.name, p1.health, p2.name, p2.health,
+                    '\n'.join(text[len(text) - 15:] if len(text) > 15 else text)
+                )
+
+                em.colour = colour
+                await msg.edit(embed=em)
+                await asyncio.sleep(1)
+
+        winner = p1 if p2.health < 0 else p2
+        loser = p2 if winner == p1 else p1
+        em.title = f":trophy: {winner.member.name.upper()} WINS!"
+        em.colour = GOLD
+        await msg.edit(embed=em)
 
 def setup(bot):
-    bot.add_cog(Miscellaneous(bot))
+    bot.add_cog(Fun(bot))

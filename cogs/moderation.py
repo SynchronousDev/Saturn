@@ -10,6 +10,7 @@ import pytimeparse as pytp
 import asyncio
 from datetime import datetime as dt, timedelta
 from collections import Counter
+from glob import glob
 
 
 # noinspection PyTypeChecker
@@ -148,19 +149,23 @@ class ActiveModerationsMenu(menus.ListPageSource):
 # kinda useful for the moderation stuff
 # I have another check in the mute command but whatever lol
 async def mod_check(ctx, member):
-    if ctx.guild.me.top_role > member.top_role:
-        if ctx.author.top_role > member.top_role:
-            if member is not ctx.guild.owner:
-                return True
+    if ctx.author is ctx.guild.owner:
+        return True
+
+    else:
+        if ctx.guild.me.top_role > member.top_role:
+            if ctx.author.top_role > member.top_role:
+                if member is not ctx.guild.owner:
+                    return True
+
+                else:
+                    raise RoleNotHighEnough
 
             else:
                 raise RoleNotHighEnough
 
         else:
-            raise RoleNotHighEnough
-
-    else:
-        raise BotRoleNotHighEnough
+            raise BotRoleNotHighEnough
 
 
 class Mod(commands.Cog, name='Moderation'):
@@ -172,23 +177,53 @@ class Mod(commands.Cog, name='Moderation'):
 
     def __init__(self, bot):
         self.bot = bot
-        self.mute_task = self.check_mutes.start()
-        self.ban_task = self.check_bans.start()
+        self.purge_task = self.purge_files.start()
         self.mod_task = self.update_modlogs.start()
 
     def cog_unload(self):
-        self.mute_task.cancel()
         self.mod_task.cancel()
+        self.purge_task.cancel()
 
     @tasks.loop(minutes=1)
     async def update_modlogs(self):
         for guild in self.bot.guilds:
             await update_log_caseids(self.bot, guild)
 
+    @tasks.loop(seconds=30)
+    async def purge_files(self):
+        for file in glob(self.bot.cwd + '/purge_txts/*.txt'):
+            os.unlink(file)
+
     @tasks.loop(seconds=1)
-    async def check_mutes(self):
+    async def check_mods(self):
         current_time = dt.utcnow()
         mutes = deepcopy(self.bot.muted_users)
+        bans = deepcopy(self.bot.banned_users)
+
+        for key, value in bans.items():
+            if value['duration'] is None:
+                continue
+
+            unban_time = value['at'] + relativedelta(seconds=value['duration'])
+
+            guild = self.bot.get_guild(value['guild_id'])
+            member = self.bot.get_user(value['_id']) or await self.bot.fetch_user(value['_id'])
+
+            data = await self.bot.config.find_one({"_id": guild.id})
+
+            if current_time >= unban_time:
+                try:
+                    await self.bot.bans.delete_one({"_id": member.id})
+                    await guild.unban(user=member, reason="Ban time expired")
+
+                except commands.MemberNotFound:
+                    pass
+
+                try:
+                    self.bot.banned_users.pop(member.id)
+
+                except KeyError:
+                    pass
 
         for key, value in mutes.items():
             guild = self.bot.get_guild(value['guild_id'])
@@ -262,42 +297,12 @@ class Mod(commands.Cog, name='Moderation'):
                         if mute_role not in member.roles:
                             await member.add_roles(mute_role, reason='Role was manually removed')
 
-    @tasks.loop(seconds=1)
-    async def check_bans(self):
-        current_time = dt.utcnow()
-        bans = deepcopy(self.bot.banned_users)
-
-        for key, value in bans.items():
-            if value['duration'] is None:
-                continue
-
-            unban_time = value['at'] + relativedelta(seconds=value['duration'])
-
-            guild = self.bot.get_guild(value['guild_id'])
-            member = self.bot.get_user(value['_id']) or await self.bot.fetch_user(value['_id'])
-
-            data = await self.bot.config.find_one({"_id": guild.id})
-
-            if current_time >= unban_time:
-                try:
-                    await self.bot.bans.delete_one({"_id": member.id})
-                    await guild.unban(user=member, reason="Ban time expired")
-
-                except commands.MemberNotFound:
-                    pass
-
-                try:
-                    self.bot.banned_users.pop(member.id)
-
-                except KeyError:
-                    pass
-
-    @check_mutes.before_loop
-    async def before_check_mutes(self):
+    @check_mods.before_loop
+    async def before_check_mods(self):
         await self.bot.wait_until_ready()
 
-    @check_bans.before_loop
-    async def before_check_bans(self):
+    @purge_files.before_loop
+    async def before_purge_files(self):
         await self.bot.wait_until_ready()
 
     @update_modlogs.before_loop
@@ -424,7 +429,7 @@ class Mod(commands.Cog, name='Moderation'):
                 colour=GREEN)
             em.set_footer(text=f"Case no. {await get_last_caseid(self.bot, ctx.guild)}")
             await ctx.send(embed=em)
-            await send_punishment(self.bot, member, ctx.guild, 'kick', ctx.author, reason)
+            await create_log(self.bot, member, ctx.guild, 'kick', ctx.author, reason)
             await member.kick(reason=f"{ctx.author}" + reason)
 
     @commands.command(
@@ -453,7 +458,7 @@ class Mod(commands.Cog, name='Moderation'):
                     colour=GREEN)
                 await ctx.send(embed=em)
                 em.set_footer(text=f"Case no. {await get_last_caseid(self.bot, ctx.guild)}")
-                await send_punishment(self.bot, member, ctx.guild, 'ban', ctx.author, reason)
+                await create_log(self.bot, member, ctx.guild, 'ban', ctx.author, reason)
                 await member.ban(reason=f"{ctx.author}" + reason, delete_message_days=delete_days)
 
         elif isinstance(member, discord.User):
@@ -462,7 +467,7 @@ class Mod(commands.Cog, name='Moderation'):
                 timestamp=dt.utcnow(),
                 colour=GREEN)
             await ctx.send(embed=em)
-            await send_punishment(self.bot, member, ctx.guild, 'ban', ctx.author, reason)
+            await create_log(self.bot, member, ctx.guild, 'ban', ctx.author, reason)
             await ctx.guild.ban(member, reason=f"{ctx.author}" + reason, delete_message_days=delete_days)
 
     @commands.command(
@@ -481,7 +486,7 @@ class Mod(commands.Cog, name='Moderation'):
                 colour=GREEN)
             await ctx.send(embed=em)
             em.set_footer(text=f"Case no. {await get_last_caseid(self.bot, ctx.guild)}")
-            await send_punishment(self.bot, member, ctx.guild, 'softban', ctx.author, reason)
+            await create_log(self.bot, member, ctx.guild, 'softban', ctx.author, reason)
             await member.ban(reason=f"{ctx.author}" + reason, delete_message_days=7)
             await asyncio.sleep(0.5)
             await member.unban(reason=f"{ctx.author}" +
@@ -535,8 +540,8 @@ class Mod(commands.Cog, name='Moderation'):
 
                 await self.bot.bans.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
                 self.bot.banned_users[member.id] = schema
-                await send_punishment(self.bot, member, ctx.guild, 'tempban',
-                                      ctx.author, reason, convert_time(time))
+                await create_log(self.bot, member, ctx.guild, 'tempban',
+                                 ctx.author, reason, convert_time(time))
                 await member.ban(reason=f"{ctx.author}" + reason)
                 em = discord.Embed(
                     description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
@@ -559,8 +564,8 @@ class Mod(commands.Cog, name='Moderation'):
 
             await self.bot.bans.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
             self.bot.banned_users[member.id] = schema
-            await send_punishment(self.bot, member, ctx.guild, 'tempban',
-                                  ctx.author, reason, convert_time(time))
+            await create_log(self.bot, member, ctx.guild, 'tempban',
+                             ctx.author, reason, convert_time(time))
             await ctx.guild.ban(user=member, reason=f"{ctx.author}" + reason)
             em = discord.Embed(
                 description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
@@ -610,7 +615,7 @@ class Mod(commands.Cog, name='Moderation'):
             timestamp=dt.utcnow(),
             colour=GREEN)
         em.set_footer(text=f"Case no. {await get_last_caseid(self.bot, ctx.guild)}")
-        await send_punishment(self.bot, member, ctx.guild, "unban", ctx.author, reason)
+        await create_log(self.bot, member, ctx.guild, "unban", ctx.author, reason)
         await ctx.send(embed=em)
 
     @commands.command(
@@ -629,7 +634,7 @@ class Mod(commands.Cog, name='Moderation'):
             em.set_footer(text=f"Case no. {await get_last_caseid(self.bot, ctx.guild)}")
             await ctx.send(embed=em)
             try:
-                await send_punishment(self.bot, member, ctx.guild, 'warn', ctx.author, reason)
+                await create_log(self.bot, member, ctx.guild, 'warn', ctx.author, reason)
 
             except discord.Forbidden:
                 pass
@@ -716,7 +721,7 @@ class Mod(commands.Cog, name='Moderation'):
                 em.set_footer(text=f"Case no. {await get_last_caseid(self.bot, ctx.guild)}")
                 await ctx.send(embed=em)
 
-                await send_punishment(
+                await create_log(
                     self.bot, member, ctx.guild, 'mute', ctx.author, reason, convert_time(time))
 
             else:
@@ -782,7 +787,7 @@ class Mod(commands.Cog, name='Moderation'):
                     await member.remove_roles(mute_role, reason=f"{ctx.author}" + reason)
 
                     try:
-                        await send_punishment(self.bot, member, ctx.guild, 'unmute', ctx.author, reason)
+                        await create_log(self.bot, member, ctx.guild, 'unmute', ctx.author, reason)
 
                     except discord.Forbidden:
                         pass

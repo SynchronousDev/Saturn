@@ -13,11 +13,13 @@ class Dev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def cog_check(self, ctx: commands.Context) -> bool:
+        return await ctx.bot.is_owner(ctx.author)
+
     @commands.command(
         name='blacklist',
         aliases=['bl'],
         description='A developer command. Blacklists a user from using the bot.')
-    @commands.is_owner()
     async def blacklist_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = 'no reason provided'):
         await self.bot.blacklists.update_one({"_id": member.id},
                                              {'$set': {"reason": reason}}, upsert=True)
@@ -32,7 +34,6 @@ class Dev(commands.Cog):
         name='unblacklist',
         aliases=['ubl'],
         description='A developer command. Unblacklists a user from using the bot.')
-    @commands.is_owner()
     async def unblacklist_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = 'no reason provided'):
         try:
             await self.bot.blacklists.delete_one({"_id": member.id})
@@ -53,7 +54,6 @@ class Dev(commands.Cog):
         name='eval',
         aliases=['ev', 'exec', 'evaluate'],
         description='The eval command. Executes code (only accessable by me)')
-    @commands.is_owner()
     async def eval(self, ctx, *, code):
         code = clean_code(code)
         local_vars = {
@@ -61,6 +61,7 @@ class Dev(commands.Cog):
             "commands": commands,
             "ctx": ctx,
             "bot": self.bot,
+            "self": self,
             "channel": ctx.channel,
             "author": ctx.author,
             "guild": ctx.guild,
@@ -74,10 +75,10 @@ class Dev(commands.Cog):
         try:
             with ctxlib.redirect_stdout(stdout):
                 exec(
-                    f"async def func():\n{textwrap.indent(code, '    ')}", local_vars
+                    f"async def saturn_evaluate():\n{textwrap.indent(code, '    ')}", local_vars
                 )
 
-                obj = await local_vars["func"]()
+                obj = await local_vars["saturn_evaluate"]()
                 value = stdout.getvalue() or "None"
                 result = f'{value}\n-- {obj}\n'
                 color = GREEN
@@ -87,7 +88,7 @@ class Dev(commands.Cog):
             color = RED
 
         em = discord.Embed(
-            description=f"```py\n{code}``````py\n{result}```",
+            description=f"```py\n{code}```\n```py\n{result}```",
             color=color,
             timestamp=dt.utcnow())
         em.set_footer(text='Saturn Eval Command')

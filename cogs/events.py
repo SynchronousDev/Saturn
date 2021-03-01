@@ -1,10 +1,11 @@
 from discord import Embed
 from assets import *
-from discord.ext import commands
+from discord.ext import commands, tasks
 import traceback
 import sys
 import random
 import DiscordUtils
+from glob import glob
 
 log = logging.getLogger(__name__)
 
@@ -71,8 +72,11 @@ class Events(commands.Cog):
             try:
                 member_logs = member.guild.get_channel(data['member_logs'])
 
+            except TypeError:
+                return
+
             except KeyError:
-                pass
+                return
 
             if not member_logs:
                 return
@@ -81,7 +85,7 @@ class Events(commands.Cog):
                 title='Member Joined',
                 description=f"{member.mention} `({member})`",
                 colour=GREEN,
-                timestamp=dt.utcnow() 
+                timestamp=dt.utcnow()
             )
             em.set_thumbnail(url=member.avatar_url)
             em.set_footer(text=f"Member no. {len(guild.members)} | Invited by {inviter}")
@@ -95,8 +99,11 @@ class Events(commands.Cog):
             try:
                 member_logs = member.guild.get_channel(data['member_logs'])
 
+            except TypeError:
+                return
+
             except KeyError:
-                pass
+                return
 
             if not member_logs:
                 return
@@ -125,7 +132,12 @@ class Events(commands.Cog):
         }
         if not message.author.bot:
             data = await self.bot.config.find_one({"_id": message.guild.id})
-            message_logs = message.guild.get_channel(data['message_logs'])
+            try:
+                message_logs = message.guild.get_channel(data['message_logs'])
+
+            except KeyError:
+                return
+
             em = discord.Embed(
                 title='Message Deleted',
                 colour=RED,
@@ -136,11 +148,7 @@ class Events(commands.Cog):
             em.add_field(name="Channel", value=f"{message.channel.mention} `(#{message.channel})`")
             em.add_field(name="Content", value=f"{message.content}", inline=False)
             em.set_footer(text=f"Message ID - {message.id}")
-            try:
-                await message_logs.send(embed=em)  # send the embed
-
-            except Exception as e:
-                pass
+            await message_logs.send(embed=em)  # send the embed
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
@@ -149,7 +157,12 @@ class Events(commands.Cog):
             Fires when a message is edited
             """
             data = await self.bot.config.find_one({"_id": after.guild.id})
-            message_logs = after.guild.get_channel(data['message_logs'])
+            try:
+                message_logs = after.guild.get_channel(data['message_logs'])
+
+            except KeyError:
+                return
+
             em = discord.Embed(
                 title='Message Edited',
                 description=f"[Jump!](https://discord.com/channels/{after.guild.id}/{after.channel.id}/{after.id})",
@@ -162,12 +175,118 @@ class Events(commands.Cog):
             em.add_field(name="Before", value=f"{before.content}", inline=False)
             em.add_field(name="After", value=f"{after.content}", inline=False)
             em.set_footer(text=f"Message ID - {after.id}")  # footer because why not
+            await message_logs.send(embed=em)  # send the embed
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.emoji.name == "⭐":
+            message = await (self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id).
+                             fetch_message(payload.message_id))
+
+            data = await self.bot.config.find_one({"_id": message.guild.id})
+            _starboard = await self.bot.starboard.find_one({"_id": message.id})
+            if not _starboard:
+                stars, msg_id = 0, None
+
+            else:
+                try:
+                    stars, msg_id = _starboard['stars'], _starboard['star_id']
+
+                except KeyError:
+                    stars, msg_id = 0, None
+
             try:
-                await message_logs.send(embed=em)  # send the embed
+                starboard = message.guild.get_channel(data['starboard'])
 
-            except Exception as e:
-                pass
+            except KeyError:
+                return
 
+            em = discord.Embed(
+                colour=GOLD,
+                description=f"{message.content}",
+                timestamp=dt.utcnow()
+            )
+            em.add_field(name='Original Message', value=f"[Jump!](https://discord.com/channels/"
+                                                        f"{payload.guild_id}/{payload.channel_id}/{message.id})")
+
+            if len(message.attachments):
+                attachment = message.attachments[0]
+
+                em.add_field(name='Attachments', value=f"[{attachment.filename}]({attachment.url})", inline=False)
+                em.set_image(url=attachment.url)
+
+            em.set_author(icon_url=message.author.avatar_url, name=message.author)
+            em.set_footer(text=f'Message ID - {message.id}')
+
+            if not stars:
+                msg = await starboard.send(
+                    content=f"**{stars + 1}** ✨ - **{message.channel.mention}**", embed=em)
+                schema = {
+                    '_id': message.id,
+                    'stars': stars + 1,
+                    'star_id': msg.id
+                }
+                await self.bot.starboard.insert_one(schema)
+
+            else:
+                msg = await (self.bot.get_guild(message.guild.id).get_channel(starboard.id).
+                             fetch_message(msg_id))
+                await msg.edit(
+                    content=f"**{stars + 1}** ✨ - **{message.channel.mention}**", embed=em)
+                await self.bot.starboard.update_one(
+                    {'_id': message.id}, {'$set': {'stars': stars + 1, 'star_id': msg.id}})
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        if payload.emoji.name == "⭐":
+            message = await (self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id).
+                             fetch_message(payload.message_id))
+            data = await self.bot.config.find_one({"_id": message.guild.id})
+            _starboard = await self.bot.starboard.find_one({"_id": message.id})
+            if not _starboard:  # check if there are stars on that message
+                return
+
+            else:
+                try:
+                    stars, msg_id = _starboard['stars'], _starboard['star_id']
+
+                except KeyError:
+                    return  # only if the the stars or star_id param doesn't exist
+
+            try:
+                starboard = message.guild.get_channel(data['starboard'])
+
+            except KeyError:
+                return
+
+            em = discord.Embed(
+                colour=GOLD,
+                description=f"{message.content}",
+                timestamp=dt.utcnow()
+            )
+            em.add_field(name='Original Message', value=f"[Jump!](https://discord.com/channels/"
+                                                        f"{payload.guild_id}/{payload.channel_id}/{message.id})")
+
+            if len(message.attachments):
+                attachment = message.attachments[0]
+
+                em.add_field(name='Attachments', value=f"[{attachment.filename}]({attachment.url})", inline=False)
+                em.set_image(url=attachment.url)
+
+            em.set_author(icon_url=message.author.avatar_url, name=message.author)
+            em.set_footer(text=f'Message ID - {message.id}')
+
+            msg = await (self.bot.get_guild(message.guild.id).get_channel(starboard.id).
+                         fetch_message(msg_id))
+            if stars - 1 < 1:
+                await msg.delete()
+                await self.bot.starboard.delete_one({'_id': message.id})
+
+            else:
+                await msg.edit(
+                        content=f"**{stars - 1}** ✨ - **{message.channel.mention}**", embed=em)
+                await self.bot.starboard.update_one(
+                    {'_id': message.id}, {'$set': {'stars': stars - 1, 'star_id': msg.id}}, upsert=True)
 
 def setup(bot):
     bot.add_cog(Events(bot))  # add this stupid cog i'm tired

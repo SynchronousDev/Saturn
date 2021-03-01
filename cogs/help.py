@@ -16,10 +16,12 @@ class HelpMenu(menus.ListPageSource):
                 title="Saturn's Commands",
                 description=f'Prefix for this server: `{prefix}`\n'
                             f'[Support Server](https://discord.gg/HANGYrUF2y) • '
-                            f'[Invite Saturn (Administrator)](https://discord.com/oauth2/'
-                            f'authorize?client_id=793572249059196959&permissions=8&scope=bot) • '
-                            f'[Invite Saturn (Recommended)](https://discord.com/oauth2/'
-                            f'authorize?client_id=793572249059196959&permissions=501083383&scope)',
+                            f'[Invite Saturn (Administrator)]('
+                            f'https://discord.com/oauth2/authorize?client_id=799328036662935572&permissions=8'
+                            f'&redirect_uri=https%3A%2F%2F127.0.0.1%3A5000%2Flogin&scope=bot) • '
+                            f'[Invite Saturn (Recommended)](https://discord.com/api/oauth2/authorize?client_id'
+                            f'=799328036662935572&permissions=536145143&redirect_uri=https%3A%2F%2F127.0.0.1%3A5000'
+                            f'%2Flogin&scope=bot)',
                 colour=MAIN,
                 timestamp=dt.utcnow())
 
@@ -27,9 +29,7 @@ class HelpMenu(menus.ListPageSource):
 
         text = f"{desc if desc else 'No description provided.'}```\n**Commands in the {cog} cog**```\n"
 
-        commands = 0
         for command in self.bot.get_cog(cog).walk_commands():
-            commands += 1
             if command.hidden:
                 continue
 
@@ -41,7 +41,7 @@ class HelpMenu(menus.ListPageSource):
 
         em.add_field(name="Description", value=f"```{text}```", inline=False)
         em.set_footer(text=f"{offset:,} of {len_data:,} cogs | "
-                           f"{commands} commands in {cog} cog")
+                           f"{len([cmd for cmd in self.bot.get_cog(cog).walk_commands()])} commands in {cog} cog")
 
         return em
 
@@ -72,6 +72,7 @@ class Help(commands.Cog):
             cogs.remove('Dev')
             cogs.remove('Reaction Roles')
             cogs.remove('ErrorHandler')
+            cogs.remove('Music')
 
             help_menu = menus.MenuPages(source=HelpMenu(ctx, cogs, self.bot), delete_message_after=True)
 

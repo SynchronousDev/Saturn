@@ -9,10 +9,16 @@ from assets import *
 # can't forget to import speed guys
 
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
+
 default_prefix = "s."
 
 
+# noinspection PyShadowingNames
 async def get_prefix(bot, message):
     if not message.guild:
         return commands.when_mentioned_or(default_prefix)(bot, message)
@@ -38,8 +44,6 @@ bot.cwd = str(bot.cwd)
 bot.version = '1.0.0'
 
 bot.configuration = json.load(open(bot.cwd + '/assets/configuration.json'))
-
-print('{}\n------'.format(bot.cwd))
 
 bot.muted_users = {}
 bot.banned_users = {}
@@ -107,10 +111,13 @@ if __name__ == '__main__':
     bot.tags = bot.db["tags"]
     bot.mod = bot.db["mod"]
     bot.bans = bot.db["bans"]
+    bot.starboard = bot.db["starboard"]
 
     for file in os.listdir(bot.cwd + '/cogs'):
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
+
+    bot.load_extension('jishaku') # i have jishaku here because i find it quite useful
 
     bot.run(bot.config_token)  # run the bot
     # all processes after this will not be run until the bot stops so oof

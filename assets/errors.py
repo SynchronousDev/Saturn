@@ -29,13 +29,23 @@ class TrackDoesNotExist(commands.CommandError):
     """Raises when a remove_track is performed and no tracks were found"""
     pass
 
-class NoVoiceChannel(commands.CommandError):
+class NotConnectedToChannel(commands.CommandError):
     """Not connected to a voice channel"""
     pass
 
-class QueueIsEmpty(commands.CommandError):
-    """Raiases when, as the name implies, the queue is empty"""
+class BotNotConnectedToChannel(commands.CommandError):
+    """The bot is not connected to a voice channel"""
     pass
+
+class QueueIsEmpty(commands.CommandError):
+    """Raises when, as the name implies, the queue is empty"""
+    pass
+
+class PlayerIsAlreadyStopped(commands.CommandError):
+    """The player is already stopped"""
+
+class PlayerIsAlreadyResumed(commands.CommandError):
+    """The player is already unpaused"""
 
 class Blacklisted(commands.CommandError):
     """Raises when a member is blacklisted"""

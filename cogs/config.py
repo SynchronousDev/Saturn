@@ -336,6 +336,20 @@ class Config(commands.Cog):
             colour=GREEN)
         await ctx.send(embed=em)
 
+    @commands.command(
+        name='starboard',
+        aliases=['star', 'sboard'],
+        description='The command to change the settings for the starboard.',
+    )
+    async def star_board(self, ctx, channel: discord.TextChannel):
+        await self.bot.config.update_one(
+            {"_id": ctx.guild.id}, {'$set': {"starboard": channel.id}}, upsert=True)
+
+        em = discord.Embed(
+            description=f"{CHECK} The `starboard` channel was set to {channel.mention}.",
+            colour=GREEN)
+        await ctx.send(embed=em)
+
 
 def setup(bot):
     bot.add_cog(Config(bot))

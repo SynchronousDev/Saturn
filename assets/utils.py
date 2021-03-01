@@ -9,46 +9,11 @@ import discord
 from discord import Color
 from discord.ext import commands
 import functools
+import os
+import asyncio
 
-# Colours, emotes, and useful stuff
 
-MAIN = 0x5A00D8
-RED = Color.red()
-GREEN = Color.green()
-GOLD = Color.gold()
-
-ERROR = '<:SatError:804756495044444160>'
-CHECK = '<:SatCheck:804756481831993374>'
-BLANK = '\uFEFF'
-LOCK = ':lock:'
-UNLOCK = ':unlock:'
-WEAK_SIGNAL = ':red_circle:'
-MEDIUM_SIGNAL = ':yellow_circle:'
-STRONG_SIGNAL = ':green_circle:'
-SATURN = '<:Saturn:813806979847421983>'
-NO_REPEAT = '⏭'
-REPEAT_ONE = '🔂'
-REPEAT_ALL = '🔁'
-MUTE = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
-       'speaker-with-cancellation-stroke_1f507.png'
-UNMUTE = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
-         'speaker-with-three-sound-waves_1f50a.png'
-WARN = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
-       'warning-sign_26a0.png'
-NO_ENTRY = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
-      'no-entry_26d4.png'
-UNBAN = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
-        'door_1f6aa.png'
-# weird emotes and stuff yay?
-
-URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s(" \
-            r")<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-SPOTIFY_URL_REGEX = r"[\bhttps://open.\b]*spotify[\b.com\b]*[/:]*track[/:]*[A-Za-z0-9?=]+"
-YOUTUBE_URL_REGEX = r"(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/" \
-                    r"(?:watch|v|embed)(?:\.php)?(?:\?.*v=|\/))([a-zA-Z0-9\_-]+)"
-INVITE_URL_REGEX = r"discord(?:\.com|app\.com|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})"
-# i barely understand these regexes omg
-
+# noinspection PyBroadException
 def convert_time(time):
     # much better than the original one lol
     try:        
@@ -92,6 +57,7 @@ async def syntax(command):
     return f"```{str(command.qualified_name)} {params}```"
 
 
+# noinspection PyBroadException
 async def retrieve_prefix(bot, message):
     try:
         data = await bot.config.find_one({"_id": message.guild.id})
@@ -120,11 +86,64 @@ async def purge_msgs(bot, ctx, limit, check):
             color=RED)
         return await ctx.send(embed=em)
 
+    deleted = list(reversed(deleted))
+
     em = discord.Embed(
-        description=f"{CHECK} Deleted {len(deleted, )} messages in {ctx.channel.mention}",
+        description=f"{CHECK} Deleted {len(deleted)} messages in {ctx.channel.mention}",
         color=GREEN)
     await ctx.send(embed=em, delete_after=2)
+    data = await bot.config.find_one({"_id": ctx.guild.id})
+    try:
+        mod_logs = ctx.guild.get_channel(data['mod_logs'])
 
+    except KeyError:
+        return
+
+    except TypeError:
+        return
+
+    if not mod_logs:
+        return
+
+    await create_purge_file(bot, ctx, deleted)
+
+    try:
+        file = discord.File(f'{bot.cwd}/purge_txts/purge-{deleted[0].id}.txt')
+
+    except FileNotFoundError:
+        await create_purge_file(bot, ctx, deleted)
+
+    file = discord.File(f'{bot.cwd}/purge_txts/purge-{deleted[0].id}.txt')
+
+    em = discord.Embed(
+        title='Messages Purged',
+        description=f'Deleted {len(deleted)} messages in {ctx.channel.mention}\n'
+                    f'Command invoked by {ctx.author.mention}',
+        colour=discord.Colour.orange(),
+        timestamp=dt.utcnow()
+    )
+    em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
+                         "thumbs/120/mozilla/36/memo_1f4dd.png")
+    em.set_footer(text="Download the .txt file below to view deleted messages")
+    await mod_logs.send(embed=em)
+    await asyncio.sleep(0.5)
+    await mod_logs.send(file=file)
+
+
+async def create_purge_file(bot, ctx, deleted):
+    with open(f'{bot.cwd}/purge_txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
+        f.write(f"{len(deleted)} messages deleted in the #{ctx.channel} channel by {ctx.author}:\n\n")
+        for message in deleted:
+            content = message.clean_content
+            if not message.author.bot:
+                f.write(f"{message.author} at {str(message.created_at)[:-7]} UTC"
+                        f" (ID - {message.author.id})\n"
+                        f"{content} (Message ID - {message.id})\n\n")
+
+            else:
+                f.write(f"{u'{}'.format(str(message.author))} at {str(message.created_at)[:-7]} UTC"
+                        f" (ID - {message.author.id})\n"
+                        f"{'Embed/file sent by a bot' if not content else content}\n\n")
 
 async def create_mute_role(bot, ctx):
     """Create the mute role for a guild"""
@@ -149,7 +168,33 @@ async def create_mute_role(bot, ctx):
     return mute_role
 
 
-async def send_punishment(bot, member, guild, action, moderator, reason, duration=None):
+class Dueler:
+    """
+    A duler class. Useful for the duel command
+    """
+
+    def __init__(self, member: discord.Member):
+        self.member = member
+        self.health = 100
+
+    def damage(self, amount):  # do damage
+        self.health -= amount
+
+    def heal(self, amount):  # heal hp
+        self.health += amount
+
+    def health(self):
+        return self.health
+
+    @property
+    def name(self):
+        return self.member.name
+
+    def member(self):
+        return self.member
+
+# noinspection PyBroadException
+async def create_log(bot, member, guild, action, moderator, reason, duration=None):
     """
     Send details about a punishment and log it in the mod logs channel.
     """
@@ -178,18 +223,33 @@ async def send_punishment(bot, member, guild, action, moderator, reason, duratio
         desc = f"**Guild** - {guild}\n" \
                f"**Moderator** - {moderator.mention}\n" \
                f"**Action** - {action.title()}\n" \
-               f"**Reason** - {reason}"
+               f"**Reason** - {reason}\n"
         if duration:
             desc += f"**Duration** - {duration}\n"
 
+        em.description = desc
+
         await member.send(embed=em)
 
-    except Exception as e:
+    except discord.Forbidden:
         pass
+
+    except Exception as e:
+        raise e
 
     # send it to the log channel because why not lol
     data = await bot.config.find_one({"_id": guild.id})
-    mod_logs = guild.get_channel(data['mod_logs'])
+    try:
+        mod_logs = guild.get_channel(data['mod_logs'])
+
+    except KeyError:
+        return
+
+    except TypeError:
+        return
+
+    if not mod_logs:
+        return
 
     action_ = action
     if action.find("ban") != -1:
@@ -221,7 +281,7 @@ async def send_punishment(bot, member, guild, action, moderator, reason, duratio
     _action = action + ((' lasting ' + duration) if duration else '')
     # get the action + duration for formatting purposes
 
-    await create_log(bot, member, guild, _action, moderator, reason)  # create the log
+    await _create_log(bot, member, guild, _action, moderator, reason)  # create the log
 
 
 async def get_member_modlogs(bot, member, guild):
@@ -266,7 +326,7 @@ async def get_last_caseid(bot, guild):
     return case_id
 
 
-async def create_log(bot, member, guild, action, moderator, reason):
+async def _create_log(bot, member, guild, action, moderator, reason):
     """
     Create a new log object in the database
     """

@@ -112,9 +112,21 @@ class ErrorHandler(commands.Cog):
                 colour=RED)
             await ctx.send(embed=em)
 
+        elif isinstance(exc, commands.CheckFailure):
+            em = Embed(
+                description=f"{ERROR} You do not have the permissions to perform this action.",
+                colour=RED)
+            await ctx.send(embed=em)
+
         elif isinstance(exc, commands.DisabledCommand):
             em = Embed(
                 description=f"{ERROR} This command is currently disabled.",
+                colour=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, commands.TooManyArguments):
+            em = Embed(
+                description=f"{ERROR} Too many arguments were passed.",
                 colour=RED)
             await ctx.send(embed=em)
 
@@ -148,6 +160,18 @@ class ErrorHandler(commands.Cog):
                 color=RED)
             await ctx.send(embed=em)
 
+        elif isinstance(exc, PlayerIsAlreadyResumed):
+            em = discord.Embed(
+                description=f"{ERROR} Player is already playing.",
+                color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, PlayerIsAlreadyStopped):
+            em = discord.Embed(
+                description=f"{ERROR} Player is already stopped.",
+                color=RED)
+            await ctx.send(embed=em)
+
         elif isinstance(exc, QueueIsEmpty):
             em = discord.Embed(
                 description=f"{ERROR} The queue is empty.",
@@ -166,9 +190,15 @@ class ErrorHandler(commands.Cog):
                     color=RED)
             await ctx.send(embed=em)
 
-        elif isinstance(exc, NoVoiceChannel):
+        elif isinstance(exc, NotConnectedToChannel):
             em = discord.Embed(
                     description=f"{ERROR} You are not in a voice channel.",
+                    color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, BotNotConnectedToChannel):
+            em = discord.Embed(
+                    description=f"{ERROR} I am not connected to a voice channel.",
                     color=RED)
             await ctx.send(embed=em)
 
@@ -212,7 +242,7 @@ class ErrorHandler(commands.Cog):
         elif hasattr(exc, "original"):
             em = discord.Embed(
                 description=f"{ERROR} Something went wrong. Whoops!"
-                            f"```{exc}```",
+                            f"```py{exc}```",
                 color=RED)
             await ctx.send(embed=em)
             raise exc.original
