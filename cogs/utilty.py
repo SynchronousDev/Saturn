@@ -1,4 +1,7 @@
 import typing as t
+from time import time
+from psutil import Process, virtual_memory
+from platform import python_version
 
 from assets import *
 from discord import Embed
@@ -13,12 +16,14 @@ from dateutil.relativedelta import relativedelta
 log = logging.getLogger(__name__)
 
 
+# noinspection SpellCheckingInspection
 class Utility(commands.Cog):
     """
     The Utility cog. Includes useful things, like starboards and modmail.
 
     Not to be confused with the Miscellaneous cog.
     """
+
     def __init__(self, bot):
         self.bot = bot
         self.snipe_task = self.clear_snipe_cache.start()
@@ -58,10 +63,21 @@ class Utility(commands.Cog):
             strength = WEAK_SIGNAL
             colour = RED
 
-        em = Embed(
-            description=f"{strength} Pong! `{latency}ms`",
+        start = time()
+        msg = await ctx.send("Pinging...")
+        end = time()
+        em = discord.Embed(
+            description=f"Pong! Bot - `{latency}ms`\n" 
+                        f"API - `{(end - start) * 1000:,.2f}ms`\n",
             colour=colour)
-        await ctx.send(embed=em)
+        await msg.edit(embed=em)
+
+    # noinspection SpellCheckingInspection
+    @commands.command(
+        name="version",
+        aliases=['vers'])
+    async def saturn_version(self, ctx):
+        await ctx.reply("Saturn is currently running on version {}".format(self.bot.__version__))
 
     @commands.command(name="userinfo",
                       aliases=["memberinfo", "ui", "mi"],

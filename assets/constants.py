@@ -73,12 +73,13 @@ DUEL_ATTACK_MESSAGES = [
     "{} throws {} into the void, dealing {} damage!",
     "{} boiled up a huge pot of water and poured it onto {}, melting away {} health!",
     "{} did some crap from Harry Potter and suffocated {} for {} damage!",
-    "{} slapped {} with a big stinky fish and destroyed {}'s sense of smell, dealing {} damage!",
+    "{} slapped {} with a big stinky fish, dealing {} damage!",
     "{} forced {} to watch YouTube rewind and instantly lost {} health!",
     "{} did nothing, but {} accidentally walked off a cliff, instantly losing {} health!",
     "{} took a leaf out of Mad-Eye Moody's book and turned {} into a ferret, dealing {} damage!",
     "{} pulled out a stick and started whipping it at {}, dealing {} damage!",
     "{} drove a Jeep Wrangler over {} many times, dealing {} damage!",
     "{} pulled out a baseball bat and sent {}'s head flying, dealing {} damage!",
-    "{} rickrolled {}, and lost {} health out of embarrassment!"
+    "{} rickrolled {}, and lost {} health out of embarrassment!",
+    "{} spammed {}.exe, and it stopped responding, dealing {} damage!"
 ]

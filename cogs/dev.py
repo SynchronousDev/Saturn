@@ -55,7 +55,7 @@ class Dev(commands.Cog):
         aliases=['ev', 'exec', 'evaluate'],
         description='The eval command. Executes code (only accessable by me)')
     async def eval(self, ctx, *, code):
-        code = clean_code(code)
+        code = clean_codeblock(code)
         local_vars = {
             "discord": discord,
             "commands": commands,
@@ -111,25 +111,25 @@ class Dev(commands.Cog):
         aliases=['gtoggle', 'gt'],
         description='A developer command. Enable or disable commands globally.')
     async def global_toggle(self, ctx, *, command):
-        command = self.bot.get_command(command)
+        cmd = self.bot.get_command(command)
 
-        if not command:
+        if not cmd:
             em = discord.Embed(
                 description=f"{ERROR} Command `{command}` does not exist.",
                 colour=RED)
             return await ctx.send(embed=em)
 
-        elif ctx.command == command or command in [c for c in self.bot.get_cog('Dev').walk_commands()]:
+        elif ctx.command == cmd or cmd in [c for c in self.bot.get_cog('Dev').walk_commands()]:
             em = discord.Embed(
                 description=f"{ERROR} This command cannot be disabled.",
                 colour=RED)
             return await ctx.send(embed=em)
 
         else:
-            command.enabled = not command.enabled
-            status = "enabled" if command.enabled else "disabled"
+            cmd.enabled = not cmd.enabled
+            status = "enabled" if cmd.enabled else "disabled"
             em = discord.Embed(
-                description=f"{CHECK} {status.title()} `{command.qualified_name}`",
+                description=f"{CHECK} {status.title()} `{cmd.qualified_name}`",
                 color=GREEN)
             await ctx.send(embed=em)
 

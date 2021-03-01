@@ -18,7 +18,7 @@ logger.addHandler(handler)
 default_prefix = "s."
 
 
-# noinspection PyShadowingNames
+# noinspection PyShadowingNames, PyBroadException
 async def get_prefix(bot, message):
     if not message.guild:
         return commands.when_mentioned_or(default_prefix)(bot, message)
@@ -38,12 +38,12 @@ bot = commands.Bot(
     command_prefix=get_prefix,
     intents=discord.Intents.all(),
     case_insensitive=True,
-    owner_ids=[531501355601494026])
+    owner_ids=[531501355601494026, 704355591686062202])
 bot.cwd = Path(__file__).parents[0]
 bot.cwd = str(bot.cwd)
-bot.version = '1.0.0'
+bot.__version__ = '1.0.0'
 
-bot.configuration = json.load(open(bot.cwd + '/assets/configuration.json'))
+bot.configuration = json.load(open(bot.cwd + '/assets/config.json'))
 
 bot.muted_users = {}
 bot.banned_users = {}
@@ -90,7 +90,7 @@ async def on_disconnect():
 async def change_pres():
     await bot.change_presence(
         activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users"
-                                   f" | {default_prefix}help | Version {bot.version}"))
+                                   f" | {default_prefix}help | Version {bot.__version__}"))
 
 
 @bot.before_invoke

@@ -1,6 +1,6 @@
 __pycache__
 idea
-/assets/configuration.json
+/assets/config.json
 .vscode
 oauth.py
 dashboard
@@ -8,3 +8,4 @@ jdk
 .idea
 purge_txts
 discord.log
+song.mp3

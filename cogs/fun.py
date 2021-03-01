@@ -3,6 +3,8 @@ from aiohttp import request
 from assets import *
 import random
 import asyncio
+from PIL import Image
+from io import BytesIO
 
 log = logging.getLogger(__name__)
 
@@ -252,13 +254,26 @@ class Fun(commands.Cog):
             colour=MAIN
         )
         em.set_footer(text='Damage amounts are generated via the random module.')
-        msg = await ctx.send(embed=em)
-        _text = ""
-        for i in range(3):
-            _text += f"Duel starting in {3 - i}\n"
-            em.description = f"```{_text}```"
-            await msg.edit(embed=em)
-            await asyncio.sleep(1)
+
+        versus = Image.open(self.bot.cwd + "/assets/versus.jpg")
+
+        asset, _asset = ctx.author.avatar_url_as(size=128), member.avatar_url_as(size=128)
+        data, _data = BytesIO(await asset.read()), BytesIO(await _asset.read())
+        p1_pfp, p2_pfp = Image.open(data), Image.open(_data)
+
+        p1_pfp = p1_pfp.resize((164, 164))
+        p2_pfp = p2_pfp.resize((164, 164))
+
+        versus.paste(p1_pfp, (39, 63))
+        versus.paste(p2_pfp, (416, 214))
+
+        versus.save(self.bot.cwd + "/assets/profile.jpg")
+        file = discord.File(self.bot.cwd + "/assets/profile.jpg", filename='profile.jpg')
+        em.set_image(url=f"attachment://profile.jpg")
+        msg = await ctx.send(file=file, embed=em)
+
+        await asyncio.sleep(3)
+        await msg.edit(embed=em)
 
         text = []
         while play:
@@ -271,7 +286,7 @@ class Fun(commands.Cog):
                     play = False
                     break
 
-                amount = random.randint(1, 50)
+                amount = random.randint(10, 50)
                 will_attack = random.choice([True, False, True])
 
                 # if it returns True then member attacks
@@ -289,18 +304,19 @@ class Fun(commands.Cog):
 
                 em.description = "**{}** - {} HP\n**{}** - {} HP\n```diff\n{}```".format(
                     p1.name, p1.health, p2.name, p2.health,
-                    '\n'.join(text[len(text) - 15:] if len(text) > 15 else text)
+                    '\n'.join(text[len(text) - 8:] if len(text) > 8 else text)
                 )
 
                 em.colour = colour
                 await msg.edit(embed=em)
                 await asyncio.sleep(1)
 
-        winner = p1 if p2.health < 0 else p2
-        loser = p2 if winner == p1 else p1
+        winner = p1 if p1.health > p2.health else p2
+        loser = p1 if winner == p2 else p2
         em.title = f":trophy: {winner.member.name.upper()} WINS!"
         em.colour = GOLD
         await msg.edit(embed=em)
+
 
 def setup(bot):
     bot.add_cog(Fun(bot))

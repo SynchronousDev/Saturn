@@ -372,7 +372,7 @@ async def delete_log(bot, id, guild):
     await update_log_caseids(bot, guild)
 
 
-def clean_code(content):
+def clean_codeblock(content):
     if content.startswith("```") and content.endswith("```"):
         return "\n".join(content.split("\n")[1:])[:-3]
     else:
