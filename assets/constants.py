@@ -51,7 +51,7 @@ DUEL_HEAL_MESSAGES = [
     "{} gets a gift from the gods and gets an instant health boost of {}!",
     "{} heals {} hp!",
     "{} eats a golden apple for {} health!",
-    "{} ender pearls to another dimension and slowly replenishes {} hp!",
+    "{} teleports to another dimension and slowly replenishes {} hp!",
     "{} ate a {} hp apple to keep the doctor away!",
 ]
 DUEL_ATTACK_MESSAGES = [

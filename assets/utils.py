@@ -1,22 +1,39 @@
-import collections
-import json
-import logging
-import re
-from pathlib import Path
-from datetime import datetime as dt, timedelta
-
-import discord
-from discord import Color
-from discord.ext import commands
-import functools
-import os
 import asyncio
+from datetime import datetime as dt, timedelta
+from itertools import chain
+
+# noinspection PyUnresolvedReferences
+import discord
+# noinspection PyUnresolvedReferences
+from discord.ext import commands
+
+from iteration_utilities import deepflatten
+from saturn import default_prefix
+from .constants import *
+
+
+def flatten(l):
+    _list = []
+    l = list(l)
+    while l:
+        e = l.pop()
+        if isinstance(e, list):
+            l.extend(e)
+
+        else:
+            _list.append(e)
+
+    return list(reversed(_list))
 
 
 # noinspection PyBroadException
 def convert_time(time):
+    """
+    Convert time into a years, hours, minute, seconds thing.
+    """
     # much better than the original one lol
-    try:        
+    # man I suck at docstrings lol
+    try:
         times = {}
         return_times = []
         time_dict = {
@@ -39,13 +56,16 @@ def convert_time(time):
 
             return_times.append("{0} {1}".format(value['value'], key))
 
-        return ' '.join(return_times)
+        return ' '.join(return_times) if return_times else '0 seconds'
 
-    except Exception as e:
+    except Exception:
         return 'indefinitely'
 
 
 async def syntax(command):
+    """
+    Get the syntax/usage for a command.
+    """
     params = []
 
     for key, value in command.params.items():
@@ -58,20 +78,40 @@ async def syntax(command):
 
 
 # noinspection PyBroadException
-async def retrieve_prefix(bot, message):
+async def retrieve_raw_prefix(bot, message):
+    """
+    A method for retrieving the raw prefix out of the database
+    """
     try:
         data = await bot.config.find_one({"_id": message.guild.id})
 
-        # Make sure we have a useable prefix
+        # make sure that we have a prefix in the data
         if not data or not data["prefix"]:
-            return "s."
+            return default_prefix
 
+        # we don't have to put anything into the database
+        # because it's always going to be s. unless they enter stuff into the database
+        # and when they change the prefix it gets inserted into the db
         else:
-            return data["prefix"]
-    except Exception as e:
-        return "s."
+            return data['prefix']
+
+    except Exception:
+        return default_prefix
 
 
+async def retrieve_prefix(bot, message):
+    """
+    Return the prefix as a readable string
+    """
+    prefix = await retrieve_raw_prefix(bot, message)
+    if isinstance(prefix, str):
+        return prefix
+    elif isinstance(prefix, list):
+        prefix = flatten(prefix)
+        return ' | '.join(prefix)
+
+
+# noinspection PyUnusedLocal, SpellCheckingInspection
 async def purge_msgs(bot, ctx, limit, check):
     await ctx.message.delete()
     deleted = await ctx.channel.purge(
@@ -96,10 +136,7 @@ async def purge_msgs(bot, ctx, limit, check):
     try:
         mod_logs = ctx.guild.get_channel(data['mod_logs'])
 
-    except KeyError:
-        return
-
-    except TypeError:
+    except KeyError or TypeError:
         return
 
     if not mod_logs:
@@ -108,12 +145,12 @@ async def purge_msgs(bot, ctx, limit, check):
     await create_purge_file(bot, ctx, deleted)
 
     try:
-        file = discord.File(f'{bot.cwd}/purge_txts/purge-{deleted[0].id}.txt')
+        file = discord.File(f'{bot.cwd}/assets/purge_txts/purge-{deleted[0].id}.txt')
 
     except FileNotFoundError:
         await create_purge_file(bot, ctx, deleted)
 
-    file = discord.File(f'{bot.cwd}/purge_txts/purge-{deleted[0].id}.txt')
+    file = discord.File(f'{bot.cwd}/assets/purge-txts/purge-{deleted[0].id}.txt')
 
     em = discord.Embed(
         title='Messages Purged',
@@ -131,7 +168,7 @@ async def purge_msgs(bot, ctx, limit, check):
 
 
 async def create_purge_file(bot, ctx, deleted):
-    with open(f'{bot.cwd}/purge_txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
+    with open(f'{bot.cwd}/assets/purge-txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
         f.write(f"{len(deleted)} messages deleted in the #{ctx.channel} channel by {ctx.author}:\n\n")
         for message in deleted:
             content = message.clean_content
@@ -145,6 +182,7 @@ async def create_purge_file(bot, ctx, deleted):
                         f" (ID - {message.author.id})\n"
                         f"{'Embed/file sent by a bot' if not content else content}\n\n")
 
+
 async def create_mute_role(bot, ctx):
     """Create the mute role for a guild"""
     perms = discord.Permissions(
@@ -153,7 +191,7 @@ async def create_mute_role(bot, ctx):
                                             reason='Could not find a muted role in the process of muting or unmuting.')
 
     await bot.config.update_one({"_id": ctx.guild.id},
-                                {'$set': {"mute_role_id": mute_role.id}}, upsert=True)
+                                {'$set': {"mute_role": mute_role.id}}, upsert=True)
 
     for channel in ctx.guild.channels:
         try:
@@ -170,7 +208,7 @@ async def create_mute_role(bot, ctx):
 
 class Dueler:
     """
-    A duler class. Useful for the duel command
+    A dueler class. Useful for the duel command
     """
 
     def __init__(self, member: discord.Member):
@@ -193,7 +231,8 @@ class Dueler:
     def member(self):
         return self.member
 
-# noinspection PyBroadException
+
+# noinspection PyBroadException,SpellCheckingInspection
 async def create_log(bot, member, guild, action, moderator, reason, duration=None):
     """
     Send details about a punishment and log it in the mod logs channel.
@@ -238,18 +277,12 @@ async def create_log(bot, member, guild, action, moderator, reason, duration=Non
         raise e
 
     # send it to the log channel because why not lol
-    data = await bot.config.find_one({"_id": guild.id})
+    data, mod_logs = await bot.config.find_one({"_id": guild.id}), None
     try:
         mod_logs = guild.get_channel(data['mod_logs'])
 
-    except KeyError:
-        return
-
-    except TypeError:
-        return
-
-    if not mod_logs:
-        return
+    except KeyError or TypeError:
+        pass
 
     action_ = action
     if action.find("ban") != -1:
@@ -267,7 +300,7 @@ async def create_log(bot, member, guild, action, moderator, reason, duration=Non
         timestamp=dt.utcnow()
     )
     em.set_thumbnail(url=emote)
-    em.set_footer(text='Case no. {}'.format(await get_last_caseid(bot, guild)))
+    em.set_footer(text='Case no. {}'.format(await get_last_case_id(bot, guild)))
     em.add_field(name='Member', value=member.mention, inline=False)
     em.add_field(name='Moderator', value=moderator.mention, inline=False)
     if duration:
@@ -276,7 +309,11 @@ async def create_log(bot, member, guild, action, moderator, reason, duration=Non
     if reason:
         em.add_field(name='Reason', value=reason, inline=False)
 
-    await mod_logs.send(embed=em)
+    try:
+        await mod_logs.send(embed=em)
+
+    except AttributeError:
+        pass
 
     _action = action + ((' lasting ' + duration) if duration else '')
     # get the action + duration for formatting purposes
@@ -284,7 +321,7 @@ async def create_log(bot, member, guild, action, moderator, reason, duration=Non
     await _create_log(bot, member, guild, _action, moderator, reason)  # create the log
 
 
-async def get_member_modlogs(bot, member, guild):
+async def get_member_mod_logs(bot, member, guild):
     """
     Fetch mod logs for a specific guild
     Will only fetch the first 100 punishments, because ya know, operation times suck
@@ -297,7 +334,7 @@ async def get_member_modlogs(bot, member, guild):
     return logs
 
 
-async def get_guild_modlogs(bot, guild):
+async def get_guild_mod_logs(bot, guild):
     """
     Fetch mod logs for a specific guild
     """
@@ -309,8 +346,9 @@ async def get_guild_modlogs(bot, guild):
     return logs
 
 
-async def get_last_caseid(bot, guild):
-    logs = await get_guild_modlogs(bot, guild)
+# noinspection SpellCheckingInspection
+async def get_last_case_id(bot, guild):
+    logs = await get_guild_mod_logs(bot, guild)
     await update_log_caseids(bot, guild)
 
     if not logs:
@@ -330,7 +368,7 @@ async def _create_log(bot, member, guild, action, moderator, reason):
     """
     Create a new log object in the database
     """
-    case_id = await get_last_caseid(bot, guild)
+    case_id = await get_last_case_id(bot, guild)
 
     schema = {
         "guild_id": guild.id,
@@ -344,12 +382,13 @@ async def _create_log(bot, member, guild, action, moderator, reason):
     await bot.mod.insert_one(schema)
 
 
+# noinspection PyUnusedLocal
 async def update_log(bot, case_id, guild, action, reason):
     """
     Update a mod log
     Used to update reasons for punishments
     """
-    logs = await get_guild_modlogs(bot, guild)
+    logs = await get_guild_mod_logs(bot, guild)
 
     schema = {
         "action": action,
@@ -358,8 +397,28 @@ async def update_log(bot, case_id, guild, action, reason):
     await bot.mod.update_one({"guild_id": guild.id, "case_id": case_id}, {"$set": schema}, upsert=True)
 
 
+async def starboard_embed(message, payload):
+    em = discord.Embed(
+        colour=GOLD,
+        description=f"{message.content}",
+        timestamp=dt.utcnow()
+    )
+    em.add_field(name='Original Message', value=f"[Jump!](https://discord.com/channels/"
+                                                f"{payload.guild_id}/{payload.channel_id}/{message.id})")
+
+    if len(message.attachments):
+        attachment = message.attachments[0]
+
+        em.add_field(name='Attachments', value=f"[{attachment.filename}]({attachment.url})", inline=False)
+        em.set_image(url=attachment.url)
+
+    em.set_author(icon_url=message.author.avatar_url, name=message.author)
+    em.set_footer(text=f'Message ID - {message.id}')
+    return em
+
+
 async def update_log_caseids(bot, guild):
-    logs = await get_guild_modlogs(bot, guild)
+    logs = await get_guild_mod_logs(bot, guild)
 
     for i, log in enumerate(logs, start=1):
         if i != log['case_id']:

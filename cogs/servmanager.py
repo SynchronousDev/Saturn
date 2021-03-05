@@ -3,9 +3,11 @@ from assets import *
 from discord.ext import commands
 import discord
 
+
+# noinspection SpellCheckingInspection
 class Management(commands.Cog, name='Server Management'):
     """
-    The Server Management cog. Useful for quickly doing things like addinig roles and deleting channels and such.
+    The Server Management cog. Useful for quickly doing things like adding roles and deleting channels and such.
 
     Essentially does most of the things that will usually take time or are annoying, like mass adding roles.
     """
@@ -27,7 +29,7 @@ class Management(commands.Cog, name='Server Management'):
 
         if ctx.guild.me.top_role > member.top_role and (role.position < ctx.guild.me.top_role.position):
             if ctx.author.top_role > member.top_role and member != ctx.author:
-                await member.add_roles(role, reason=reason, atomic=True)
+                await member.add_roles(role, reason=reason)
                 em = discord.Embed(
                     description=f"{CHECK} Added {role.mention} to {member.mention}",
                     colour=GREEN)
@@ -87,7 +89,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, ):
+    async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, reason: t.Optional[str]):
         em = discord.Embed(
             description=f"{SATURN} This might take a while, please wait...",
             colour=MAIN)
@@ -116,13 +118,14 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def remove_roles(self, ctx, role: discord.Role, member: t.Optional[discord.Member], ):
+    async def remove_roles(self, ctx, role: discord.Role,
+                           member: t.Optional[discord.Member], reason: t.Optional[str]):
         member = member or ctx.author
 
         if ctx.guild.me.top_role > member.top_role and (member != ctx.author) \
                 and (role.position < ctx.guild.me.top_role.position):
             if ctx.author.top_role > member.top_role and member != ctx.author:
-                await member.remove_roles(role, reason=reason, atomic=True)
+                await member.remove_roles(role, reason=reason)
                 em = discord.Embed(
                     description=f"{CHECK} Added {role.mention} to {member.mention}",
                     colour=GREEN)

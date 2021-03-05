@@ -8,7 +8,7 @@ from io import BytesIO
 
 log = logging.getLogger(__name__)
 
-
+# noinspection SpellCheckingInspection
 class Fun(commands.Cog):
     """
     The Fun cog. These are commands that are just fun, and can spice up the chat.
@@ -36,13 +36,12 @@ class Fun(commands.Cog):
         1, 3, commands.BucketType.member)
     async def anonymous_quote_cmd(self, ctx, channel: t.Optional[discord.TextChannel], *, quote: str):
         channel = channel or ctx.channel
-        author = ctx.author
         await channel.send(f'*"{quote}"*\n\n - Anonymous')
 
     @commands.command(
-        name='fact',
-        aliases=['facts'],
-        description='Get Animal facts. API may be down sometimes, but still reliable.')
+        name='animalfact',
+        aliases=['animalfacts', 'afacts'],
+        description='Get animal facts. API may be down sometimes, but still reliable.')
     @commands.cooldown(
         1, 3, commands.BucketType.member)
     async def fact_cmd(self, ctx, animal: str):
@@ -62,15 +61,13 @@ class Fun(commands.Cog):
                 if response.status == 200:
                     data = await response.json()
                     fact_em = discord.Embed(
-                        title=f"{animal.title()} fact",
+                        title=f"Did you know?",
                         description=data['fact'],
                         color=MAIN)
                     if IMAGE_URL is not None:
                         fact_em.set_image(url=image_link)
-                    else:
-                        pass
-                    await ctx.send(embed=fact_em)
-                    return
+                    return await ctx.send(embed=fact_em)
+
                 if response.status == 503:
                     status = discord.Embed(
                         description=f"{ERROR} API is currently offline",
@@ -83,7 +80,7 @@ class Fun(commands.Cog):
                     await ctx.send(embed=status)
         else:
             no_facts = discord.Embed(
-                description=f"{ERROR} API could not find any facts for animal `{animal}`",
+                description=f"{ERROR} I could not find any facts for animal `{animal}`",
                 color=RED)
             await ctx.send(embed=no_facts)
 
@@ -174,6 +171,7 @@ class Fun(commands.Cog):
             amount = int(amount)
 
             if amount <= 100:
+                # noinspection PyUnusedLocal
                 rolls = [random.randint(1, value) for i in range(amount)]
 
                 em = discord.Embed(
@@ -312,6 +310,7 @@ class Fun(commands.Cog):
                 await asyncio.sleep(1)
 
         winner = p1 if p1.health > p2.health else p2
+        # noinspection PyUnusedLocal
         loser = p1 if winner == p2 else p2
         em.title = f":trophy: {winner.member.name.upper()} WINS!"
         em.colour = GOLD

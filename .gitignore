@@ -6,7 +6,7 @@ oauth.py
 dashboard
 jdk
 .idea
-purge_txts
+assets/purge_txts
 discord.log
-song.mp3
-assets/profile.jpg
+assets/song.mp3
+assets/imgs/profile.jpg

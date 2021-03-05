@@ -1,3 +1,4 @@
+# noinspection SpellCheckingInspection
 import contextlib as ctxlib
 import io
 import textwrap
@@ -8,7 +9,7 @@ from assets import *
 
 log = logging.getLogger(__name__)
 
-
+# noinspection SpellCheckingInspection
 class Dev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -53,7 +54,7 @@ class Dev(commands.Cog):
     @commands.command(
         name='eval',
         aliases=['ev', 'exec', 'evaluate'],
-        description='The eval command. Executes code (only accessable by me)')
+        description='The eval command. Executes code (only accessible by me)')
     async def eval(self, ctx, *, code):
         code = clean_codeblock(code)
         local_vars = {
@@ -119,7 +120,8 @@ class Dev(commands.Cog):
                 colour=RED)
             return await ctx.send(embed=em)
 
-        elif ctx.command == cmd or cmd in [c for c in self.bot.get_cog('Dev').walk_commands()]:
+        elif ctx.command == cmd or cmd in [c for c in self.bot.get_cog('Dev').walk_commands()] \
+                or cmd == self.bot.get_command('help'):
             em = discord.Embed(
                 description=f"{ERROR} This command cannot be disabled.",
                 colour=RED)
@@ -127,9 +129,13 @@ class Dev(commands.Cog):
 
         else:
             cmd.enabled = not cmd.enabled
+            for _cmd in self.bot.get_cog(cmd.cog.qualified_name).walk_commands():
+                if _cmd.parent == cmd:
+                    _cmd.enabled = not _cmd.enabled
+
             status = "enabled" if cmd.enabled else "disabled"
             em = discord.Embed(
-                description=f"{CHECK} {status.title()} `{cmd.qualified_name}`",
+                description=f"{CHECK} {status.title()} `{cmd.qualified_name}` and its subcommands.",
                 color=GREEN)
             await ctx.send(embed=em)
 

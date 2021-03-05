@@ -1,8 +1,9 @@
-from assets.utils import *
+from assets import *
 
 log = logging.getLogger(__name__)
 
 
+# noinspection SpellCheckingInspection
 class Config(commands.Cog):
     """
     The Configuration cog. All commands that can help you set up or customize Saturn are included here.
@@ -14,32 +15,96 @@ class Config(commands.Cog):
         self.bot = bot
 
     @commands.command(
-        name="prefix",
-        aliases=["changeprefix", "setprefix", 'pre'],
-        description="Change your guild's prefix.")
+        name="prefixes",
+        aliases=["pres", 'showprefixes'],
+        description="Show the prefixes that the bot will respond to.")
     @commands.has_guild_permissions(manage_guild=True)
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
-    async def prefix(self, ctx, *, prefix):
+    async def prefix(self, ctx):
+        em = discord.Embed(
+            title='Prefixes for {}'.format(ctx.guild),
+            description=(
+                '\n'.join('**{} - ** {}'.format(i, prefix)
+                          for i, prefix in enumerate(
+                    (await retrieve_prefix(self.bot, ctx)).split('|'), start=1))
+            ),
+            colour=MAIN,
+            timestamp=dt.utcnow()
+        )
+        em.set_footer(text='You can always invoke commands by mentioning me.')
+        await ctx.send(embed=em)
+
+    @commands.command(
+        name='addprefix',
+        aliases=['addpre'],
+        description='Add a prefix that the bot responds to.'
+    )
+    async def add_prefix(self, ctx, prefix):
         if prefix != "--":
             prefix = prefix.replace("--", " ")
-        await self.bot.config.update_one({"_id": ctx.guild.id}, {'$set': {"prefix": prefix}}, upsert=True)
+
+        data = await self.bot.config.find_one({"_id": ctx.guild.id})
+        try:
+            if prefix in flatten(data['prefix']):
+                em = discord.Embed(
+                    description=f"{ERROR} `{prefix}` is already a registered prefix.",
+                    colour=RED)
+                return await ctx.send(embed=em)
+
+        except TypeError:
+            pass
+
+        if not data or not data['prefix']:
+            prefixes = prefix
+
+        else:
+            prefixes = (data['prefix'], prefix)
+            prefixes = flatten(prefixes)
+
+        if len(prefixes) > 10:
+            em = discord.Embed(
+                description=f"{ERROR} Your guild does not have any prefixes!",
+                colour=RED)
+            return await ctx.send(embed=em)
+
+        await self.bot.config.update_one({"_id": ctx.guild.id}, {'$set': {"prefix": prefixes}}, upsert=True)
         em = discord.Embed(
-            description=f"{CHECK} Prefix has been set to `{prefix}`",
+            description=f"{CHECK} `{prefix}` has been added as a prefix.",
             colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.command(
-        name='deleteprefix',
-        aliases=['dp', 'delpre'],
-        description="Delete your guild's prefix.")
-    @commands.guild_only()
-    @commands.has_guild_permissions(administrator=True)
-    @commands.cooldown(1, 5, commands.BucketType.guild)
-    async def deleteprefix(self, ctx):
-        await self.bot.config.update_one({"_id": ctx.guild.id}, {"$unset": {"prefix": 1}})
+        name='removeprefix',
+        aliases=['delprefix', 'delpre', 'removepre'],
+        description='Remove a prefix that the bot responds to.'
+    )
+    async def remove_prefix(self, ctx, prefix):
+        if prefix != "--":
+            prefix = prefix.replace("--", " ")
+
+        data = await self.bot.config.find_one({"_id": ctx.guild.id})
+        try:
+            if not data or len(data['prefix']) < 1:
+                em = discord.Embed(
+                    description=f"{ERROR} Your guild does not have any prefixes!",
+                    colour=RED)
+                return await ctx.send(embed=em)
+
+        except TypeError or KeyError:
+            em = discord.Embed(
+                description=f"{ERROR} Your guild does not have any prefixes!",
+                colour=RED)
+            return await ctx.send(embed=em)
+
+        prefixes = data["prefix"]
+
+        if isinstance(prefixes, str): pass
+        else: prefixes.remove(prefix)
+
+        await self.bot.config.update_one({"_id": ctx.guild.id}, {'$set': {"prefix": prefixes}}, upsert=True)
         em = discord.Embed(
-            description=f"{CHECK} Prefix has been reset to the default `s.`",
+            description=f"{CHECK} `{prefix}` has been removed as a prefix.",
             colour=GREEN)
         await ctx.send(embed=em)
 
@@ -66,7 +131,7 @@ class Config(commands.Cog):
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def set_moderator_role(self, ctx, role: discord.Role):
         await self.bot.config.update_one(
-            {"_id": ctx.guild.id}, {'$set': {"moderator_role_id": role.id}}, upsert=True)
+            {"_id": ctx.guild.id}, {'$set': {"mod_role": role.id}}, upsert=True)
         em = discord.Embed(
             description=f"{CHECK} The moderator role has been assigned to {role.mention}",
             colour=GREEN)
@@ -82,7 +147,7 @@ class Config(commands.Cog):
     async def mod_role_del(self, ctx):
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
-            mod_role = ctx.guild.get_role(data['moderator_role_id'])
+            mod_role = ctx.guild.get_role(data['mod_role'])
             if not mod_role:
                 em = discord.Embed(
                     description=f"{ERROR} The moderator role does not exist! "
@@ -99,7 +164,7 @@ class Config(commands.Cog):
             await ctx.send(embed=em)
             return
 
-        mod_role = ctx.guild.get_role(data['moderator_role_id'])
+        mod_role = ctx.guild.get_role(data['mod_role'])
 
         try:
             await mod_role.delete(reason=f'Moderator role deleted by {ctx.author.name} (ID {ctx.author.id})')
@@ -120,7 +185,7 @@ class Config(commands.Cog):
             return
 
         await self.bot.config.update_one(
-            {"_id": ctx.guild.id}, {'$unset': {"moderator_role_id": None}})
+            {"_id": ctx.guild.id}, {'$unset': {"mod_role": None}})
 
         em = discord.Embed(
             description=f"{CHECK} The moderator role has been deleted.",
@@ -137,7 +202,7 @@ class Config(commands.Cog):
     async def mod_role_create(self, ctx):
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
-            mod_role = ctx.guild.get_role(data['moderator_role_id'])
+            mod_role = ctx.guild.get_role(data['mod_role'])
             if mod_role:
                 em = discord.Embed(
                     description=f"{ERROR} The moderator role already exists"
@@ -163,7 +228,7 @@ class Config(commands.Cog):
             name='Moderator', permissions=perms, reason='Could not find a muted role')
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
-                                         {'$set': {"moderator_role_id": mod_role.id}}, upsert=True)
+                                         {'$set': {"mod_role": mod_role.id}}, upsert=True)
 
         em = discord.Embed(
             description=f"{CHECK} The moderator role was created.",
@@ -191,7 +256,7 @@ class Config(commands.Cog):
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def mute_role_set(self, ctx, role: discord.Role):
         await self.bot.config.update_one(
-            {"_id": ctx.guild.id}, {'$set': {"mute_role_id": role.id}}, upsert=True)
+            {"_id": ctx.guild.id}, {'$set': {"mute_role": role.id}}, upsert=True)
         em = discord.Embed(
             description=f"{CHECK} The mute role has been assigned to {role.mention}",
             colour=GREEN)
@@ -207,7 +272,7 @@ class Config(commands.Cog):
     async def mute_role_del(self, ctx):
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
-            mute_role = ctx.guild.get_role(data['mute_role_id'])
+            mute_role = ctx.guild.get_role(data['mute_role'])
             if not mute_role:
                 em = discord.Embed(
                     description=f"{ERROR} The mute role does not exist! Run `muterole set <role>` or `muterole create`",
@@ -222,7 +287,7 @@ class Config(commands.Cog):
             await ctx.send(embed=em)
             return
 
-        mute_role = ctx.guild.get_role(data['mute_role_id'])
+        mute_role = ctx.guild.get_role(data['mute_role'])
 
         try:
             await mute_role.delete(reason=f'Mute role deleted by {ctx.author.name} (ID {ctx.author.id})')
@@ -243,7 +308,7 @@ class Config(commands.Cog):
             return
 
         await self.bot.config.update_one(
-            {"_id": ctx.guild.id}, {'$unset': {"mute_role_id": None}})
+            {"_id": ctx.guild.id}, {'$unset': {"mute_role": None}})
 
         em = discord.Embed(
             description=f"{CHECK} The mute role has been deleted.",
@@ -260,13 +325,12 @@ class Config(commands.Cog):
     async def mute_role_create(self, ctx):
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
-            mod_role = ctx.guild.get_role(data['mute_role_id'])
+            mod_role = ctx.guild.get_role(data['mute_role'])
             if mod_role:
                 em = discord.Embed(
                     description=f"{ERROR} The mute role already exists! Run `muterole set <role>` or `muterole delete`",
                     colour=RED)
-                await ctx.send(embed=em)
-                return
+                return await ctx.send(embed=em)
 
         except KeyError:
             pass
@@ -287,7 +351,7 @@ class Config(commands.Cog):
                 continue
 
         await self.bot.config.update_one(
-            {"_id": ctx.guild.id}, {'$set': {"mute_role_id": mute_role.id}}, upsert=True)
+            {"_id": ctx.guild.id}, {'$set': {"mute_role": mute_role.id}}, upsert=True)
 
         em = discord.Embed(
             description=f"{CHECK} The mute role was created.",
@@ -336,17 +400,46 @@ class Config(commands.Cog):
             colour=GREEN)
         await ctx.send(embed=em)
 
-    @commands.command(
+    @commands.group(
         name='starboard',
         aliases=['star', 'sboard'],
         description='The command to change the settings for the starboard.',
+        invoke_without_command=True
     )
-    async def star_board(self, ctx, channel: discord.TextChannel):
+    async def star_board(self, ctx):
+        await ctx.invoke(self.bot.get_command('help'), entity='starboard')
+
+    @star_board.command(
+        name='set',
+        aliases=['assign'],
+        description='Set the starboard channel to a channel.'
+    )
+    async def set_starboard(self, ctx, channel: discord.TextChannel):
         await self.bot.config.update_one(
             {"_id": ctx.guild.id}, {'$set': {"starboard": channel.id}}, upsert=True)
 
         em = discord.Embed(
             description=f"{CHECK} The `starboard` channel was set to {channel.mention}.",
+            colour=GREEN)
+        await ctx.send(embed=em)
+
+    @star_board.command(
+        name='stars',
+        aliases=['count', 'star'],
+        description='Set the required number of stars needed to get a message to the starboard.'
+    )
+    async def set_starboard_stars(self, ctx, stars: int):
+        if stars < 3:
+            em = discord.Embed(
+                description=f"{ERROR} Minimum number of stars cannot be less than 3.",
+                colour=RED)
+            return await ctx.send(embed=em)
+
+        await self.bot.config.update_one(
+            {"_id": ctx.guild.id}, {'$set': {"count": stars}}, upsert=True)
+
+        em = discord.Embed(
+            description=f"{CHECK} Messages now require `{stars}` stars to get on the starboard.",
             colour=GREEN)
         await ctx.send(embed=em)
 

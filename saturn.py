@@ -1,37 +1,45 @@
+import json
 import os
+from pathlib import Path
 
 import motor.motor_asyncio
 from discord.ext import tasks
 
 from assets import *
 
-# import speed
-# can't forget to import speed guys
-
+# import speed lol
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+# noinspection SpellCheckingInspection
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
 default_prefix = "s."
 
 
-# noinspection PyShadowingNames, PyBroadException
+# noinspection PyShadowingNames, PyBroadException, SpellCheckingInspection
 async def get_prefix(bot, message):
-    if not message.guild:
-        return commands.when_mentioned_or(default_prefix)(bot, message)
-
+    """
+    For the bot's command_prefix. Not the same as the `retrieve_prefix` function.
+    """
+    # sphagetto code galore
+    if not message.guild: return commands.when_mentioned_or(default_prefix)(bot, message)
+    # noinspection PyUnusedLocal
     try:
         data = await bot.config.find_one({"_id": message.guild.id})
 
-        if not data or "prefix" not in data:
-            return commands.when_mentioned_or(default_prefix)(bot, message)
+        if not data or not data['prefix']: return commands.when_mentioned_or(default_prefix)(bot, message)
 
-        return commands.when_mentioned_or(data["prefix"])(bot, message)
+        if isinstance(data['prefix'], str):
+            return commands.when_mentioned_or(data['prefix'])(bot, message)
 
-    except Exception:
+        pre = flatten(data['prefix'])
+        return commands.when_mentioned_or(*pre)(bot, message)
+
+    # noinspection PyUnusedLocal
+    except Exception as e:
         return commands.when_mentioned_or(default_prefix)(bot, message)
 
 bot = commands.Bot(
@@ -41,13 +49,15 @@ bot = commands.Bot(
     owner_ids=[531501355601494026, 704355591686062202])
 bot.cwd = Path(__file__).parents[0]
 bot.cwd = str(bot.cwd)
-bot.__version__ = '1.0.0'
+bot.__version__ = '1.1.0'
 
 bot.configuration = json.load(open(bot.cwd + '/assets/config.json'))
 
 bot.muted_users = {}
 bot.banned_users = {}
 bot.snipes = {}
+bot.edit_snipes = {}
+
 bot.config_token = bot.configuration['token']
 bot.connection_url = bot.configuration['mongo']
 bot.spotify_client_id = bot.configuration['spotify_client_id']
@@ -117,7 +127,7 @@ if __name__ == '__main__':
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
 
-    bot.load_extension('jishaku') # i have jishaku here because i find it quite useful
+    bot.load_extension('jishaku')  # i have jishaku here because i find it quite useful
 
     bot.run(bot.config_token)  # run the bot
     # all processes after this will not be run until the bot stops so oof

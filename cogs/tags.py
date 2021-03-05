@@ -304,8 +304,5 @@ class Tags(commands.Cog):
             colour=GREEN)
         await ctx.send(embed=em)
 
-    # TODO Add parameter to tags command that allows user to see tags only owned by a discord.Member
-
-
 def setup(bot):
     bot.add_cog(Tags(bot))

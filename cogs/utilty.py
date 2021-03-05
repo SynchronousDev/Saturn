@@ -1,17 +1,11 @@
 import typing as t
+from copy import deepcopy
 from time import time
-from psutil import Process, virtual_memory
-from platform import python_version
+
+from dateutil.relativedelta import relativedelta
+from discord.ext import tasks
 
 from assets import *
-from discord import Embed
-from discord.ext import commands
-import pytimeparse as pytp
-from datetime import timedelta, datetime as dt
-from copy import deepcopy
-
-from discord.ext import menus, tasks
-from dateutil.relativedelta import relativedelta
 
 log = logging.getLogger(__name__)
 
@@ -52,23 +46,20 @@ class Utility(commands.Cog):
     async def ping(self, ctx):
         latency = float(f"{self.bot.latency * 1000:.2f}")
         if latency < 60:
-            strength = STRONG_SIGNAL
             colour = GREEN
 
         elif latency < 101:
-            strength = MEDIUM_SIGNAL
             colour = GOLD
 
         else:
-            strength = WEAK_SIGNAL
             colour = RED
 
         start = time()
         msg = await ctx.send("Pinging...")
         end = time()
         em = discord.Embed(
-            description=f"Pong! Bot - `{latency}ms`\n" 
-                        f"API - `{(end - start) * 1000:,.2f}ms`\n",
+            description=f"Pong!\n**Bot -** `{latency}ms`\n"
+                        f"**API -** `{(end - start) * 1000:,.2f}ms`\n",
             colour=colour)
         await msg.edit(embed=em)
 
@@ -143,33 +134,78 @@ class Utility(commands.Cog):
         description='Retrieve deleted messages.'
     )
     @commands.cooldown(1, 2, commands.BucketType.member)
-    async def get_snipes(self, ctx, member: t.Optional[discord.Member]):
+    async def get_snipes(self, ctx, member: t.Optional[discord.Member], channel: t.Optional[discord.TextChannel]):
         em = discord.Embed(
             colour=MAIN,
         )
         em.description = f"Couldn't find any deleted messages " \
-                         f"{f'from {member.mention}' if member else None}" \
+                         f"{f'from {member.mention}' if member else ''}" \
                          f" in the last 10 minutes."
 
         if self.bot.snipes:
             for key, value in reversed(self.bot.snipes.items()):
-                if member:
-                    if value['guild'] == ctx.guild.id:
-                        if value['author'] == member.id:
-                            user = self.bot.get_user(value['author'])
-                            em.set_author(name=user,
-                                          icon_url=user.avatar_url)
-                            em.description = value['content']
-                            em.timestamp = value['time']
+                if value['guild'] == ctx.guild.id:
+                    if channel:
+                        if value['channel'] == channel.id:
+                            pass
 
-                else:
-                    if value['guild'] == ctx.guild.id:
-                        user = self.bot.get_user(value['author'])
-                        em.set_author(name=user,
-                                      icon_url=user.avatar_url)
-                        em.description = value['content']
-                        em.timestamp = value['time']
-                        break
+                        else:
+                            continue
+
+                    if member:
+                        if value['author'] == member.id:
+                            pass
+
+                        else:
+                            continue
+
+                    user = self.bot.get_user(value['author'])
+                    em.set_author(name=user,
+                                  icon_url=user.avatar_url)
+                    em.description = value['content']
+                    em.timestamp = value['time']
+                    break
+
+        await ctx.send(embed=em)
+
+    @commands.command(
+        name='editsnipe',
+        aliases=['esnp', 'esnip'],
+        description='Retrieve edited messages.'
+    )
+    @commands.cooldown(1, 2, commands.BucketType.member)
+    async def get_editsnipes(self, ctx, member: t.Optional[discord.Member], channel: t.Optional[discord.TextChannel]):
+        em = discord.Embed(
+            colour=MAIN,
+        )
+        em.description = f"Couldn't find any edited messages " \
+                         f"{f'from {member.mention}' if member else ''}" \
+                         f" in the last 10 minutes."
+
+        if self.bot.edit_snipes:
+            for key, value in reversed(self.bot.edit_snipes.items()):
+                if value['guild'] == ctx.guild.id:
+                    if channel:
+                        if value['channel'] == channel.id:
+                            pass
+
+                        else:
+                            continue
+                        
+                    if member:
+                        if value['author'] == member.id:
+                            pass
+
+                        else:
+                            continue
+
+                    user = self.bot.get_user(value['author'])
+                    em.set_author(name=user,
+                                  icon_url=user.avatar_url)
+                    em.description = f"**Before** - {value['before']}\n" \
+                                     f"**After** - {value['after']}"
+                    em.timestamp = value['time']
+                    break
 
         await ctx.send(embed=em)
 
