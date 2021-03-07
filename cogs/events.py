@@ -138,7 +138,7 @@ class Events(commands.Cog):
             try:
                 message_logs = message.guild.get_channel(data['message_logs'])
 
-            except KeyError:
+            except KeyError or TypeError:
                 return
 
             em = discord.Embed(
@@ -180,7 +180,7 @@ class Events(commands.Cog):
             try:
                 message_logs = after.guild.get_channel(data['message_logs'])
 
-            except KeyError:
+            except KeyError or TypeError:
                 return
 
             em = discord.Embed(

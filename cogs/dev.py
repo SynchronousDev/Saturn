@@ -17,6 +17,12 @@ class Dev(commands.Cog):
     async def cog_check(self, ctx: commands.Context) -> bool:
         return await ctx.bot.is_owner(ctx.author)
 
+    @commands.command()
+    async def test(self, ctx):
+        conf = await ConfirmationMenu('delete this role').prompt(ctx)
+        if conf:
+            await ctx.send("Deleted.")
+
     @commands.command(
         name='blacklist',
         aliases=['bl'],

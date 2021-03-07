@@ -188,7 +188,7 @@ class Mod(commands.Cog, name='Moderation'):
 
     @tasks.loop(seconds=30)
     async def purge_files(self):
-        for file in glob(self.bot.cwd + '/purge_txts/*.txt'):
+        for file in glob(self.bot.path + '/purge_txts/*.txt'):
             os.unlink(file)
 
     @tasks.loop(seconds=1)

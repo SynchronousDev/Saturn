@@ -225,7 +225,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def del_category(self, ctx, category: discord.CategoryChannel, *, reason=None):
+    async def del_category(self, ctx, category: discord.CategoryChannel, *, reason: t.Optional[str]):
         await category.delete(reason=reason)
         em = discord.Embed(
             description=f"{CHECK} Deleted category `{category.name}`",
@@ -239,7 +239,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def del_channel(self, ctx, channel: t.Optional[discord.TextChannel], *, reason=None):
+    async def del_channel(self, ctx, channel: t.Optional[discord.TextChannel], *, reason: t.Optional[str]):
         channel = channel or ctx.channel
         await channel.delete(reason=reason)
         em = discord.Embed(
@@ -254,7 +254,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def del_channel(self, ctx, role: t.Optional[discord.Role], *, reason=None):
+    async def del_channel(self, ctx, role: t.Optional[discord.Role], *, reason: t.Optional[str]):
         await role.delete(reason=reason)
         em = discord.Embed(
             description=f"{CHECK} Deleted role `{role.name}`",

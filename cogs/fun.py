@@ -26,7 +26,12 @@ class Fun(commands.Cog):
     async def quote_cmd(self, ctx, channel: t.Optional[discord.TextChannel], *, quote: str):
         channel = channel or ctx.channel
         author = ctx.author
-        await channel.send(f'*"{quote}"*\n\n - {author.mention}')
+
+        em = discord.Embed(
+            description=f'*"{quote}"*\n\n - {author.mention}',
+            colour=ctx.author.colour
+        )
+        await channel.send(embed=em)
 
     @commands.command(
         name='anonymousecho',
@@ -36,7 +41,11 @@ class Fun(commands.Cog):
         1, 3, commands.BucketType.member)
     async def anonymous_quote_cmd(self, ctx, channel: t.Optional[discord.TextChannel], *, quote: str):
         channel = channel or ctx.channel
-        await channel.send(f'*"{quote}"*\n\n - Anonymous')
+        em = discord.Embed(
+            description=f'*"{quote}"*',
+            colour=MAIN
+        )
+        await channel.send(embed=em)
 
     @commands.command(
         name='animalfact',
@@ -253,7 +262,7 @@ class Fun(commands.Cog):
         )
         em.set_footer(text='Damage amounts are generated via the random module.')
 
-        versus = Image.open(self.bot.cwd + "/assets/versus.jpg")
+        versus = Image.open(self.bot.path + "/assets/versus.jpg")
 
         asset, _asset = ctx.author.avatar_url_as(size=128), member.avatar_url_as(size=128)
         data, _data = BytesIO(await asset.read()), BytesIO(await _asset.read())
@@ -265,8 +274,8 @@ class Fun(commands.Cog):
         versus.paste(p1_pfp, (39, 63))
         versus.paste(p2_pfp, (416, 214))
 
-        versus.save(self.bot.cwd + "/assets/profile.jpg")
-        file = discord.File(self.bot.cwd + "/assets/profile.jpg", filename='profile.jpg')
+        versus.save(self.bot.path + "/assets/profile.jpg")
+        file = discord.File(self.bot.path + "/assets/profile.jpg", filename='profile.jpg')
         em.set_image(url=f"attachment://profile.jpg")
         msg = await ctx.send(file=file, embed=em)
 

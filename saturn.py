@@ -1,8 +1,14 @@
 import json
+# noinspection PyUnresolvedReferences
+import logging
 import os
 from pathlib import Path
 
+# noinspection PyUnresolvedReferences
+import discord
 import motor.motor_asyncio
+# noinspection PyUnresolvedReferences
+from discord.ext import commands
 from discord.ext import tasks
 
 from assets import *
@@ -47,11 +53,11 @@ bot = commands.Bot(
     intents=discord.Intents.all(),
     case_insensitive=True,
     owner_ids=[531501355601494026, 704355591686062202])
-bot.cwd = Path(__file__).parents[0]
-bot.cwd = str(bot.cwd)
+bot.path = Path(__file__).parents[0]
+bot.path = str(bot.path)
 bot.__version__ = '1.1.0'
 
-bot.configuration = json.load(open(bot.cwd + '/assets/config.json'))
+bot.configuration = json.load(open(bot.path + '/assets/config.json'))
 
 bot.muted_users = {}
 bot.banned_users = {}
@@ -123,7 +129,7 @@ if __name__ == '__main__':
     bot.bans = bot.db["bans"]
     bot.starboard = bot.db["starboard"]
 
-    for file in os.listdir(bot.cwd + '/cogs'):
+    for file in os.listdir(bot.path + '/cogs'):
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f"cogs.{file[:-3]}")
 

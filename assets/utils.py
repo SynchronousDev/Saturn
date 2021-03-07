@@ -1,15 +1,14 @@
 import asyncio
 from datetime import datetime as dt, timedelta
-from itertools import chain
 
 # noinspection PyUnresolvedReferences
 import discord
 # noinspection PyUnresolvedReferences
 from discord.ext import commands
 
-from iteration_utilities import deepflatten
 from saturn import default_prefix
 from .constants import *
+from discord.ext import menus
 
 
 def flatten(l):
@@ -70,8 +69,12 @@ async def syntax(command):
 
     for key, value in command.params.items():
         if key not in ("self", "ctx"):
-            params.append(f"[{key}]" if "NoneType" in str(
-                value) else f"<{key}>")
+            value = str(value)
+            if "optional" in str(value).lower() or "greedy" in str(value).lower():
+                params.append(f"[{key}]")
+
+            else:
+                params.append(f"<{key}>")
 
     params = " ".join(params)
     return f"```{str(command.qualified_name)} {params}```"
@@ -145,12 +148,12 @@ async def purge_msgs(bot, ctx, limit, check):
     await create_purge_file(bot, ctx, deleted)
 
     try:
-        file = discord.File(f'{bot.cwd}/assets/purge_txts/purge-{deleted[0].id}.txt')
+        file = discord.File(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt')
 
     except FileNotFoundError:
         await create_purge_file(bot, ctx, deleted)
 
-    file = discord.File(f'{bot.cwd}/assets/purge-txts/purge-{deleted[0].id}.txt')
+    file = discord.File(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt')
 
     em = discord.Embed(
         title='Messages Purged',
@@ -168,7 +171,7 @@ async def purge_msgs(bot, ctx, limit, check):
 
 
 async def create_purge_file(bot, ctx, deleted):
-    with open(f'{bot.cwd}/assets/purge-txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
+    with open(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
         f.write(f"{len(deleted)} messages deleted in the #{ctx.channel} channel by {ctx.author}:\n\n")
         for message in deleted:
             content = message.clean_content
@@ -187,8 +190,9 @@ async def create_mute_role(bot, ctx):
     """Create the mute role for a guild"""
     perms = discord.Permissions(
         send_messages=False, read_messages=True)
-    mute_role = await ctx.guild.create_role(name='Muted', permissions=perms,
-                                            reason='Could not find a muted role in the process of muting or unmuting.')
+    mute_role = await ctx.guild.create_role(
+        name='Muted', permissions=perms,
+        reason='Could not find a muted role in the process of muting or unmuting.')
 
     await bot.config.update_one({"_id": ctx.guild.id},
                                 {'$set': {"mute_role": mute_role.id}}, upsert=True)
@@ -205,10 +209,40 @@ async def create_mute_role(bot, ctx):
 
     return mute_role
 
+# TODO add yes/no confirmation box style things for commands making un-doable actions
+
+# noinspection PyUnusedLocal
+class ConfirmationMenu(menus.Menu):
+    def __init__(self, msg):
+        super().__init__(timeout=30.0)
+        self.msg = msg
+        self.result = None
+
+    async def send_initial_message(self, ctx, channel):
+        em = discord.Embed(
+            description=f'{WARNING} Are you sure you want to {self.msg}?',
+            colour=GOLD,
+            timestamp=dt.utcnow()
+        )
+        return await ctx.send(embed=em)
+
+    @menus.button(CHECK)  # confirmation
+    async def do_confirm(self, payload):
+        self.result = True
+        self.stop()
+
+    @menus.button(ERROR)  # deny
+    async def do_deny(self, payload):
+        self.result = False
+        self.stop()
+
+    async def prompt(self, ctx):
+        await self.start(ctx, wait=True)
+        return self.result
 
 class Dueler:
     """
-    A dueler class. Useful for the duel command
+    A dueler class. Used for the duel command
     """
 
     def __init__(self, member: discord.Member):

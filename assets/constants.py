@@ -11,6 +11,7 @@ GOLD = discord.Colour.gold()
 
 ERROR = '<:SatError:804756495044444160>'
 CHECK = '<:SatCheck:804756481831993374>'
+WARNING = ':warning:'
 BLANK = '\uFEFF'
 LOCK = ':lock:'
 UNLOCK = ':unlock:'
