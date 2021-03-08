@@ -60,21 +60,21 @@ class Events(commands.Cog):
         """
         Fires when a member joins the server
         """
+        try:
+            if self.bot.muted_users[member.id]:
+                data = await self.bot.config.find_one({"_id": member.guild.id})
+                mute_role = member.guild.get_role(data['mute_role'])
+                if mute_role:
+                    await member.add_roles(mute_role, reason='Role Persists', atomic=True)
+                    # check if the member left the server while they were muted
+                    # anti-mute bypass yes
+
+        except KeyError:
+            pass
+
         if not member.bot:
             inviter = await self.tracker.fetch_inviter(member)  # get the inviter of the member
             guild = member.guild
-            try:
-                if self.bot.muted_users[member.id]:
-                    data = await self.bot.config.find_one({"_id": guild.id})
-                    mute_role = guild.get_role(data['mute_role_id'])
-                    if mute_role:
-                        await member.add_roles(mute_role, reason='Role Persists', atomic=True)
-                        # check if the member left the server while they were muted
-                        # anti-mute bypass yes
-
-            except KeyError:
-                pass
-
             data = await self.bot.config.find_one({"_id": guild.id})
             try:
                 member_logs = member.guild.get_channel(data['member_logs'])
@@ -89,7 +89,7 @@ class Events(commands.Cog):
                 timestamp=dt.utcnow()
             )
             em.set_thumbnail(url=member.avatar_url)
-            em.add_field(name='Account Created At', value=discord.utils.parse_time(dt.utcnow()))
+            em.add_field(name='Account Created At', value=member.created_at)
             em.set_footer(text=f"Member no. {len(guild.members)} | Invited by {inviter}")
             await member_logs.send(embed=em)  # send the member embed thing
 

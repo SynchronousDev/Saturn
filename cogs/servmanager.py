@@ -61,24 +61,32 @@ class Management(commands.Cog, name='Server Management'):
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def mass_add_roles(self, ctx, role: discord.Role, has_role: discord.Role,
                              reason: t.Optional[str] = 'no reason provided'):
-        em = discord.Embed(
-            description=f"{SATURN} This might take a while, please wait...",
-            colour=MAIN)
-        msg = await ctx.send(embed=em)
-        added_roles = []
-        for member in ctx.guild.members:
-            if has_role in member.roles:
-                await member.add_roles(role, reason=reason, atomic=True)
-                added_roles.append(member)
+        conf = await ConfirmationMenu(f'mass add {role.mention}').prompt(ctx)
+        if conf:
+            em = discord.Embed(
+                description=f"{SATURN} This might take a while, please wait...",
+                colour=MAIN)
+            msg = await ctx.send(embed=em)
+            added_roles = []
+            for member in ctx.guild.members:
+                if has_role in member.roles:
+                    await member.add_roles(role, reason=reason, atomic=True)
+                    added_roles.append(member)
+
+                else:
+                    continue
 
             else:
-                continue
-
-        else:
-            await msg.delete()
-            em = discord.Embed(
+                await msg.delete()
+                em = discord.Embed(
                     description=f"{CHECK} Added {role.mention} to `{len(added_roles)}` members.",
                     colour=GREEN)
+                await ctx.send(embed=em)
+
+        else:
+            em = discord.Embed(
+                description=f"{ERROR} Action cancelled.",
+                colour=RED)
             await ctx.send(embed=em)
 
     @commands.command(
@@ -227,10 +235,26 @@ class Management(commands.Cog, name='Server Management'):
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def del_category(self, ctx, category: discord.CategoryChannel, *, reason: t.Optional[str]):
         await category.delete(reason=reason)
-        em = discord.Embed(
-            description=f"{CHECK} Deleted category `{category.name}`",
-            colour=GREEN)
-        await ctx.send(embed=em)
+        conf = await ConfirmationMenu(f'delete `{category.name}`').prompt(ctx)
+        if conf:
+            try:
+                await category.delete(reason=reason)
+                em = discord.Embed(
+                    description=f"{CHECK} Deleted category `{category.name}`",
+                    colour=GREEN)
+                await ctx.send(embed=em)
+
+            except discord.HTTPException:
+                em = discord.Embed(
+                    description=f"{ERROR} I cannot delete that category.",
+                    colour=RED)
+                await ctx.send(embed=em)
+
+        else:
+            em = discord.Embed(
+                description=f"{ERROR} Action cancelled.",
+                colour=RED)
+            await ctx.send(embed=em)
 
     @delete.command(
         name='channel',
@@ -241,11 +265,26 @@ class Management(commands.Cog, name='Server Management'):
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def del_channel(self, ctx, channel: t.Optional[discord.TextChannel], *, reason: t.Optional[str]):
         channel = channel or ctx.channel
-        await channel.delete(reason=reason)
-        em = discord.Embed(
-            description=f"{CHECK} Deleted channel `{channel.name}`",
-            colour=GREEN)
-        await ctx.send(embed=em)
+        conf = await ConfirmationMenu(f'delete `{channel.name}`').prompt(ctx)
+        if conf:
+            try:
+                await channel.delete(reason=reason)
+                em = discord.Embed(
+                    description=f"{CHECK} Deleted channel `{channel.name}`",
+                    colour=GREEN)
+                await ctx.send(embed=em)
+
+            except discord.HTTPException:
+                em = discord.Embed(
+                    description=f"{ERROR} I cannot delete that channel.",
+                    colour=RED)
+                await ctx.send(embed=em)
+
+        else:
+            em = discord.Embed(
+                description=f"{ERROR} Action cancelled.",
+                colour=RED)
+            await ctx.send(embed=em)
 
     @delete.command(
         name='role',
@@ -254,12 +293,27 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def del_channel(self, ctx, role: t.Optional[discord.Role], *, reason: t.Optional[str]):
-        await role.delete(reason=reason)
-        em = discord.Embed(
-            description=f"{CHECK} Deleted role `{role.name}`",
-            colour=GREEN)
-        await ctx.send(embed=em)
+    async def del_role(self, ctx, role: discord.Role, *, reason: t.Optional[str]):
+        conf = await ConfirmationMenu(f'delete `{role.name}`').prompt(ctx)
+        if conf:
+            try:
+                await role.delete(reason=reason)
+                em = discord.Embed(
+                    description=f"{CHECK} Deleted role `{role.name}`",
+                    colour=GREEN)
+                await ctx.send(embed=em)
+
+            except discord.HTTPException:
+                em = discord.Embed(
+                    description=f"{ERROR} I cannot delete that role.",
+                    colour=RED)
+                await ctx.send(embed=em)
+
+        else:
+            em = discord.Embed(
+                description=f"{ERROR} Action cancelled.",
+                colour=RED)
+            await ctx.send(embed=em)
 
 def setup(bot):
     bot.add_cog(Management(bot))

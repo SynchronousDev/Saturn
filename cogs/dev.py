@@ -19,9 +19,19 @@ class Dev(commands.Cog):
 
     @commands.command()
     async def test(self, ctx):
-        conf = await ConfirmationMenu('delete this role').prompt(ctx)
-        if conf:
-            await ctx.send("Deleted.")
+        await ctx.send("TBD...")
+        # conf = await ConfirmationMenu('delete this role').prompt(ctx)
+        # if conf:
+        #     em = discord.Embed(
+        #         description=f"{CHECK} Deleted {role.mention}.",
+        #         colour=GREEN)
+        #     await ctx.send(embed=em)
+        #
+        # else:
+        #     em = discord.Embed(
+        #         description=f"{ERROR} Action cancelled.",
+        #         colour=RED)
+        #     await ctx.send(embed=em)
 
     @commands.command(
         name='blacklist',

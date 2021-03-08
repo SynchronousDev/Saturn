@@ -197,30 +197,6 @@ class Mod(commands.Cog, name='Moderation'):
         mutes = deepcopy(self.bot.muted_users)
         bans = deepcopy(self.bot.banned_users)
 
-        # bans stuff
-        for key, value in bans.items():
-            if value['duration'] is None:
-                continue
-
-            unban_time = value['at'] + relativedelta(seconds=value['duration'])
-
-            guild = self.bot.get_guild(value['guild_id'])
-            member = self.bot.get_user(value['_id']) or await self.bot.fetch_user(value['_id'])
-
-            if current_time >= unban_time:
-                try:
-                    await self.bot.bans.delete_one({"_id": member.id})
-                    await guild.unban(user=member, reason="Ban time expired")
-
-                except commands.MemberNotFound:
-                    pass
-
-                try:
-                    self.bot.banned_users.pop(member.id)
-
-                except KeyError:
-                    pass
-
         # mutes stuff
         for key, value in mutes.items():
             guild = self.bot.get_guild(value['guild_id'])
@@ -232,27 +208,18 @@ class Mod(commands.Cog, name='Moderation'):
 
             join_delta = dt.utcnow() - member.joined_at
 
-            if value['duration'] is None:
-                if member in guild.members:
-                    if self.bot.muted_users[member.id] and (mute_role not in member.roles):
-                        await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
-
-                        try:
-                            await self.bot.mutes.delete_one({"_id": member.id})
-                            self.bot.muted_users.pop(member.id)
-
-                        except commands.MemberNotFound or KeyError:
-                            pass
-
-                continue
-
-            if mute_role not in member.roles and join_delta > timedelta(seconds=5):
+            if mute_role not in member.roles and join_delta > timedelta(seconds=3):
                 try:
                     await self.bot.mutes.delete_one({"_id": member.id})
                     self.bot.muted_users.pop(member.id)
 
                 except commands.MemberNotFound or KeyError:
                     pass
+
+                continue
+
+            if value['duration'] is None:
+                continue
 
             unmute_time = value['at'] + relativedelta(seconds=value['duration'])
 
@@ -305,6 +272,29 @@ class Mod(commands.Cog, name='Moderation'):
                     if member in guild.members:
                         if mute_role not in member.roles:
                             await member.add_roles(mute_role, reason='Role was manually removed')
+
+        for key, value in bans.items():
+            if value['duration'] is None:
+                continue
+
+            unban_time = value['at'] + relativedelta(seconds=value['duration'])
+
+            guild = self.bot.get_guild(value['guild_id'])
+            member = self.bot.get_user(value['_id']) or await self.bot.fetch_user(value['_id'])
+
+            if current_time >= unban_time:
+                try:
+                    await self.bot.bans.delete_one({"_id": member.id})
+                    await guild.unban(user=member, reason="Ban time expired")
+
+                except commands.MemberNotFound:
+                    pass
+
+                try:
+                    self.bot.banned_users.pop(member.id)
+
+                except KeyError:
+                    pass
 
     @check_mods.before_loop
     async def before_check_mods(self):
@@ -1073,7 +1063,6 @@ class Mod(commands.Cog, name='Moderation'):
             description=f"{CHECK} Kicked {member.mention} from `{vc}`",
             color=GREEN)
         await ctx.send(embed=em)
-
 
 def setup(bot):
     bot.add_cog(Mod(bot))

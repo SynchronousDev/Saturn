@@ -37,6 +37,8 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if not message.guild: return
+
         data = await self.bot.config.find_one({"_id": message.guild.id})
         msg = message.content.lower()
 

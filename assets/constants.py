@@ -9,9 +9,9 @@ DIFF_GREEN = 0x677c1e
 DIFF_RED = 0xFF0000
 GOLD = discord.Colour.gold()
 
-ERROR = '<:SatError:804756495044444160>'
-CHECK = '<:SatCheck:804756481831993374>'
-WARNING = ':warning:'
+ERROR = '<:SaturnCross:818198526923243520>'
+CHECK = '<:SaturnCheck:818198526940807199>'
+WARNING = '<:SaturnAlert:818199916312002631>'
 BLANK = '\uFEFF'
 LOCK = ':lock:'
 UNLOCK = ':unlock:'
