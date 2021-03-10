@@ -28,9 +28,10 @@ class Fun(commands.Cog):
         author = ctx.author
 
         em = discord.Embed(
-            description=f'*"{quote}"*\n\n - {author.mention}',
+            description=f'*"{quote}"*',
             colour=ctx.author.colour
         )
+        em.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
         await channel.send(embed=em)
 
     @commands.command(
@@ -45,6 +46,8 @@ class Fun(commands.Cog):
             description=f'*"{quote}"*',
             colour=MAIN
         )
+        em.set_author(name='Anonymous', icon_url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
+                                                 "thumbs/120/mozilla/36/black-question-mark-ornament_2753.png")
         await channel.send(embed=em)
 
     @commands.command(

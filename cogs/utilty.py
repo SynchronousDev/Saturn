@@ -138,7 +138,7 @@ class Utility(commands.Cog):
         em = discord.Embed(
             colour=MAIN,
         )
-        em.description = f"Couldn't find any deleted messages " \
+        em.description = f"{SATURN} Couldn't find any deleted messages " \
                          f"{f'from {member.mention}' if member else ''}" \
                          f" in the last 10 minutes."
 
@@ -178,7 +178,7 @@ class Utility(commands.Cog):
         em = discord.Embed(
             colour=MAIN,
         )
-        em.description = f"Couldn't find any edited messages " \
+        em.description = f"{SATURN} Couldn't find any edited messages " \
                          f"{f'from {member.mention}' if member else ''}" \
                          f" in the last 10 minutes."
 

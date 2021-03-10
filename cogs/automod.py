@@ -27,7 +27,8 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
                 starts = True
                 prefix = _prefix
 
-        if not starts: return False
+        if not starts:
+            return False
         content = content.replace(prefix, '')
         if self.bot.get_command(content[:2]) or self.bot.get_command(content[:1]):
             return True
@@ -35,9 +36,15 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         else:
             return False
 
+    async def cog_check(self, ctx: commands.Context) -> bool:
+        if not ctx.guild or not ctx.author.guild_permissions.manage_guild:
+            return False
+        return True
+
     @commands.Cog.listener()
     async def on_message(self, message):
-        if not message.guild: return
+        if not message.guild:
+            return
 
         data = await self.bot.config.find_one({"_id": message.guild.id})
         msg = message.content.lower()
@@ -49,19 +56,24 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
                         profanity.load_censor_words(data['words'])
 
                 except KeyError:
-                    profanity.load_censor_words_from_file(self.bot.path + '/assets/profanity.txt')
+                    profanity.load_censor_words_from_file(
+                        self.bot.path + '/assets/profanity.txt')
 
                 # anti-profanity
                 if (
-                    profanity.contains_profanity(msg) or  # message just has plain profanity
-                    profanity.contains_profanity(
-                        msg.replace(' ', '')) or  # message has spaces and remove the spaces
-                    profanity.contains_profanity(
-                        re.sub(r'[^\w\s]', '', msg)) or  # message has punctuation, remove punctuation
-                    profanity.contains_profanity(msg.replace('­', '')) or  # message has invis unicode character
-                    profanity.contains_profanity("".join(collections.OrderedDict.fromkeys(msg)))  # duplicate chars
+                        # message just has plain profanity
+                        profanity.contains_profanity(msg) or
+                        profanity.contains_profanity(
+                            msg.replace(' ', '')) or  # message has spaces and remove the spaces
+                        profanity.contains_profanity(
+                            re.sub(r'[^\w\s]', '', msg)) or  # message has punctuation, remove punctuation
+                        # message has invis unicode character
+                        profanity.contains_profanity(msg.replace('­', '')) or
+                        profanity.contains_profanity(
+                            "".join(collections.OrderedDict.fromkeys(msg)))  # duplicate chars
                 ):
-                    if await self.profanity_command_check(message): return
+                    if await self.profanity_command_check(message):
+                        return
                     await message.delete()
                     await message.channel.send(
                         "{}, That word is not allowed in **{}**!".format(message.author.mention, message.guild))
@@ -83,6 +95,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         aliases=['switch'],
         description='Toggles the anti-profanity system on or off.'
     )
+    @commands.cooldown(1, 3, commands.BucketType.guild)
     async def toggle_profanity(self, ctx):
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
@@ -108,6 +121,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         description='Adds a curse word the anti-profanity system detects. '
                     'Use -default to include the default Saturn wordlist.'
     )
+    @commands.cooldown(1, 3, commands.BucketType.member)
     async def add_curse(self, ctx, *, word: str):
         if word == "-default":
             words = await self.get_censor_words()
@@ -158,6 +172,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         aliases=['remove', 'delcurse', 'removeswear', 'delprofanity'],
         description='Removes a curse word the anti-profanity system detects.'
     )
+    @commands.cooldown(1, 3, commands.BucketType.member)
     async def remove_curse(self, ctx, *, word: str):
         words = await self.get_censor_words()
 
@@ -193,6 +208,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         aliases=['clearsw', 'clearwords', 'clearcurses', 'clearswears'],
         description='Deletes all currently registered words. For deleting one word, use the `profanity delswears `'
     )
+    @commands.cooldown(1, 3, commands.BucketType.member)
     async def clear_curses(self, ctx):
         await self.bot.config.update_one({"_id": ctx.guild.id},
                                          {'$unset': {"words": 1}})
@@ -200,6 +216,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
             description=f"{CHECK} Deleted all recognized curse words.",
             color=GREEN)
         await ctx.send(embed=em)
+
 
 def setup(bot):
     bot.add_cog(AutoMod(bot))

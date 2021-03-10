@@ -6,7 +6,6 @@ from glob import glob
 
 import pytimeparse as pytp
 from dateutil.relativedelta import relativedelta
-from discord.ext import menus
 from discord.ext import tasks
 
 from assets import *
@@ -143,6 +142,107 @@ class ActiveModerationsMenu(menus.ListPageSource):
     async def format_page(self, menu, entries):
         return await self.write_cases(menu, entries)
 
+async def kick_members(bot, ctx, member, reason):
+    """
+    Kick members
+    """
+    await create_log(bot, member, ctx.guild, 'kick', ctx.author, reason)
+    await member.kick(reason=f"{ctx.author} - " + reason)
+
+async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _type='ban'):
+    """
+    Ban members
+    """
+    if time:
+        schema = {
+            '_id': member.id,
+            'at': dt.utcnow(),
+            'duration': time or None,
+            'moderator': ctx.author.id,
+            'guild_id': ctx.guild.id,
+            'type': 'ban'
+        }
+        await bot.bans.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
+        bot.banned_users[member.id] = schema
+
+    await create_log(bot, member, ctx.guild, _type, ctx.author, reason)
+    await ctx.guild.ban(member, reason=f"{ctx.author} - " + reason, delete_message_days=delete_days)
+    if _type == 'softban':
+        await asyncio.sleep(0.5)
+        await ctx.guild.unban(member, reason=f"{ctx.author} - Softban")
+
+async def unban_members(bot, ctx, member, reason):
+    if isinstance(member, discord.User):
+        try:
+            await ctx.guild.unban(member, reason=f"{ctx.author} - " + reason)
+
+        except Exception:
+            raise commands.MemberNotFound(member)
+
+    elif isinstance(member, int):
+        user = await bot.fetch_user(member)
+        if not user:
+            raise commands.MemberNotFound(member)
+
+        try:
+            await ctx.guild.unban(user, reason=f"{ctx.author} - " + reason)
+
+        except Exception:
+            raise commands.MemberNotFound(member)
+
+    user = bot.get_user(member) or member
+
+    try:
+        bot.banned_users.pop(user.id)
+
+    except KeyError:
+        pass
+
+    await create_log(bot, member, ctx.guild, "unban", ctx.author, reason)
+
+
+async def mute_members(bot, ctx, member: discord.Member, reason, mute_role, time=None):
+    schema = {
+        '_id': member.id,
+        'at': dt.utcnow(),
+        'duration': time or None,
+        'moderator': ctx.author.id,
+        'guild_id': ctx.guild.id,
+        'type': 'mute'
+    }
+
+    await member.add_roles(mute_role,
+                           reason=f"{ctx.author}" + f'Mute lasting {convert_time(time)}'
+                                                    f', for {reason}.')
+
+    await bot.mutes.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
+    bot.muted_users[member.id] = schema
+    await create_log(
+        bot, member, ctx.guild, 'mute', ctx.author, reason, convert_time(time))
+
+async def unmute_members(bot, ctx, member: discord.Member, reason, mute_role):
+    try:
+        await bot.mutes.delete_one({"_id": member.id})
+        bot.muted_users.pop(member.id)
+
+    except commands.MemberNotFound or KeyError:
+        pass
+
+    await member.remove_roles(mute_role, reason=f"{ctx.author} - " + reason)
+
+    try:
+        await create_log(bot, member, ctx.guild, 'unmute', ctx.author, reason)
+
+    except discord.Forbidden:
+        pass
+
+async def warn_members(bot, ctx, member, reason):
+    try:
+        await create_log(bot, member, ctx.guild, 'warn', ctx.author, reason)
+
+    except discord.Forbidden:
+        pass
+
 # kinda useful for the moderation stuff
 # I have another check in the mute command but whatever lol
 async def mod_check(ctx, member):
@@ -176,6 +276,7 @@ class Mod(commands.Cog, name='Moderation'):
         self.bot = bot
         self.purge_task = self.purge_files.start()
         self.mod_task = self.update_modlogs.start()
+        self.check_mods = self.check_mods.start()
 
     def cog_unload(self):
         self.mod_task.cancel()
@@ -224,37 +325,16 @@ class Mod(commands.Cog, name='Moderation'):
             unmute_time = value['at'] + relativedelta(seconds=value['duration'])
 
             if current_time >= unmute_time:
-                if member:
-                    try:
-                        if self.bot.muted_users[member.id] and (mute_role not in member.roles) \
-                                and member in guild.members:
-                            try:
-                                await self.bot.mutes.delete_one({"_id": member.id})
-                                self.bot.muted_users.pop(member.id)
-
-                            except commands.MemberNotFound or KeyError:
-                                pass
-                        else:
-                            pass
-
-                    except AttributeError:
-                        pass
-
                 try:
                     await self.bot.mutes.delete_one({"_id": member.id})
+                    self.bot.muted_users.pop(member.id)
 
-                except commands.MemberNotFound:
+                except commands.MemberNotFound or KeyError:
                     pass
                 
                 if isinstance(member, discord.Member):
                     if mute_role in member.roles:
                         await member.remove_roles(mute_role, reason='Mute time expired')
-
-                try:
-                    self.bot.muted_users.pop(member.id)
-
-                except KeyError:
-                    pass
 
             else:
                 if member in guild.members:
@@ -268,11 +348,6 @@ class Mod(commands.Cog, name='Moderation'):
                         except commands.MemberNotFound or KeyError:
                             pass
 
-                else:
-                    if member in guild.members:
-                        if mute_role not in member.roles:
-                            await member.add_roles(mute_role, reason='Role was manually removed')
-
         for key, value in bans.items():
             if value['duration'] is None:
                 continue
@@ -285,15 +360,10 @@ class Mod(commands.Cog, name='Moderation'):
             if current_time >= unban_time:
                 try:
                     await self.bot.bans.delete_one({"_id": member.id})
+                    self.bot.banned_users.pop(member.id)
                     await guild.unban(user=member, reason="Ban time expired")
 
-                except commands.MemberNotFound:
-                    pass
-
-                try:
-                    self.bot.banned_users.pop(member.id)
-
-                except KeyError:
+                except discord.NotFound or commands.MemberNotFound or KeyError:
                     pass
 
     @check_mods.before_loop
@@ -428,8 +498,7 @@ class Mod(commands.Cog, name='Moderation'):
                 colour=GREEN)
             em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
             await ctx.send(embed=em)
-            await create_log(self.bot, member, ctx.guild, 'kick', ctx.author, reason)
-            await member.kick(reason=f"{ctx.author}" + reason)
+            await kick_members(self.bot, ctx, member, reason)
 
     @commands.command(
         name='ban',
@@ -450,24 +519,15 @@ class Mod(commands.Cog, name='Moderation'):
             return await ctx.send(embed=em)
 
         if isinstance(member, discord.Member):
-            if await mod_check(ctx, member):
-                em = discord.Embed(
-                    description=f"{CHECK} Banned {member.mention} for `{reason}`",
-                    timestamp=dt.utcnow(),
-                    colour=GREEN)
-                await ctx.send(embed=em)
-                em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
-                await create_log(self.bot, member, ctx.guild, 'ban', ctx.author, reason)
-                await member.ban(reason=f"{ctx.author}" + reason, delete_message_days=delete_days)
+            if await mod_check(ctx, member): pass
 
-        elif isinstance(member, discord.User):
-            em = discord.Embed(
-                description=f"{CHECK} Banned {member.mention} for `{reason}`",
-                timestamp=dt.utcnow(),
-                colour=GREEN)
-            await ctx.send(embed=em)
-            await create_log(self.bot, member, ctx.guild, 'ban', ctx.author, reason)
-            await ctx.guild.ban(member, reason=f"{ctx.author}" + reason, delete_message_days=delete_days)
+        em = discord.Embed(
+            description=f"{CHECK} Banned {member.mention} for `{reason}`",
+            timestamp=dt.utcnow(),
+            colour=GREEN)
+        await ctx.send(embed=em)
+        em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
+        await ban_members(self.bot, ctx, member, reason, delete_days=delete_days)
 
     @commands.command(
         name='softban',
@@ -483,13 +543,9 @@ class Mod(commands.Cog, name='Moderation'):
                 description=f"{CHECK} Softbanned {member.mention} for `{reason}`",
                 timestamp=dt.utcnow(),
                 colour=GREEN)
-            await ctx.send(embed=em)
             em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
-            await create_log(self.bot, member, ctx.guild, 'softban', ctx.author, reason)
-            await member.ban(reason=f"{ctx.author}" + reason, delete_message_days=7)
-            await asyncio.sleep(0.5)
-            await member.unban(reason=f"{ctx.author}" +
-                                      'Softban actioned by {0} (ID {1})'.format(ctx.author, ctx.author.id))
+            await ctx.send(embed=em)
+            await ban_members(self.bot, ctx, member, reason, delete_days=7, _type='softban')
 
     @commands.command(
         name='tempban',
@@ -506,72 +562,32 @@ class Mod(commands.Cog, name='Moderation'):
         except IndexError:
             time = None
 
-        if not time:
-            reason = ' '.join(args)
-
-        else:
-            reason = ' '.join(args[1:])
-
-        if not reason:
-            reason = 'no reason provided'
-
-        schema = {
-            '_id': member.id,
-            'at': dt.utcnow(),
-            'duration': time or None,
-            'moderator': ctx.author.id,
-            'guild_id': ctx.guild.id,
-            'type': 'ban'
-        }
+        if not time: reason = ' '.join(args)
+        else: reason = ' '.join(args[1:])
+        if not reason: reason = 'no reason provided'
 
         if isinstance(member, discord.Member):
             if await mod_check(ctx, member):
-                try:
-                    if self.bot.banned_users[member.id]:
-                        em = discord.Embed(
-                            description=f"{ERROR} {member.mention} is already banned! "
-                                        f"Talk about adding insult to injury.",
-                            colour=RED)
-                        return await ctx.send(embed=em)
-
-                except KeyError:
-                    pass
-
-                await self.bot.bans.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
-                self.bot.banned_users[member.id] = schema
-                await create_log(self.bot, member, ctx.guild, 'tempban',
-                                 ctx.author, reason, convert_time(time))
-                await member.ban(reason=f"{ctx.author}" + reason)
-                em = discord.Embed(
-                    description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
-                                f", for `{reason}`", timestamp=dt.utcnow(),
-                    colour=GREEN)
-                em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
-                await ctx.send(embed=em)
-
-        elif isinstance(member, discord.User):
-            try:
-                if self.bot.banned_users[member.id]:
-                    em = discord.Embed(
-                        description=f"{ERROR} {member.mention} is already banned! "
-                                    f"Talk about adding insult to injury.",
-                        colour=RED)
-                    return await ctx.send(embed=em)
-
-            except KeyError:
                 pass
 
-            await self.bot.bans.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
-            self.bot.banned_users[member.id] = schema
-            await create_log(self.bot, member, ctx.guild, 'tempban',
-                             ctx.author, reason, convert_time(time))
-            await ctx.guild.ban(user=member, reason=f"{ctx.author}" + reason)
-            em = discord.Embed(
-                description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
-                            f", for `{reason}`", timestamp=dt.utcnow(),
-                colour=GREEN)
-            em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
-            await ctx.send(embed=em)
+        try:
+            if self.bot.banned_users[member.id]:
+                em = discord.Embed(
+                    description=f"{ERROR} {member.mention} is already banned! "
+                                f"Talk about adding insult to injury.",
+                    colour=RED)
+                return await ctx.send(embed=em)
+
+        except KeyError:
+            pass
+
+        await ban_members(self.bot, ctx, member, reason, time, delete_days=7, _type='tempban')
+        em = discord.Embed(
+            description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
+                        f", for `{reason}`", timestamp=dt.utcnow(),
+            colour=GREEN)
+        em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
+        await ctx.send(embed=em)
 
     @commands.command(
         name='unban',
@@ -583,38 +599,12 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.has_permissions(ban_members=True)
     async def unban_cmd(self, ctx, member: t.Union[discord.User, int],
                         *, reason: t.Optional[str] = 'no reason provided'):
-        if isinstance(member, discord.User):
-            try:
-                await ctx.guild.unban(member, reason=f"{ctx.author}" + reason)
-
-            except Exception:
-                raise commands.MemberNotFound(member)
-
-        elif isinstance(member, int):
-            user = await self.bot.fetch_user(member)
-            if not user:
-                raise commands.MemberNotFound(member)
-
-            try:
-                await ctx.guild.unban(user, reason=f"{ctx.author}" + reason)
-
-            except Exception:
-                raise commands.MemberNotFound(member)
-
-        user = self.bot.get_user(member) or member
-
-        try:
-            self.bot.banned_users.pop(user.id)
-
-        except KeyError:
-            pass
-
+        await unban_members(self.bot, ctx, member, reason)
         em = discord.Embed(
             description=f"{CHECK} Unbanned {member.mention} for `{reason}`",
             timestamp=dt.utcnow(),
             colour=GREEN)
         em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
-        await create_log(self.bot, member, ctx.guild, "unban", ctx.author, reason)
         await ctx.send(embed=em)
 
     @commands.command(
@@ -632,11 +622,7 @@ class Mod(commands.Cog, name='Moderation'):
                 colour=GREEN)
             em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
             await ctx.send(embed=em)
-            try:
-                await create_log(self.bot, member, ctx.guild, 'warn', ctx.author, reason)
-
-            except discord.Forbidden:
-                pass
+            await warn_members(self.bot, ctx, member, reason)
 
     @commands.command(
         name='mute',
@@ -654,14 +640,9 @@ class Mod(commands.Cog, name='Moderation'):
         except IndexError:
             time = None
 
-        if not time:
-            reason = ' '.join(args)
-
-        else:
-            reason = ' '.join(args[1:])
-
-        if not reason:
-            reason = 'no reason provided'
+        if not time: reason = ' '.join(args)
+        else: reason = ' '.join(args[1:])
+        if not reason: reason = 'no reason provided'
 
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
@@ -670,7 +651,7 @@ class Mod(commands.Cog, name='Moderation'):
                 em = discord.Embed(
                     description=f"{SATURN} Couldn't find a mute role to assign to {member.mention}, making one now...",
                     colour=MAIN)
-                msg = await ctx.send(embed=em)
+                msg = await ctx.channel.send(embed=em)
 
                 mute_role = await create_mute_role(self.bot, ctx)
 
@@ -699,29 +680,13 @@ class Mod(commands.Cog, name='Moderation'):
                 except KeyError:
                     pass
 
-                schema = {
-                    '_id': member.id,
-                    'at': dt.utcnow(),
-                    'duration': time or None,
-                    'moderator': ctx.author.id,
-                    'guild_id': ctx.guild.id,
-                    'type': 'mute'
-                }
-                await member.add_roles(mute_role,
-                                       reason=f"{ctx.author}" + f'Muted by {ctx.author} lasting `{convert_time(time)}`'
-                                                                f', for {reason}.')
-
-                await self.bot.mutes.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
-                self.bot.muted_users[member.id] = schema
                 em = discord.Embed(
                     description=f"{CHECK} Muted {member.mention} lasting `{convert_time(time)}`"
                                 f", for `{reason}`", timestamp=dt.utcnow(),
                     colour=GREEN)
                 em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
                 await ctx.send(embed=em)
-
-                await create_log(
-                    self.bot, member, ctx.guild, 'mute', ctx.author, reason, convert_time(time))
+                await mute_members(self.bot, ctx, member, reason, mute_role, time)
 
             else:
                 em = discord.Embed(
@@ -743,47 +708,24 @@ class Mod(commands.Cog, name='Moderation'):
             mute_role = ctx.guild.get_role(data['mute_role'])
             if not mute_role:
                 em = discord.Embed(
-                    description=f"{SATURN} Couldn't find a mute role to assign to {member.mention}, making one now...",
-                    colour=MAIN)
-                msg = await ctx.send(embed=em)
-
-                mute_role = await create_mute_role(self.bot, ctx)
-
-                await msg.delete()
+                    description=f"{ERROR} This guild does not have a mute role set up.",
+                    colour=RED)
+                return await ctx.send(embed=em)
 
         except KeyError:
             em = discord.Embed(
-                description=f"{SATURN} Couldn't find a mute role to assign to {member.mention}, making one now...",
-                colour=MAIN)
-            msg = await ctx.send(embed=em)
-
-            mute_role = await create_mute_role(self.bot, ctx)
-
-            await msg.delete()
+                description=f"{ERROR} This guild does not have a mute role set up.",
+                colour=RED)
+            return await ctx.send(embed=em)
 
         if await mod_check(ctx, member):
             if mute_role in member.roles:
+                await unmute_members(self.bot, ctx, member, reason, mute_role)
                 em = discord.Embed(
-                    description=f"{CHECK} Unmuted {member.mention} for `{reason}`",
-                    timestamp=dt.utcnow(),
+                    description=f"{CHECK} Unmuted {member.mention} for `{reason}`", timestamp=dt.utcnow(),
                     colour=GREEN)
                 em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
                 await ctx.send(embed=em)
-
-                try:
-                    await self.bot.mutes.delete_one({"_id": member.id})
-                    self.bot.muted_users.pop(member.id)
-
-                except commands.MemberNotFound or KeyError:
-                    pass
-
-                await member.remove_roles(mute_role, reason=f"{ctx.author}" + reason)
-
-                try:
-                    await create_log(self.bot, member, ctx.guild, 'unmute', ctx.author, reason)
-
-                except discord.Forbidden:
-                    pass
 
             else:
                 try:
@@ -1057,12 +999,13 @@ class Mod(commands.Cog, name='Moderation'):
                 color=RED)
             return await ctx.send(embed=em)
 
-        await member.move_to(channel=None, reason=f"{ctx.author}" + reason)
+        await member.move_to(channel=None, reason=f"{ctx.author} - " + reason)
 
         em = discord.Embed(
             description=f"{CHECK} Kicked {member.mention} from `{vc}`",
             color=GREEN)
         await ctx.send(embed=em)
+
 
 def setup(bot):
     bot.add_cog(Mod(bot))

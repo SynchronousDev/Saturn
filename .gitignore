@@ -1,5 +1,4 @@
 __pycache__
-idea
 /assets/config.json
 .vscode
 oauth.py
@@ -11,3 +10,4 @@ discord.log
 assets/song.mp3
 assets/profanity.txt
 assets/profile.jpg
+test.py

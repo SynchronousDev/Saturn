@@ -73,7 +73,7 @@ bot.spotify_client_secret = bot.configuration['spotify_client_secret']
 async def on_ready():
     # The on ready event. Fires when the bot is ready
     print(f"------\nLogged in as {bot.user.name}"
-          f" (ID {bot.user.id})\n------\nTime: {dt.now()}\n------")
+          f" (ID {bot.user.id})\n------\nTime: {dt.now()}")
 
     data = []
     async for document in bot.mutes.find({}):
@@ -105,9 +105,7 @@ async def on_disconnect():
 @tasks.loop(minutes=1)
 async def change_pres():
     await bot.change_presence(
-        activity=discord.Game(name=f"in {len(bot.guilds)} server and {len(bot.users)} users"
-                                   f" | {default_prefix}help | Version {bot.__version__}"))
-
+        activity=discord.Game(name=f"{default_prefix}help | V{bot.__version__}"))
 
 @bot.before_invoke
 async def blacklist_check(ctx):

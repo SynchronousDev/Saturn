@@ -89,7 +89,7 @@ class Events(commands.Cog):
                 timestamp=dt.utcnow()
             )
             em.set_thumbnail(url=member.avatar_url)
-            em.add_field(name='Account Created At', value=member.created_at)
+            em.add_field(name='Account Created At', value=str(member.created_at)[:-16])
             em.set_footer(text=f"Member no. {len(guild.members)} | Invited by {inviter}")
             await member_logs.send(embed=em)  # send the member embed thing
 
