@@ -19,7 +19,8 @@ class Events(commands.Cog):
         ]
         self.tracker = DiscordUtils.InviteTracker(self.bot)
 
-    @commands.Cog.listener()
+    @commands.Cog.listener()  # invite tracking
+    # may implement some better invite tracking later on, too lazy lol
     async def on_ready(self):
         await self.tracker.cache_invites()
 

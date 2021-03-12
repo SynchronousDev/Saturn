@@ -42,7 +42,7 @@ class GuildPunishmentsMenu(menus.ListPageSource):
                 user = self.bot.get_user(case['member']) or (await self.bot.fetch_user(case['member']))
                 reason = case['reason']
                 em.add_field(
-                    name=f'{case_id}.  {action} on {user}',
+                    name=f'{case_id}. {action} on {user}',
                     value=reason + ' - ' + '<@!{}>'.format(case['moderator']), inline=False)
 
         return em
@@ -146,8 +146,8 @@ async def kick_members(bot, ctx, member, reason):
     """
     Kick members
     """
-    await create_log(bot, member, ctx.guild, 'kick', ctx.author, reason)
-    await member.kick(reason=f"{ctx.author} - " + reason)
+    await create_log(bot, member, ctx.guild, 'kick', ctx.author if ctx.author != member else ctx.guild.me, reason)
+    await member.kick(reason=f"{ctx.author if ctx.author != member else ctx.guild.me} - " + reason)
 
 async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _type='ban'):
     """
@@ -165,13 +165,17 @@ async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _ty
         await bot.bans.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
         bot.banned_users[member.id] = schema
 
-    await create_log(bot, member, ctx.guild, _type, ctx.author, reason)
-    await ctx.guild.ban(member, reason=f"{ctx.author} - " + reason, delete_message_days=delete_days)
+    await create_log(bot, member, ctx.guild, _type, ctx.author if ctx.author != member else ctx.guild.me, reason)
+    await ctx.guild.ban(member, reason=f"{ctx.author if ctx.author != member else ctx.guild.me} - "
+                                       + reason, delete_message_days=delete_days)
     if _type == 'softban':
         await asyncio.sleep(0.5)
-        await ctx.guild.unban(member, reason=f"{ctx.author} - Softban")
+        await ctx.guild.unban(member, reason=f"{ctx.author} - softban")
 
 async def unban_members(bot, ctx, member, reason):
+    """
+    Unban members
+    """
     if isinstance(member, discord.User):
         try:
             await ctx.guild.unban(member, reason=f"{ctx.author} - " + reason)
@@ -185,7 +189,7 @@ async def unban_members(bot, ctx, member, reason):
             raise commands.MemberNotFound(member)
 
         try:
-            await ctx.guild.unban(user, reason=f"{ctx.author} - " + reason)
+            await ctx.guild.unban(user, reason=f"{ctx.author if ctx.author != member else ctx.guild.me} - " + reason)
 
         except Exception:
             raise commands.MemberNotFound(member)
@@ -198,10 +202,13 @@ async def unban_members(bot, ctx, member, reason):
     except KeyError:
         pass
 
-    await create_log(bot, member, ctx.guild, "unban", ctx.author, reason)
+    await create_log(bot, member, ctx.guild, "unban", ctx.author if ctx.author != member else ctx.guild.me, reason)
 
 
 async def mute_members(bot, ctx, member: discord.Member, reason, mute_role, time=None):
+    """
+    Mute members
+    """
     schema = {
         '_id': member.id,
         'at': dt.utcnow(),
@@ -212,15 +219,19 @@ async def mute_members(bot, ctx, member: discord.Member, reason, mute_role, time
     }
 
     await member.add_roles(mute_role,
-                           reason=f"{ctx.author}" + f'Mute lasting {convert_time(time)}'
-                                                    f', for {reason}.')
+                           reason=f"{ctx.author if ctx.author != member else 'automod'} - "
+                                  + f'Mute lasting {convert_time(time)}, for {reason}.')
 
     await bot.mutes.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
     bot.muted_users[member.id] = schema
     await create_log(
-        bot, member, ctx.guild, 'mute', ctx.author, reason, convert_time(time))
+        bot, member, ctx.guild, 'mute', ctx.author if
+        ctx.author != member else ctx.guild.me, reason, convert_time(time))
 
 async def unmute_members(bot, ctx, member: discord.Member, reason, mute_role):
+    """
+    Unmute members
+    """
     try:
         await bot.mutes.delete_one({"_id": member.id})
         bot.muted_users.pop(member.id)
@@ -228,8 +239,8 @@ async def unmute_members(bot, ctx, member: discord.Member, reason, mute_role):
     except commands.MemberNotFound or KeyError:
         pass
 
-    await member.remove_roles(mute_role, reason=f"{ctx.author} - " + reason)
-
+    await member.remove_roles(mute_role,
+                              reason=f"{ctx.author if ctx.author != member else 'automod'} - {reason}")
     try:
         await create_log(bot, member, ctx.guild, 'unmute', ctx.author, reason)
 
@@ -237,8 +248,11 @@ async def unmute_members(bot, ctx, member: discord.Member, reason, mute_role):
         pass
 
 async def warn_members(bot, ctx, member, reason):
+    """
+    Warn members
+    """
     try:
-        await create_log(bot, member, ctx.guild, 'warn', ctx.author, reason)
+        await create_log(bot, member, ctx.guild, 'warn', ctx.author if ctx.author != member else 'automod', reason)
 
     except discord.Forbidden:
         pass

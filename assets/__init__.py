@@ -5,8 +5,7 @@ import logging
 
 """
 The assets package for this bot
-Contains some simple stuff to help it run and stuffz
+Contains some simple stuff to help it run and stuff
 """
 
-# e
 

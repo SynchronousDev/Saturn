@@ -358,11 +358,11 @@ async def create_log(bot, member, guild, action, moderator, reason, duration=Non
 async def get_member_mod_logs(bot, member, guild):
     """
     Fetch mod logs for a specific guild
-    Will only fetch the first 100 punishments, because ya know, operation times suck
+    Will only fetch the first 10000 punishments, because ya know, operation times suck
     """
     logs = []
     cursor = bot.mod.find({"member": member.id, "guild_id": guild.id})
-    for document in await cursor.to_list(length=100):
+    for document in await cursor.to_list(length=10000):
         logs.append(document)
 
     return logs
@@ -374,7 +374,7 @@ async def get_guild_mod_logs(bot, guild):
     """
     logs = []
     cursor = bot.mod.find({"guild_id": guild.id})
-    for document in await cursor.to_list(length=100):
+    for document in await cursor.to_list(length=10000):
         logs.append(document)
 
     return logs

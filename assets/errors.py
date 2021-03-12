@@ -1,9 +1,6 @@
 from discord.ext import commands
 
-"""
-Some custom erros I can raise for stuff
-Wooooooooooooooo
-"""
+# custom errors
 
 class AlreadyConnectedToChannel(commands.CommandError):
     """Bot is already connected to another channel"""
@@ -25,52 +22,6 @@ class BotRoleNotHighEnough(commands.CommandError):
     """Raises when the bot's role is not higher than the target's role"""
     pass
 
-class TrackDoesNotExist(commands.CommandError):
-    """Raises when a remove_track is performed and no tracks were found"""
-    pass
-
-class NotConnectedToChannel(commands.CommandError):
-    """Not connected to a voice channel"""
-    pass
-
-class BotNotConnectedToChannel(commands.CommandError):
-    """The bot is not connected to a voice channel"""
-    pass
-
-class QueueIsEmpty(commands.CommandError):
-    """Raises when, as the name implies, the queue is empty"""
-    pass
-
-class PlayerIsAlreadyStopped(commands.CommandError):
-    """The player is already stopped"""
-
-class PlayerIsAlreadyResumed(commands.CommandError):
-    """The player is already unpaused"""
-
 class Blacklisted(commands.CommandError):
     """Raises when a member is blacklisted"""
-    pass
-
-class NoTracksFound(commands.CommandError):
-    """Raises when a ytsearch:query is performed and no tracks were found"""
-    pass
-
-class UrlNotFound(commands.CommandError):
-    """Raises when an invalid url is parsed"""
-    pass
-
-class PlayerIsAlreadyPaused(commands.CommandError):
-    """The player is already paused"""
-    pass
-
-class NoMoreTracks(commands.CommandError):
-    """There are no more tracks in the queue"""
-    pass
-
-class NoPreviousTracks(commands.CommandError):
-    """Raises when the `previous` command is called and there are no more tracks in the queue"""
-    pass
-
-class InvalidRepeatMode(commands.CommandError):
-    """Raises when an invalid repeat mode was specified"""
     pass

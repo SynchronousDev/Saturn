@@ -1,25 +1,23 @@
 import json
-# noinspection PyUnresolvedReferences
 import logging
 import os
 from pathlib import Path
 
-# noinspection PyUnresolvedReferences
-import discord
 import motor.motor_asyncio
-# noinspection PyUnresolvedReferences
-from discord.ext import commands
 from discord.ext import tasks
+from discord.ext import commands
+import discord
 
 from assets import *
 
-# import speed lol
-
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
-# noinspection SpellCheckingInspection
-handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+
+formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(module)s | %(message)s")
+
+handler = logging.FileHandler(filename='saturn.log', encoding='utf-8', mode='w')
+handler.setFormatter(formatter)
+
 logger.addHandler(handler)
 
 default_prefix = "s."

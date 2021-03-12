@@ -10,15 +10,6 @@ log = logging.getLogger(__name__)
 class ErrorHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.cooldown_messages = [
-            "Too fast!",
-            "Woah, too quick there!",
-            "Slow down!",
-            "This command's on cooldown!",
-            "Do me a favour and slow down a little, you're overheating the systems.",
-            "Congrats, you earned yourself an extra millisecond of cooldown.",
-            "Take a chill pill!"
-        ]
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, exc):
@@ -42,7 +33,7 @@ class ErrorHandler(commands.Cog):
 
         elif isinstance(exc, commands.CommandOnCooldown):
             em = Embed(
-                description=f"{ERROR} {random.choice(self.cooldown_messages)} "
+                description=f"{ERROR} Woah there, too fast! "
                             f"Please try again in `{(convert_time(round(exc.retry_after)))}`",
                 colour=RED)
             await ctx.send(embed=em)
@@ -134,78 +125,6 @@ class ErrorHandler(commands.Cog):
             em = discord.Embed(
                     description=f"{ERROR} You are blacklisted.",
                     colour=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, NoMoreTracks):
-            em = discord.Embed(
-                description=f"{ERROR} There are no more tracks in the queue.",
-                color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, NoPreviousTracks):
-            em = discord.Embed(
-                description=f"{ERROR} There are no previous tracks in the queue.",
-                color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, InvalidRepeatMode):
-            em = discord.Embed(
-                description=f"{ERROR} Invalid repeat mode specified.",
-                color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, PlayerIsAlreadyPaused):
-            em = discord.Embed(
-                description=f"{ERROR} Player is already paused.",
-                color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, PlayerIsAlreadyResumed):
-            em = discord.Embed(
-                description=f"{ERROR} Player is already playing.",
-                color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, PlayerIsAlreadyStopped):
-            em = discord.Embed(
-                description=f"{ERROR} Player is already stopped.",
-                color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, QueueIsEmpty):
-            em = discord.Embed(
-                description=f"{ERROR} The queue is empty.",
-                color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, NoTracksFound):
-            em = discord.Embed(
-                description=f"{ERROR} No tracks were found.",
-                color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, AlreadyConnectedToChannel):
-            em = discord.Embed(
-                    description=f"{ERROR} Already connected to a channel.",
-                    color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, NotConnectedToChannel):
-            em = discord.Embed(
-                    description=f"{ERROR} You are not in a voice channel.",
-                    color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, BotNotConnectedToChannel):
-            em = discord.Embed(
-                    description=f"{ERROR} I am not connected to a voice channel.",
-                    color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, TrackDoesNotExist):
-            em = discord.Embed(
-                    description=f"{ERROR} Track does not exist.",
-                    color=RED)
             await ctx.send(embed=em)
 
         elif isinstance(exc, RoleNotHighEnough):
