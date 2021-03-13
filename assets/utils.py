@@ -334,6 +334,7 @@ async def create_log(bot, member, guild, action, moderator, reason, duration=Non
         timestamp=dt.utcnow()
     )
     em.set_thumbnail(url=emote)
+    em.set_author(icon_url=member.avatar_url, name=member)
     em.set_footer(text='Case no. {}'.format(await get_last_case_id(bot, guild)))
     em.add_field(name='Member', value=member.mention, inline=False)
     em.add_field(name='Moderator', value=moderator.mention, inline=False)

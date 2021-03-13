@@ -30,7 +30,6 @@ async def get_prefix(bot, message):
     """
     # sphagetto code galore
     if not message.guild: return commands.when_mentioned_or(default_prefix)(bot, message)
-    # noinspection PyUnusedLocal
     try:
         data = await bot.config.find_one({"_id": message.guild.id})
 
@@ -42,94 +41,110 @@ async def get_prefix(bot, message):
         pre = flatten(data['prefix'])
         return commands.when_mentioned_or(*pre)(bot, message)
 
-    # noinspection PyUnusedLocal
-    except Exception as e:
+    except Exception:
         return commands.when_mentioned_or(default_prefix)(bot, message)
 
-bot = commands.Bot(
-    command_prefix=get_prefix,
-    intents=discord.Intents.all(),
-    case_insensitive=True,
-    owner_ids=[531501355601494026, 704355591686062202])
-bot.path = Path(__file__).parents[0]
-bot.path = str(bot.path)
-bot.__version__ = '1.1.0'
 
-bot.configuration = json.load(open(bot.path + '/assets/config.json'))
+# noinspection PyMethodMayBeStatic
+class SaturnBot(commands.Bot):
+    def __init__(self):
+        super().__init__(
+            command_prefix=get_prefix,
+            description="An all-in-one discord bot suited to your needs.",
+            intents=discord.Intents.all(),
+            case_insensitive=True,
+            owner_ids=[531501355601494026, 704355591686062202]
+        )
+        self.ready = False
 
-bot.muted_users = {}
-bot.banned_users = {}
-bot.snipes = {}
-bot.edit_snipes = {}
+        self.path = Path(__file__).parents[0]
+        self.path = str(self.path)
+        self.__version__ = '1.1.0'
+        print("Loading info from config.json...")
+        self.configuration = json.load(open(self.path + '/assets/config.json'))
+        self.spotify_client_secret = self.configuration['spotify_client_secret']
+        self.spotify_client_id = self.configuration['spotify_client_id']
+        self.connection_url = self.configuration['mongo']
+        self.config_token = self.configuration['token']
 
-bot.config_token = bot.configuration['token']
-bot.connection_url = bot.configuration['mongo']
-bot.spotify_client_id = bot.configuration['spotify_client_id']
-bot.spotify_client_secret = bot.configuration['spotify_client_secret']
+        self.edit_snipes = {}
+        self.snipes = {}
+        self.banned_users = {}
+        self.muted_users = {}
 
-@bot.event
-async def on_ready():
-    # The on ready event. Fires when the bot is ready
-    print(f"------\nLogged in as {bot.user.name}"
-          f" (ID {bot.user.id})\n------\nTime: {dt.now()}")
+        print("Initializing database...")
+        self.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(self.connection_url))
+        self.db = self.mongo["saturn"]
+        self.config = self.db["config"]
+        self.mutes = self.db["mutes"]
+        self.blacklists = self.db["blacklists"]
+        self.tags = self.db["tags"]
+        self.mod = self.db["mod"]
+        self.bans = self.db["bans"]
+        self.starboard = self.db["starboard"]
 
-    data = []
-    async for document in bot.mutes.find({}):
-        data.append(document)
+    def run(self):
+        print("Running Saturn...")
+        super().run(self.config_token, reconnect=True)
 
-    for mute in data:
-        bot.muted_users[mute["_id"]] = mute
+    async def process_commands(self, message):
+        ctx = await self.get_context(message)
 
-    bans = []
-    async for document in bot.bans.find({}):
-        bans.append(document)
+        if ctx.command and ctx.guild:
+            if await self.blacklists.find_one({"_id": ctx.author.id}):
+                raise Blacklisted
 
-    for ban in bans:
-        bot.banned_users[ban["_id"]] = ban
+            elif not self.ready:
+                em = discord.Embed(
+                    description=f"{SATURN} I'm not quite ready to receive commands yet!",
+                    colour=MAIN)
+                return await ctx.send(embed=em)
 
+            if ctx.valid:
+                await self.invoke(ctx)
 
-@bot.event
-async def on_connect():
-    change_pres.start()
-    print("------\nSaturn connected")
+    async def on_connect(self):
+        self.change_pres.start()
+        print("Saturn connected")
 
+    async def on_disconnect(self):
+        self.change_pres.cancel()
+        print("Saturn disconnected")
 
-@bot.event
-async def on_disconnect():
-    print("------\nSaturn disconnected")
-    change_pres.cancel()
+    async def on_ready(self):
+        if not self.ready:
+            self.ready = True
+            for _file in os.listdir(self.path + '/cogs'):
+                if _file.endswith('.py') and not _file.startswith('_'):
+                    print(f"Loading {_file[:-3]} cog...")
+                    self.load_extension(f"cogs.{_file[:-3]}")  # load all of the cogs
 
+            self.load_extension('jishaku')  # i have jishaku here because i find it quite useful
 
-@tasks.loop(minutes=1)
-async def change_pres():
-    await bot.change_presence(
-        activity=discord.Game(name=f"{default_prefix}help | V{bot.__version__}"))
+            mutes, bans = [], []
+            print("Initializing mute and ban cache...")
+            async for _doc in self.mutes.find({}): mutes.append(_doc)
+            for mute in mutes: self.muted_users[mute["_id"]] = mute
+            async for _doc in self.bans.find({}): bans.append(_doc)
+            for ban in bans: self.banned_users[ban["_id"]] = ban
 
-@bot.before_invoke
-async def blacklist_check(ctx):
-    if await bot.blacklists.find_one({"_id": ctx.author.id}) is not None:
-        raise Blacklisted
+            print("Saturn is ready")
 
-    else:
-        pass
+        else:
+            print("Saturn reconnected")
+
+    async def on_message(self, message):
+        await self.process_commands(message)
+
+    @tasks.loop(minutes=1)
+    async def change_pres(self):
+        await self.change_presence(
+            activity=discord.Game(name=f"{default_prefix}help | V{self.__version__}"))
+
 
 if __name__ == '__main__':
     """Load all of the cogs and initialize the databases"""
-    bot.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(bot.connection_url))
-    bot.db = bot.mongo["saturn"]
-    bot.config = bot.db["config"]
-    bot.mutes = bot.db["mutes"]
-    bot.blacklists = bot.db["blacklists"]
-    bot.tags = bot.db["tags"]
-    bot.mod = bot.db["mod"]
-    bot.bans = bot.db["bans"]
-    bot.starboard = bot.db["starboard"]
-
-    for file in os.listdir(bot.path + '/cogs'):
-        if file.endswith('.py') and not file.startswith('_'):
-            bot.load_extension(f"cogs.{file[:-3]}")
-
-    bot.load_extension('jishaku')  # i have jishaku here because i find it quite useful
-
-    bot.run(bot.config_token)  # run the bot
+    saturn = SaturnBot()
+    saturn.run()  # run the bot
+    print("Event loop closed.")  # I can do this because it will not print until the event loop stops
     # all processes after this will not be run until the bot stops so oof

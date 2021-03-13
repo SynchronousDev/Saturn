@@ -17,10 +17,7 @@ class ErrorHandler(commands.Cog):
             return
 
         if isinstance(exc, commands.CommandNotFound):
-            em = Embed(
-                description=f"{ERROR} Command `{ctx.invoked_with}` does not exist.",
-                colour=RED)
-            await ctx.send(embed=em)
+            pass
 
         elif isinstance(exc, commands.MissingRequiredArgument):
             parameter = str(exc.param.name)
@@ -68,7 +65,7 @@ class ErrorHandler(commands.Cog):
         elif isinstance(exc, commands.MissingPermissions):
             perms = str(', '.join(exc.missing_perms)).title().replace('_', ' ')
             em = Embed(
-                description=f"{ERROR} You do not have the required permissions perform this action.\n"
+                description=f"{ERROR} You do not have  the proper permissions perform this action.\n"
                             f"```Missing {perms} permissions```",
                 colour=RED)
 
@@ -77,7 +74,7 @@ class ErrorHandler(commands.Cog):
         elif isinstance(exc, commands.BotMissingPermissions):
             perms = str(', '.join(exc.missing_perms)).title().replace('_', ' ')
             em = Embed(
-                description=f"{ERROR} I do not have permission to perform this action.\n"
+                description=f"{ERROR} I do not have the proper permissions to perform this action.\n"
                             f"```Missing {perms} permissions```",
                 colour=RED)
 
@@ -105,7 +102,7 @@ class ErrorHandler(commands.Cog):
 
         elif isinstance(exc, commands.CheckFailure):
             em = Embed(
-                description=f"{ERROR} You do not have the permissions to perform this action.",
+                description=f"{ERROR} You do not have the proper permissions to perform this action.",
                 colour=RED)
             await ctx.send(embed=em)
 
@@ -174,6 +171,7 @@ class ErrorHandler(commands.Cog):
             await ctx.send(embed=em)
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
             traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
+            log.warning("Something went wrong.")
 
 
 def setup(bot):

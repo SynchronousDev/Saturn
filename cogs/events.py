@@ -90,6 +90,7 @@ class Events(commands.Cog):
                 timestamp=dt.utcnow()
             )
             em.set_thumbnail(url=member.avatar_url)
+            em.set_author(icon_url=member.avatar_url, name=member)
             em.add_field(name='Account Created At', value=str(member.created_at)[:-16])
             em.set_footer(text=f"Member no. {len(guild.members)} | Invited by {inviter}")
             await member_logs.send(embed=em)  # send the member embed thing
@@ -113,6 +114,7 @@ class Events(commands.Cog):
                 colour=RED,
                 timestamp=dt.utcnow()
             )
+            em.set_author(icon_url=member.avatar_url, name=member)
             em.set_thumbnail(url=member.avatar_url)
             em.set_footer(text=f"Only {len(member.guild.members)} members left in {member.guild}")
             await member_logs.send(embed=em)
@@ -148,6 +150,7 @@ class Events(commands.Cog):
                 timestamp=dt.utcnow()
             )
             em.set_thumbnail(url=message.author.avatar_url)
+            em.set_author(icon_url=message.author.avatar_url, name=message.author)
             em.add_field(name="Author", value=message.author.mention)
             em.add_field(name="Channel", value=f"{message.channel.mention} `(#{message.channel})`")
             em.add_field(name="Content", value=f"{message.content}", inline=False)
@@ -191,6 +194,7 @@ class Events(commands.Cog):
                 timestamp=dt.utcnow()
             )
             em.set_thumbnail(url=after.author.avatar_url)
+            em.set_author(icon_url=after.author.avatar_url, name=after.author)
             em.add_field(name="Author", value=after.author.mention)
             em.add_field(name="Channel", value=f"{after.channel.mention} `(#{after.channel})`")
             em.add_field(name="Before", value=f"{before.content}", inline=False)
@@ -238,7 +242,7 @@ class Events(commands.Cog):
             if not starboard:
                 return
 
-            em = starboard_embed(message, payload)
+            em = await starboard_embed(message, payload)
             schema = {
                 '_id': message.id,
                 'stars': stars + 1,
@@ -292,7 +296,7 @@ class Events(commands.Cog):
             if not starboard:
                 return
 
-            em = starboard_embed(message, payload)
+            em = await starboard_embed(message, payload)
 
             await self.bot.starboard.update_one(
                 {'_id': message.id}, {'$set': {'stars': stars - 1}}, upsert=True)

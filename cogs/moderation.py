@@ -37,13 +37,17 @@ class GuildPunishmentsMenu(menus.ListPageSource):
                                f"of {len_data:,} punishments")
 
             for case in punishments:
-                case_id = case['case_id']
-                action = case['action']
-                user = self.bot.get_user(case['member']) or (await self.bot.fetch_user(case['member']))
-                reason = case['reason']
+                case_id, action, reason = case['case_id'], case['action'], case['reason']
+                action = action.split(' ')
+
+                desc = f"**Member -** <@!{case['member']}>\n**Action -** {action[0]}\n"
+                if len(action) > 1:
+                    desc += f"**Duration -** {' '.join(action[2:])}\n"
+
+                desc += f"**Moderator -** <@!{case['moderator']}>\n**Reason -** {reason}"
                 em.add_field(
-                    name=f'{case_id}. {action} on {user}',
-                    value=reason + ' - ' + '<@!{}>'.format(case['moderator']), inline=False)
+                    name=f'**Case #{case_id}**',
+                    value=desc)
 
         return em
 
@@ -78,10 +82,16 @@ class PunishmentsMenu(menus.ListPageSource):
 
             for case in punishments:
                 case_id, action, reason = case['case_id'], case['action'], case['reason']
+                action = action.split(' ')
                 em.set_thumbnail(url=self.member.avatar_url)
+                desc = f"**Action** - {action[0]}\n"
+                if len(action) > 1:
+                    desc += f"**Duration -** {' '.join(action[2:])}\n"
+
+                desc += f"**Moderator -** <@!{case['moderator']}>\n**Reason -** {reason}"
                 em.add_field(
-                    name=f'Case no. {case_id} - {action}',
-                    value=reason + ' - ' + '<@!{}>'.format(case['moderator']), inline=False)
+                    name=f'**Case #{case_id}**',
+                    value=desc)
 
         return em
 
@@ -228,6 +238,7 @@ async def mute_members(bot, ctx, member: discord.Member, reason, mute_role, time
         bot, member, ctx.guild, 'mute', ctx.author if
         ctx.author != member else ctx.guild.me, reason, convert_time(time))
 
+
 async def unmute_members(bot, ctx, member: discord.Member, reason, mute_role):
     """
     Unmute members
@@ -321,7 +332,11 @@ class Mod(commands.Cog, name='Moderation'):
             data = await self.bot.config.find_one({"_id": guild.id})
             mute_role = guild.get_role(data['mute_role'])
 
-            join_delta = dt.utcnow() - member.joined_at
+            try:
+                join_delta = dt.utcnow() - member.joined_at
+
+            except AttributeError:
+                continue
 
             if mute_role not in member.roles and join_delta > timedelta(seconds=3):
                 try:
@@ -352,15 +367,19 @@ class Mod(commands.Cog, name='Moderation'):
 
             else:
                 if member in guild.members:
-                    if self.bot.muted_users[member.id] and (mute_role not in member.roles):
-                        await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
+                    try:
+                        if self.bot.muted_users[member.id] and (mute_role not in member.roles):
+                            await member.remove_roles(mute_role, reason='Mute time expired', atomic=True)
 
-                        try:
-                            await self.bot.mutes.delete_one({"_id": member.id})
-                            self.bot.muted_users.pop(member.id)
+                            try:
+                                await self.bot.mutes.delete_one({"_id": member.id})
+                                self.bot.muted_users.pop(member.id)
 
-                        except commands.MemberNotFound or KeyError:
-                            pass
+                            except commands.MemberNotFound or KeyError:
+                                pass
+
+                    except KeyError:
+                        pass
 
         for key, value in bans.items():
             if value['duration'] is None:
@@ -466,7 +485,7 @@ class Mod(commands.Cog, name='Moderation'):
                 moderator = self.bot.get_user(log["moderator"])
                 member = self.bot.get_user(log["member"])
                 em.set_thumbnail(url=member.avatar_url)
-                em.set_author(icon_url=moderator.avatar_url, name=f'Case no. {log["case_id"]} - {log["action"]}')
+                em.set_author(icon_url=moderator.avatar_url, name=f'Case #{log["case_id"]} - {log["action"]}')
                 em.add_field(name='Member', value=member.mention)
                 em.add_field(name='Actioned By', value=moderator.mention)
                 em.add_field(name='Reason', value=log['reason'])
@@ -506,13 +525,13 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.has_permissions(kick_members=True)
     async def kick_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
+            await kick_members(self.bot, ctx, member, reason)
             em = discord.Embed(
                 description=f"{CHECK} Kicked {member.mention} for `{reason}`",
                 timestamp=dt.utcnow(),
                 colour=GREEN)
-            em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
+            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
             await ctx.send(embed=em)
-            await kick_members(self.bot, ctx, member, reason)
 
     @commands.command(
         name='ban',
@@ -535,13 +554,13 @@ class Mod(commands.Cog, name='Moderation'):
         if isinstance(member, discord.Member):
             if await mod_check(ctx, member): pass
 
+        await ban_members(self.bot, ctx, member, reason, delete_days=delete_days)
         em = discord.Embed(
             description=f"{CHECK} Banned {member.mention} for `{reason}`",
             timestamp=dt.utcnow(),
             colour=GREEN)
+        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
         await ctx.send(embed=em)
-        em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
-        await ban_members(self.bot, ctx, member, reason, delete_days=delete_days)
 
     @commands.command(
         name='softban',
@@ -553,13 +572,13 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.has_permissions(ban_members=True)
     async def softban_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
+            await ban_members(self.bot, ctx, member, reason, delete_days=7, _type='softban')
             em = discord.Embed(
                 description=f"{CHECK} Softbanned {member.mention} for `{reason}`",
                 timestamp=dt.utcnow(),
                 colour=GREEN)
-            em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
+            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
             await ctx.send(embed=em)
-            await ban_members(self.bot, ctx, member, reason, delete_days=7, _type='softban')
 
     @commands.command(
         name='tempban',
@@ -600,7 +619,7 @@ class Mod(commands.Cog, name='Moderation'):
             description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
                         f", for `{reason}`", timestamp=dt.utcnow(),
             colour=GREEN)
-        em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
+        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
         await ctx.send(embed=em)
 
     @commands.command(
@@ -618,7 +637,7 @@ class Mod(commands.Cog, name='Moderation'):
             description=f"{CHECK} Unbanned {member.mention} for `{reason}`",
             timestamp=dt.utcnow(),
             colour=GREEN)
-        em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
+        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
         await ctx.send(embed=em)
 
     @commands.command(
@@ -630,13 +649,13 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     async def warn_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
+            await warn_members(self.bot, ctx, member, reason)
             em = discord.Embed(
                 description=f"{CHECK} Warned {member.mention} for `{reason}`",
                 timestamp=dt.utcnow(),
                 colour=GREEN)
-            em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
+            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
             await ctx.send(embed=em)
-            await warn_members(self.bot, ctx, member, reason)
 
     @commands.command(
         name='mute',
@@ -694,13 +713,13 @@ class Mod(commands.Cog, name='Moderation'):
                 except KeyError:
                     pass
 
+                await mute_members(self.bot, ctx, member, reason, mute_role, time)
                 em = discord.Embed(
                     description=f"{CHECK} Muted {member.mention} lasting `{convert_time(time)}`"
                                 f", for `{reason}`", timestamp=dt.utcnow(),
                     colour=GREEN)
-                em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
+                em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
                 await ctx.send(embed=em)
-                await mute_members(self.bot, ctx, member, reason, mute_role, time)
 
             else:
                 em = discord.Embed(
@@ -738,7 +757,7 @@ class Mod(commands.Cog, name='Moderation'):
                 em = discord.Embed(
                     description=f"{CHECK} Unmuted {member.mention} for `{reason}`", timestamp=dt.utcnow(),
                     colour=GREEN)
-                em.set_footer(text=f"Case no. {await get_last_case_id(self.bot, ctx.guild)}")
+                em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
                 await ctx.send(embed=em)
 
             else:

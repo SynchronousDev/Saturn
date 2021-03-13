@@ -38,7 +38,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         else:
             return False
 
-    async def cog_check(self, ctx: commands.Context) -> bool:
+    def cog_check(self, ctx: commands.Context) -> bool:
         if not ctx.guild or not ctx.author.guild_permissions.manage_guild:
             return False
         return True
@@ -63,7 +63,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         try:
             for message in self._cache[member.id]:
                 # filter out all items in the self._cache that were created more than 5 seconds ago
-                if message.created_at - timedelta(seconds=3) > dt.utcnow():
+                if dt.utcnow() - timedelta(seconds=5) > message.created_at:
                     self._cache[member.id].remove(message)
 
                 return self._cache[member.id]
@@ -93,14 +93,35 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         except KeyError:
             return False
 
+    async def automod_log(self, message, action, reason) -> None:
+        data = await self.bot.config.find_one({"_id": message.guild.id})
+        try:
+            automod = message.guild.get_channel(data['automod_logs'])
+
+        except TypeError or KeyError:
+            return
+        if not automod: return
+
+        em = discord.Embed(
+            title='Automod',
+            description=f'**Member -** {message.author.mention}\n'
+                        f'**Action -** {action}\n'
+                        f'**Reason -** {reason}',
+            colour=discord.Colour.orange(),
+            timestamp=dt.utcnow()
+        )
+        em.set_author(icon_url=message.author.avatar_url, name=message.author)
+        await automod.send(embed=em)
+
+    # noinspection PyBroadException
     @commands.Cog.listener()
     async def on_message(self, message):
         if not message.guild or message.author.bot:
             return
 
+        await self.update_cache(message)
         _data = await self.bot.config.find_one({"_id": message.guild.id})
         msg = message.content.lower()
-        await self.update_cache(message)
 
         try:
             if _data['profanity_toggle']:  # check if profanity is enabled
@@ -125,7 +146,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
                         profanity.contains_profanity(
                             "".join(collections.OrderedDict.fromkeys(msg)))  # duplicate chars
                 ):
-                    if await self.profanity_command_check(message): return # make sure that they're not adding a word
+                    if await self.profanity_command_check(message): return  # make sure that they're not adding a word
                     # in that case then don't do stuff
 
                     await message.delete()
@@ -133,9 +154,23 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
                         description=f"{WARNING} That word is not allowed in **{message.guild}**!",
                         colour=GOLD)
                     await message.channel.send(embed=em)
+                    await self.automod_log(
+                        message, "warning", f"Said || {message.content} || which contains profanity")
 
             if _data['spam_toggle'] and self.is_spamming(message.author):
-                to_delete = len(self.get_cache(message.author))
+                _cache = self.get_cache(message.author)
+                to_delete = len(_cache)
+                try:
+                    # purge the spam messages sent by the author
+                    # I originally had the check to be lambda m: m in self.get_cache but it just didn't quite work
+                    # because I was emptying the cache after the messages were purged
+                    await message.channel.purge(
+                        limit=to_delete,
+                        check=lambda m: m in _cache)  # make sure that the message author is the spammer
+
+                except discord.NotFound or discord.NoMoreItems or asyncio.QueueEmpty:
+                    pass
+
                 await self.delete_cache(message.author)
                 data = await self.bot.config.find_one({"_id": message.guild.id})
                 try:
@@ -143,7 +178,8 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
                     if message.author.id in whitelist: return
                     # check that the author isn't in the spam whitelist
 
-                except KeyError or TypeError: pass # if there is no whitelist
+                except KeyError or TypeError:
+                    pass  # if there is no whitelist
 
                 try:
                     if not (mute_role := message.guild.get_role(_data['mute_role'])):
@@ -153,29 +189,24 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
                     # create the mute role
                     mute_role = await create_mute_role(self.bot, message)
 
-                try:
-                    # purge the spam messages sent by the author
-                    # I originally had the check to be lambda m: m in self.get_cache but it just didn't quite work
-                    # because I was emptying the cache after the messages were purged
-                    await message.channel.purge(
-                        limit=to_delete,
-                        check=lambda m: m.author == message.author)  # make sure that the message author is the spammer
-
-                except discord.NotFound or discord.NoMoreItems or asyncio.QueueEmpty:
-                    pass
+                start = _cache[to_delete - 1].created_at
+                end = _cache[0].created_at
+                delta = (start - end).total_seconds()
 
                 if not message.author.guild_permissions.manage_messages:
                     # mute the member, only if they can't mute other people so they have mute invincibility
                     await mute_members(self.bot, message, message.author,
                                        "sending messages too quickly", mute_role, 10)
+                    await self.automod_log(
+                        message, "10 second mute", f"Sent {to_delete} messages in {delta} seconds")
 
                 em = discord.Embed(
                     description=f"{WARNING} Spam is not allowed in **{message.guild}**!",
                     colour=GOLD)
                 await message.channel.send(embed=em)
 
-        except KeyError or TypeError:
-            pass
+        except Exception as e:
+            log.warning(e)
 
     @commands.group(
         name='profanity',
@@ -184,7 +215,10 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         invoke_without_command=True
     )
     async def anti_profanity(self, ctx):
-        await ctx.invoke(self.bot.get_command('help'), entity='profanity')
+        try:
+            await ctx.invoke(self.bot.get_command('help'), entity='profanity')
+        except:
+            raise
 
     @anti_profanity.command(
         name='toggle',

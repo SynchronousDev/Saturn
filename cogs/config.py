@@ -400,6 +400,21 @@ class Config(commands.Cog):
             colour=GREEN)
         await ctx.send(embed=em)
 
+    @commands.command(
+        name='automod',
+        aliases=['auto-moderation', 'amod', 'automoderation'],
+        description='The command to change the settings for the automod log channel.',
+    )
+    async def auto_mod_logs(self, ctx, channel: discord.TextChannel):
+        await self.bot.config.update_one(
+            {"_id": ctx.guild.id}, {'$set': {"automod_logs": channel.id}}, upsert=True)
+
+        em = discord.Embed(
+            description=f"{CHECK} The `automod logs` channel was set to {channel.mention}.",
+            colour=GREEN)
+        await ctx.send(embed=em)
+
+
     @commands.group(
         name='starboard',
         aliases=['star', 'sboard'],

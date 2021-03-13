@@ -9,5 +9,5 @@ assets/purge_txts
 saturn.log
 assets/song.mp3
 assets/profanity.txt
-assets/profile.jpg
+assets/imgs/profile.jpg
 test.py
