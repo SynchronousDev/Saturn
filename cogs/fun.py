@@ -56,49 +56,45 @@ class Fun(commands.Cog):
     @commands.cooldown(
         1, 3, commands.BucketType.member)
     async def fact_cmd(self, ctx, animal: str):
-        if animal.lower() in ("dog", "cat", 'panda', 'fox', 'bird', 'koala'):
-            URL = f'https://some-random-api.ml/facts/{animal.lower()}'
-            IMAGE_URL = f"https://some-random-api.ml/img/{'birb' if animal == 'bird' else animal.lower()}"
+        animal = random.choice(("dog", "cat", 'panda', 'fox', 'bird', 'koala')) or animal
+        URL = f'https://some-random-api.ml/facts/{animal.lower()}'
+        IMAGE_URL = f"https://some-random-api.ml/img/{'birb' if animal == 'bird' else animal.lower()}"
 
-            async with request('GET', IMAGE_URL, headers={}) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    image_link = data['link']
+        async with request('GET', IMAGE_URL, headers={}) as response:
+            if response.status == 200:
+                data = await response.json()
+                image_link = data['link']
 
-                else:
-                    image_link = None
+            else:
+                image_link = None
 
-            async with request('GET', URL, headers={}) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    fact_em = discord.Embed(
-                        title=f"Did you know?",
-                        description=data['fact'],
-                        color=MAIN)
-                    if IMAGE_URL is not None:
-                        fact_em.set_image(url=image_link)
-                    return await ctx.send(embed=fact_em)
+        async with request('GET', URL, headers={}) as response:
+            if response.status == 200:
+                data = await response.json()
+                fact_em = discord.Embed(
+                    title=f"Did you know?",
+                    description=data['fact'],
+                    color=MAIN)
+                if IMAGE_URL is not None:
+                    fact_em.set_image(url=image_link)
+                return await ctx.send(embed=fact_em)
 
-                if response.status == 503:
-                    status = discord.Embed(
-                        description=f"{ERROR} API is currently offline",
-                        color=RED)
-                    await ctx.send(embed=status)
-                else:
-                    status = discord.Embed(
-                        description=f"{ERROR} API returned with a response status `{response.status}`",
-                        color=RED)
-                    await ctx.send(embed=status)
-        else:
-            no_facts = discord.Embed(
-                description=f"{ERROR} I could not find any facts for animal `{animal}`",
-                color=RED)
-            await ctx.send(embed=no_facts)
+            if response.status == 503:
+                status = discord.Embed(
+                    description=f"{ERROR} API is currently offline.",
+                    color=RED)
+                await ctx.send(embed=status)
+
+            else:
+                status = discord.Embed(
+                    description=f"{ERROR} API returned with a response status `{response.status}`",
+                    color=RED)
+                await ctx.send(embed=status)
 
     @commands.command(
         name='rps', aliases=['rockpaperscissors'],
         description='Play rock paper scissors with the bot! '
-                    'This is not rigged and is generated via the `random` module.')
+                    'This is not rigged and outputs generated via the `random` module.')
     @commands.cooldown(1, 1, commands.BucketType.member)
     async def rps_cmd(self, ctx, choice):
         if choice.startswith('r'):
