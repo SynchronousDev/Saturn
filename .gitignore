@@ -1,11 +1,8 @@
 __pycache__
 /assets/config.json
 .vscode
-jdk
 .idea
 assets/purge_txts
 saturn.log
-assets/song.mp3
 assets/profanity.txt
 assets/imgs/profile.jpg
-test.py
