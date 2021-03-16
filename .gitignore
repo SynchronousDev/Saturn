@@ -1,8 +1,6 @@
 __pycache__
 /assets/config.json
 .vscode
-oauth.py
-dashboard
 jdk
 .idea
 assets/purge_txts

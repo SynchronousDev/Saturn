@@ -17,7 +17,7 @@ class ErrorHandler(commands.Cog):
             return
 
         if isinstance(exc, commands.CommandNotFound):
-            pass
+            await ctx.send("oof... couldn't find that command :clown:")
 
         elif isinstance(exc, commands.MissingRequiredArgument):
             parameter = str(exc.param.name)
@@ -158,7 +158,7 @@ class ErrorHandler(commands.Cog):
         elif hasattr(exc, "original"):
             em = discord.Embed(
                 description=f"{ERROR} Something went wrong. Whoops!"
-                            f"```py{exc}```",
+                            f"```{exc}```",
                 color=RED)
             await ctx.send(embed=em)
             raise exc.original

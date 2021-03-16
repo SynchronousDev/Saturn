@@ -12,6 +12,7 @@ GOLD = discord.Colour.gold()
 ERROR = '<:SaturnCross:818198526923243520>'
 CHECK = '<:SaturnCheck:818198526940807199>'
 WARNING = '<:SaturnAlert:818199916312002631>'
+PREFIX = "s."
 BLANK = '\uFEFF'
 LOCK = ':lock:'
 UNLOCK = ':unlock:'

@@ -1,3 +1,4 @@
+import io
 import typing as t
 from aiohttp import request
 from assets import *
@@ -51,12 +52,19 @@ class Fun(commands.Cog):
 
     @commands.command(
         name='animalfact',
-        aliases=['animalfacts', 'afacts'],
+        aliases=['animalfacts', 'afacts', 'afact'],
         description='Get animal facts. API may be down sometimes, but still reliable.')
     @commands.cooldown(
-        1, 3, commands.BucketType.member)
-    async def fact_cmd(self, ctx, animal: str):
-        animal = random.choice(("dog", "cat", 'panda', 'fox', 'bird', 'koala')) or animal
+        1, 2, commands.BucketType.member)
+    async def animal_fact_cmd(self, ctx, *, animal: t.Optional[str]):
+        animals = ("dog", "cat", 'panda', 'fox', 'bird', 'koala')
+        animal = random.choice(animals) or animal
+        if animal not in animals:
+            em = discord.Embed(
+                description=f"{ERROR} Could not find any facts for `{animal}`.",
+                color=RED)
+            await ctx.send(embed=em)
+
         URL = f'https://some-random-api.ml/facts/{animal.lower()}'
         IMAGE_URL = f"https://some-random-api.ml/img/{'birb' if animal == 'bird' else animal.lower()}"
 
@@ -77,7 +85,110 @@ class Fun(commands.Cog):
                     color=MAIN)
                 if IMAGE_URL is not None:
                     fact_em.set_image(url=image_link)
+                fact_em.set_footer(text='some-random-api.ml')
                 return await ctx.send(embed=fact_em)
+
+            if response.status == 503:
+                status = discord.Embed(
+                    description=f"{ERROR} API is currently offline.",
+                    color=RED)
+                await ctx.send(embed=status)
+
+            else:
+                status = discord.Embed(
+                    description=f"{ERROR} API returned with a response status `{response.status}`",
+                    color=RED)
+                await ctx.send(embed=status)
+
+    @commands.command(
+        name='wasted',
+        aliases=['waste'],
+        description='Apply a wasted overlay to someone\'s avatar!'
+    )
+    @commands.cooldown(1, 1, commands.BucketType.member)
+    async def wasted_avatar(self, ctx, member: t.Optional[discord.Member]):
+        doot = member.e
+        member = member or ctx.author
+        URL = f"https://some-random-api.ml/canvas/wasted/?avatar=" \
+              f"{member.avatar_url_as(format='png')}"
+        async with request('GET', URL, headers={}) as response:
+            if response.status == 200:
+                data = io.BytesIO(await response.read())
+                file = discord.File(data, 'wasted.jpg')
+                em = discord.Embed(
+                    title=f"Wasted...",
+                    color=RED)
+                em.set_image(url=f"attachment://wasted.jpg")
+                em.set_footer(text='some-random-api.ml')
+                return await ctx.send(embed=em, file=file)
+
+            if response.status == 503:
+                status = discord.Embed(
+                    description=f"{ERROR} API is currently offline.",
+                    color=RED)
+                await ctx.send(embed=status)
+
+            else:
+                status = discord.Embed(
+                    description=f"{ERROR} API returned with a response status `{response.status}`",
+                    color=RED)
+                await ctx.send(embed=status)
+
+    @commands.command(
+        name='gay',
+        aliases=['gayify', 'gay-ify', 'rainbow', 'rainbowify'],
+        description='Apply a gay overlay to someone\'s avatar!'
+    )
+    @commands.cooldown(1, 1, commands.BucketType.member)
+    async def gayify_avatar(self, ctx, member: t.Optional[discord.Member]):
+        member = member or ctx.author
+        URL = f"https://some-random-api.ml/canvas/gay/?avatar=" \
+              f"{member.avatar_url_as(format='png')}"
+        async with request('GET', URL, headers={}) as response:
+            if response.status == 200:
+                data = io.BytesIO(await response.read())
+                file = discord.File(data, 'gay.jpg')
+                em = discord.Embed(
+                    title=f"That's kind of gay...",
+                    color=discord.Colour.random()
+                )
+                em.set_image(url=f"attachment://gay.jpg")
+                em.set_footer(text='some-random-api.ml')
+                return await ctx.send(embed=em, file=file)
+
+            if response.status == 503:
+                status = discord.Embed(
+                    description=f"{ERROR} API is currently offline.",
+                    color=RED)
+                await ctx.send(embed=status)
+
+            else:
+                status = discord.Embed(
+                    description=f"{ERROR} API returned with a response status `{response.status}`",
+                    color=RED)
+                await ctx.send(embed=status)
+
+    @commands.command(
+        name='triggered',
+        aliases=['trigger'],
+        description='Apply a triggered overlay to someone\'s avatar!'
+    )
+    @commands.cooldown(1, 1, commands.BucketType.member)
+    async def triggered_avatar(self, ctx, member: t.Optional[discord.Member]):
+        member = member or ctx.author
+        URL = f"https://some-random-api.ml/canvas/triggered/?avatar=" \
+              f"{member.avatar_url_as(format='png')}"
+        async with request('GET', URL, headers={}) as response:
+            if response.status == 200:
+                data = io.BytesIO(await response.read())
+                file = discord.File(data, 'triggered.gif')
+                em = discord.Embed(
+                    title=f"Very triggered indeed...",
+                    color=discord.Colour.orange()
+                )
+                em.set_image(url=f"attachment://triggered.gif")
+                em.set_footer(text='some-random-api.ml')
+                return await ctx.send(embed=em, file=file)
 
             if response.status == 503:
                 status = discord.Embed(

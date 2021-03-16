@@ -11,11 +11,16 @@ log = logging.getLogger(__name__)
 
 # noinspection SpellCheckingInspection
 class AutoMod(commands.Cog, name='Auto Moderation'):
+    """
+    The Auto Moderation cog. Includes all the commands to have a virtually endless task force of moderators.
+
+    Includes anti-profanity and anti-spam.
+    """
     def __init__(self, bot):
         self.bot = bot
         self._cache = {}
 
-    async def get_censor_words(self):
+    def get_censor_words(self):
         with open(self.bot.path + '/assets/profanity.txt', 'r') as f:
             file = f.read()
 
@@ -158,55 +163,56 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
                         message, "warning", f"Said || {message.content} || which contains profanity")
 
             if _data['spam_toggle'] and self.is_spamming(message.author):
-                _cache = self.get_cache(message.author)
-                to_delete = len(_cache)
-                try:
-                    # purge the spam messages sent by the author
-                    # I originally had the check to be lambda m: m in self.get_cache but it just didn't quite work
-                    # because I was emptying the cache after the messages were purged
-                    await message.channel.purge(
-                        limit=to_delete,
-                        check=lambda m: m in _cache)  # make sure that the message author is the spammer
-
-                except discord.NotFound or discord.NoMoreItems or asyncio.QueueEmpty:
-                    pass
-
+                _cache = self.get_cache(message.author)  # make a copy of the cache
+                # so it doesn't double the message
                 await self.delete_cache(message.author)
-                data = await self.bot.config.find_one({"_id": message.guild.id})
-                try:
-                    whitelist = data['spam_whitelist']
-                    if message.author.id in whitelist: return
-                    # check that the author isn't in the spam whitelist
-
-                except KeyError or TypeError:
-                    pass  # if there is no whitelist
-
-                try:
-                    if not (mute_role := message.guild.get_role(_data['mute_role'])):
-                        mute_role = await create_mute_role(self.bot, message)
-
-                except TypeError or KeyError:
-                    # create the mute role
-                    mute_role = await create_mute_role(self.bot, message)
-
-                start = _cache[to_delete - 1].created_at
-                end = _cache[0].created_at
-                delta = (start - end).total_seconds()
 
                 if not message.author.guild_permissions.manage_messages:
+                    to_delete = len(_cache)
+                    try:
+                        # purge the spam messages sent by the author
+                        # I originally had the check to be lambda m: m in self.get_cache but it just didn't quite work
+                        # because I was emptying the cache after the messages were purged
+                        await message.channel.purge(
+                            limit=to_delete,
+                            check=lambda m: m in _cache)  # make sure that the message author is the spammer
+
+                    except discord.NotFound or discord.NoMoreItems or asyncio.QueueEmpty:
+                        pass
+                    data = await self.bot.config.find_one({"_id": message.guild.id})
+                    try:
+                        whitelist = data['spam_whitelist']
+                        if message.author.id in whitelist: return
+                        # check that the author isn't in the spam whitelist
+
+                    except KeyError or TypeError:
+                        pass  # if there is no whitelist
+
+                    try:
+                        if not (mute_role := message.guild.get_role(_data['mute_role'])):
+                            mute_role = await create_mute_role(self.bot, message)
+
+                    except TypeError or KeyError:
+                        # create the mute role
+                        mute_role = await create_mute_role(self.bot, message)
+
+                    start = _cache[to_delete - 1].created_at
+                    end = _cache[0].created_at
+                    delta = (start - end).total_seconds()
+
                     # mute the member, only if they can't mute other people so they have mute invincibility
                     await mute_members(self.bot, message, message.author,
                                        "sending messages too quickly", mute_role, 10)
                     await self.automod_log(
                         message, "10 second mute", f"Sent {to_delete} messages in {delta} seconds")
 
-                em = discord.Embed(
-                    description=f"{WARNING} Spam is not allowed in **{message.guild}**!",
-                    colour=GOLD)
-                await message.channel.send(embed=em)
+                    em = discord.Embed(
+                        description=f"{WARNING} Spam is not allowed in **{message.guild}**!",
+                        colour=GOLD)
+                    await message.channel.send(embed=em)
 
-        except Exception as e:
-            log.warning(e)
+        except Exception:
+            pass
 
     @commands.group(
         name='profanity',
@@ -254,7 +260,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     async def add_curse(self, ctx, *, word: str):
         if word == "-default":
-            words = await self.get_censor_words()
+            words = self.get_censor_words()
 
         else:
             words = []
@@ -304,7 +310,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
     )
     @commands.cooldown(1, 3, commands.BucketType.member)
     async def remove_curse(self, ctx, *, word: str):
-        words = await self.get_censor_words()
+        words = self.get_censor_words()
 
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:

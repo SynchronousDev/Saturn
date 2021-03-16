@@ -42,9 +42,9 @@ class Dev(commands.Cog):
                                              {'$set': {"reason": reason}}, upsert=True)
 
         em = discord.Embed(
-            description=f"{CHECK} Blacklisted {member.mention} for **{reason}**.",
+            description=f"{CHECK} Blacklisted {member.mention} for `{reason}`.",
             colour=GREEN,
-            timestamp=dt.now())
+            timestamp=dt.utcnow())
         await ctx.send(embed=em)
 
     @commands.command(
@@ -62,9 +62,9 @@ class Dev(commands.Cog):
             await ctx.send(embed=em)
 
         em = discord.Embed(
-            description=f"{CHECK} Unblacklisted {member.mention} for **{reason}**.",
+            description=f"{CHECK} Unblacklisted {member.mention} for `{reason}`.",
             colour=GREEN,
-            timestamp=dt.now())
+            timestamp=dt.utcnow())
         await ctx.send(embed=em)
 
     @commands.command(
@@ -98,18 +98,23 @@ class Dev(commands.Cog):
                 obj = await local_vars["saturn_evaluate"]()
                 value = stdout.getvalue() or "None"
                 result = f'{value}\n-- {obj}\n'
-                color = GREEN
+                colour = DIFF_GREEN
 
         except Exception as e:
             result = ''.join(format_exception(e, e, e.__traceback__))
-            color = RED
+            colour = DIFF_RED
 
-        em = discord.Embed(
-            description=f"```py\n{code}```\n```py\n{result}```",
-            color=color,
-            timestamp=dt.utcnow())
-        em.set_footer(text='Saturn Eval Command')
-        await ctx.send(embed=em)
+        pager = SaturnPaginator(
+            timeout=120,
+            entries=[result[i: i + (2000 - len(code))]
+                     for i in range(0, len(result), (2000 - len(code)))],
+            length=1,
+            colour=colour,
+            prefix=f"```py\n{code}```\n```py\n",
+            suffix='```'
+        )
+
+        await pager.start(ctx)
 
     @commands.command(
         name='logout',

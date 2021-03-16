@@ -5,6 +5,7 @@ from pathlib import Path
 
 import motor.motor_asyncio
 from discord.ext import tasks
+from assets import *
 from discord.ext import commands
 import discord
 
@@ -19,30 +20,6 @@ handler = logging.FileHandler(filename='saturn.log', encoding='utf-8', mode='w')
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
-
-default_prefix = "s."
-
-
-# noinspection PyShadowingNames, PyBroadException, SpellCheckingInspection
-async def get_prefix(bot, message):
-    """
-    For the bot's command_prefix. Not the same as the `retrieve_prefix` function.
-    """
-    # sphagetto code galore
-    if not message.guild: return commands.when_mentioned_or(default_prefix)(bot, message)
-    try:
-        data = await bot.config.find_one({"_id": message.guild.id})
-
-        if not data or not data['prefix']: return commands.when_mentioned_or(default_prefix)(bot, message)
-
-        if isinstance(data['prefix'], str):
-            return commands.when_mentioned_or(data['prefix'])(bot, message)
-
-        pre = flatten(data['prefix'])
-        return commands.when_mentioned_or(*pre)(bot, message)
-
-    except Exception:
-        return commands.when_mentioned_or(default_prefix)(bot, message)
 
 
 # noinspection PyMethodMayBeStatic
@@ -100,8 +77,7 @@ class SaturnBot(commands.Bot):
                     colour=MAIN)
                 return await ctx.send(embed=em)
 
-            if ctx.valid:
-                await self.invoke(ctx)
+        await self.invoke(ctx)
 
     async def on_connect(self):
         self.change_pres.start()
@@ -139,7 +115,7 @@ class SaturnBot(commands.Bot):
     @tasks.loop(minutes=1)
     async def change_pres(self):
         await self.change_presence(
-            activity=discord.Game(name=f"{default_prefix}help | V{self.__version__}"))
+            activity=discord.Game(name=f"{PREFIX}help | V{self.__version__}"))
 
 
 if __name__ == '__main__':

@@ -6,9 +6,38 @@ import discord
 # noinspection PyUnresolvedReferences
 from discord.ext import commands
 
-from saturn import default_prefix
 from .constants import *
 from discord.ext import menus
+from .paginator import Paginator
+
+class SaturnPaginator(Paginator):
+    async def teardown(self):
+        try:
+            await self.page.delete()
+        except discord.NotFound:
+            pass
+
+
+# noinspection PyShadowingNames, PyBroadException, SpellCheckingInspection
+async def get_prefix(bot, message):
+    """
+    For the bot's command_prefix. Not the same as the `retrieve_prefix` function.
+    """
+    # sphagetto code galore
+    if not message.guild: return commands.when_mentioned_or(PREFIX)(bot, message)
+    try:
+        data = await bot.config.find_one({"_id": message.guild.id})
+
+        if not data or not data['prefix']: return commands.when_mentioned_or(PREFIX)(bot, message)
+
+        if isinstance(data['prefix'], str):
+            return commands.when_mentioned_or(data['prefix'])(bot, message)
+
+        pre = flatten(data['prefix'])
+        return commands.when_mentioned_or(*pre)(bot, message)
+
+    except Exception as e:
+        return commands.when_mentioned_or(PREFIX)(bot, message)
 
 
 def flatten(l):
@@ -90,7 +119,7 @@ async def retrieve_raw_prefix(bot, message):
 
         # make sure that we have a prefix in the data
         if not data or not data["prefix"]:
-            return default_prefix
+            return PREFIX
 
         # we don't have to put anything into the database
         # because it's always going to be s. unless they enter stuff into the database
@@ -99,7 +128,7 @@ async def retrieve_raw_prefix(bot, message):
             return data['prefix']
 
     except Exception:
-        return default_prefix
+        return PREFIX
 
 
 async def retrieve_prefix(bot, message):
