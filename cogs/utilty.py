@@ -61,7 +61,7 @@ class Utility(commands.Cog):
             description=f"Pong!\n**Bot -** `{latency}ms`\n"
                         f"**API -** `{(end - start) * 1000:,.2f}ms`\n",
             colour=colour)
-        await msg.edit(embed=em)
+        await msg.edit(content=None, embed=em)
 
     # noinspection SpellCheckingInspection
     @commands.command(

@@ -126,7 +126,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
 
         await self.update_cache(message)
         _data = await self.bot.config.find_one({"_id": message.guild.id})
-        msg = message.content.lower()
+        msg = str(message.content).lower()
 
         try:
             if _data['profanity_toggle']:  # check if profanity is enabled

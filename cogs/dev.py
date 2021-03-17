@@ -105,11 +105,11 @@ class Dev(commands.Cog):
             colour = DIFF_RED
 
         pager = SaturnPaginator(
-            timeout=120,
             entries=[result[i: i + (2000 - len(code))]
                      for i in range(0, len(result), (2000 - len(code)))],
             length=1,
             colour=colour,
+            footer='Saturn Eval command',
             prefix=f"```py\n{code}```\n```py\n",
             suffix='```'
         )

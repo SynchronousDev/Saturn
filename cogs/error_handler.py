@@ -17,7 +17,7 @@ class ErrorHandler(commands.Cog):
             return
 
         if isinstance(exc, commands.CommandNotFound):
-            await ctx.send("oof... couldn't find that command :clown:")
+            pass
 
         elif isinstance(exc, commands.MissingRequiredArgument):
             parameter = str(exc.param.name)
@@ -40,6 +40,12 @@ class ErrorHandler(commands.Cog):
                 description=f"{ERROR} No such member was found.",
                 colour=RED)
             await ctx.send(embed=em)
+
+        elif isinstance(exc, Blacklisted):
+            em = Embed(
+                description=f"{ERROR} You are blacklisted from the bot.",
+                colour=RED)
+            await ctx.author.send(embed=em)
 
         elif isinstance(exc, commands.RoleNotFound):
             em = Embed(

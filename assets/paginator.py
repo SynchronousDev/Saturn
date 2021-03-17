@@ -11,6 +11,7 @@ from .constants import *
 # noinspection PyRedeclaration
 __all__ = ('Session', 'Paginator', 'button', 'inverse_button',)
 
+
 # Big thanks to discord.ext.buttons.
 
 # noinspection PyRedeclaration
@@ -40,7 +41,7 @@ class Session:
         self._buttons = {}
         self._gather_buttons()
 
-        self.page: discord.Message = None # noqa
+        self.page: discord.Message = None  # noqa
         self._session_task = None
         self._cancelled = False
         self._try_remove = try_remove
@@ -164,11 +165,18 @@ class Session:
         await self.teardown()
 
     async def teardown(self):
-        """Clean the session up."""
-        self._session_task.cancel()
-
+        """
+        Clean the session up.
+        """
         try:
-            await self.page.delete()
+            em = discord.Embed(
+                description=f'{INFO} Closing interactive menu.',
+                colour=discord.Colour.blue()
+            )
+            await self.page.edit(content=None, embed=em)
+            if self.page.guild.me.guild_permissions.manage_messages:
+                await self.page.clear_reactions()
+
         except discord.NotFound:
             pass
 
@@ -180,7 +188,10 @@ class Session:
                 pass
 
     def get_emoji_as_string(self, emoji):
-        return f'{emoji.name}{":" + str(emoji.id) if emoji.is_custom_emoji() else ""}'
+        if emoji.is_custom_emoji():
+            return f'<:{emoji.name}:{str(emoji.id)}>'
+
+        return emoji.name
 
     def check(self, payload):
         """Check which takes in a raw_reaction payload. This may be overwritten."""
@@ -240,20 +251,31 @@ class Paginator(Session):
                  joiner: str = '\n', timeout: int = 180, thumbnail: str = None):
         super().__init__()
         self._defaults = {
-            (0, '⏮'): Button(emoji='⏮', position=0, callback=partial(self._default_indexer, 'start')),
-            (1, '◀'): Button(emoji='◀', position=1, callback=partial(self._default_indexer, -1)),
-            (2, '▶'): Button(emoji='▶', position=2, callback=partial(self._default_indexer, +1)),
-            (3, '⏭'): Button(emoji='⏭', position=3, callback=partial(self._default_indexer, 'end')),
-            (4, '⏹'): Button(emoji='⏹', position=4, callback=partial(self._default_indexer, 'stop')),
-            (5, 'ℹ️'): Button(emoji='ℹ️', position=5, callback=partial(self._default_indexer, 'info')),
-            (6, '⏹'): Button(emoji='⏹', position=6, callback=partial(self._default_indexer, 'number')),
+            (0, PAG_FRONT): Button(emoji=PAG_FRONT, position=0, callback=partial(self._default_indexer, 'start')),
+            (1, PAG_PREVIOUS): Button(emoji=PAG_PREVIOUS, position=1, callback=partial(self._default_indexer, -1)),
+            (2, PAG_NEXT): Button(emoji=PAG_NEXT, position=2, callback=partial(self._default_indexer, +1)),
+            (3, PAG_BACK): Button(emoji=PAG_BACK, position=3, callback=partial(self._default_indexer, 'end')),
+            (4, PAG_STOP): Button(emoji=PAG_STOP, position=4, callback=partial(self._default_indexer, 'stop')),
+            (5, PAG_INFO): Button(emoji=PAG_INFO, position=5, callback=partial(self._default_indexer, 'info')),
+            (6, PAG_NUMBERS): Button(emoji=PAG_NUMBERS, position=6,
+                                     callback=partial(self._default_indexer, 'number'))
 
         }
-        self._default_stop = {(0, '⏹'): Button(emoji='⏹', position=0, callback=partial(self._default_indexer, 'stop'))}
+        self._default_stop = {(0, PAG_STOP): Button(emoji=PAG_STOP, position=0,
+                                                    callback=partial(self._default_indexer, 'stop'))}
+        # self._defaults = {
+        #     (0, '⏮'): Button(emoji='⏮', position=0, callback=partial(self._default_indexer, 'start')),
+        #     (1, '◀'): Button(emoji='◀', position=1, callback=partial(self._default_indexer, -1)),
+        #     (2, '▶'): Button(emoji='▶', position=2, callback=partial(self._default_indexer, +1)),
+        #     (3, '⏭'): Button(emoji='⏭', position=3, callback=partial(self._default_indexer, 'end')),
+        #     (4, '⏹'): Button(emoji='⏹', position=4, callback=partial(self._default_indexer, 'stop'))
+        # }
+        # self._default_stop = {(0, '⏹'): Button(emoji='⏹', position=0,
+        #                                        callback=partial(self._default_indexer, 'stop'))}
 
         self.buttons = {}
 
-        self.page: discord.Message = None # noqa
+        self.page: discord.Message = None  # noqa
         self._pages = []
         self._session_task = None
         self._cancelled = False
@@ -302,23 +324,23 @@ class Paginator(Session):
         else:
             entries = []
 
-        for chunk in entries:
+        for i, chunk in enumerate(entries, start=1):
             if not self.use_embed:
                 self._pages.append(self.joiner.join(chunk))
             else:
-                embed = discord.Embed(
+                em = discord.Embed(
                     title=self.title,
                     description=self.joiner.join(chunk),
                     colour=self.colour,
                     timestamp=dt.utcnow(),
                 )
-                if self.footer:
-                    embed.set_footer(text=self.footer)
+
+                em.set_footer(text=f"Page {i} out of {len(entries)} pages {f'| {self.footer}' if self.footer else ''}")
 
                 if self.thumbnail:
-                    embed.set_thumbnail(url=self.thumbnail)
+                    em.set_thumbnail(url=self.thumbnail)
 
-                self._pages.append(embed)
+                self._pages.append(em)
 
         self._pages += self.extra_pages
 
@@ -356,19 +378,61 @@ class Paginator(Session):
         elif control == 'info':
             em = discord.Embed(
                 title="How to use the Saturn Interactive Menu",
-                description="""
-                ⏮ - Go to the first page.
-                ◀ - Go back one page.
-                ▶ - Go forward one page.
-                ⏭ - Go to the last page.
-                ⏹ - Stop the menu.
-                ℹ️ - Shows this message.    
+                description=f"""
+                {PAG_FRONT} - Go to the first page.
+                {PAG_PREVIOUS} - Go back one page.
+                {PAG_NEXT} - Go forward one page.
+                {PAG_BACK} - Go to the last page.
+                {PAG_STOP} - Stop the menu.
+                {PAG_INFO} - Shows this message.
+                {PAG_NUMBERS} - Type a page number in chat to go to.    
                 
                 Press any button to continue.
                 """,
                 timestamp=dt.utcnow(),
                 colour=MAIN)
             return await self.page.edit(embed=em)
+
+        elif control == 'number':
+            em = discord.Embed(
+                description=f'{INFO} Please specify which page you want to go to in the chat.',
+                colour=discord.Colour.blue())
+            await ctx.send(embed=em)
+            try:
+                msg = await ctx.bot.wait_for(
+                    'message',
+                    check=lambda m: m.author == ctx.author)
+
+            except asyncio.TimeoutError:
+                em = discord.Embed(
+                    description=f'{INFO} User did not respond in time.',
+                    colour=discord.Colour.blue())
+                await ctx.send(embed=em)
+
+            else:
+                try:
+                    _int = int(msg.content)
+
+                except ValueError:
+                    em = discord.Embed(
+                        description=f'{ERROR} Invalid page number given.\n'
+                                    f'```Page must be between 1 and {len(self._pages)}```',
+                        colour=RED)
+                    return await ctx.send(embed=em)
+
+                if (len(self._pages) < _int or
+                        _int < 1):
+                    em = discord.Embed(
+                        description=f'{ERROR} Invalid page number given.\n'
+                                    f'```Page must be between 1 and {len(self._pages)}```',
+                        colour=RED)
+                    return await ctx.send(embed=em)
+
+                self._index = _int - 1
+                em = discord.Embed(
+                    description=f'{CHECK} Switched to page `{_int}`',
+                    colour=GREEN)
+                await ctx.send(embed=em)
 
         else:
             self._index += control

@@ -9,11 +9,15 @@ DIFF_GREEN = 0x677c1e
 DIFF_RED = 0xFF0000
 GOLD = discord.Colour.gold()
 
+# Some default emotes
+# not too shabby
+BLANK = '\uFEFF'
+
 ERROR = '<:SaturnCross:818198526923243520>'
 CHECK = '<:SaturnCheck:818198526940807199>'
 WARNING = '<:SaturnAlert:818199916312002631>'
+INFO = f'<:SaturnInfo:821565551939420170>'
 PREFIX = "s."
-BLANK = '\uFEFF'
 LOCK = ':lock:'
 UNLOCK = ':unlock:'
 WEAK_SIGNAL = ':red_circle:'
@@ -23,6 +27,16 @@ SATURN = '<:Saturn:813806979847421983>'
 NO_REPEAT = '⏭'
 REPEAT_ONE = '🔂'
 REPEAT_ALL = '🔁'
+
+# Pagination emotes
+PAG_FRONT = '<:front:821724241647894559>'
+PAG_PREVIOUS = '<:previous:821724241803739186>'
+PAG_NEXT = '<:next:821724241338302515>'
+PAG_BACK = '<:back:821724241510268988>'
+PAG_STOP = '<:stop:821724241882775593>'
+PAG_NUMBERS = '<:number:821724241799020554>'
+PAG_INFO = '<:info:821725311590203412>'
+
 MUTE = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
        'speaker-with-cancellation-stroke_1f507.png'
 UNMUTE = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \

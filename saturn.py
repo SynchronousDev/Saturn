@@ -8,8 +8,11 @@ from discord.ext import tasks
 from assets import *
 from discord.ext import commands
 import discord
+from dotenv import load_dotenv
 
 from assets import *
+
+load_dotenv()
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
@@ -37,12 +40,10 @@ class SaturnBot(commands.Bot):
         self.path = Path(__file__).parents[0]
         self.path = str(self.path)
         self.__version__ = '1.1.0'
-        print("Loading info from config.json...")
-        self.configuration = json.load(open(self.path + '/assets/config.json'))
-        self.spotify_client_secret = self.configuration['spotify_client_secret']
-        self.spotify_client_id = self.configuration['spotify_client_id']
-        self.connection_url = self.configuration['mongo']
-        self.config_token = self.configuration['token']
+        print("Loading info from .env file...")
+
+        self.mongo_connection_url = os.environ.get("MONGO")
+        self.TOKEN = os.environ.get("TOKEN")
 
         self.edit_snipes = {}
         self.snipes = {}
@@ -50,7 +51,7 @@ class SaturnBot(commands.Bot):
         self.muted_users = {}
 
         print("Initializing database...")
-        self.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(self.connection_url))
+        self.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(self.mongo_connection_url))
         self.db = self.mongo["saturn"]
         self.config = self.db["config"]
         self.mutes = self.db["mutes"]
@@ -62,7 +63,7 @@ class SaturnBot(commands.Bot):
 
     def run(self):
         print("Running Saturn...")
-        super().run(self.config_token, reconnect=True)
+        super().run(self.TOKEN, reconnect=True)
 
     async def process_commands(self, message):
         ctx = await self.get_context(message)

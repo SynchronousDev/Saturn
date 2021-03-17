@@ -11,12 +11,7 @@ from discord.ext import menus
 from .paginator import Paginator
 
 class SaturnPaginator(Paginator):
-    async def teardown(self):
-        try:
-            await self.page.delete()
-        except discord.NotFound:
-            pass
-
+    pass
 
 # noinspection PyShadowingNames, PyBroadException, SpellCheckingInspection
 async def get_prefix(bot, message):
