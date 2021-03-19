@@ -1,2 +1,2 @@
 # Saturn
-![Saturn](assets/SaturnButWithSmallerRings.png)
+A all-round discord bot made in python.
