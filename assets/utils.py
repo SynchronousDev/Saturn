@@ -1,14 +1,20 @@
 import asyncio
-from datetime import datetime as dt, timedelta
+from datetime import datetime as dt
+import logging
 
-# noinspection PyUnresolvedReferences
 import discord
-# noinspection PyUnresolvedReferences
 from discord.ext import commands
 
 from .constants import *
 from discord.ext import menus
 from .paginator import Paginator
+from cogs.moderation import mute_members
+
+import collections
+import re
+
+from better_profanity import profanity
+
 
 class SaturnPaginator(Paginator):
     pass
@@ -31,7 +37,7 @@ async def get_prefix(bot, message):
         pre = flatten(data['prefix'])
         return commands.when_mentioned_or(*pre)(bot, message)
 
-    except Exception as e:
+    except Exception:
         return commands.when_mentioned_or(PREFIX)(bot, message)
 
 
@@ -136,104 +142,6 @@ async def retrieve_prefix(bot, message):
     elif isinstance(prefix, list):
         prefix = flatten(prefix)
         return ' | '.join(prefix)
-
-
-# noinspection PyUnusedLocal, SpellCheckingInspection
-async def purge_msgs(bot, ctx, limit, check):
-    await ctx.message.delete()
-    deleted = await ctx.channel.purge(
-        limit=limit,
-        after=dt.utcnow() - timedelta(weeks=2),
-        check=check)
-
-    if not len(deleted):
-        em = discord.Embed(
-            description=f"{ERROR} Could not find any messages to delete.\n"
-                        f"```Messages older than 2 weeks cannot be deleted```",
-            color=RED)
-        return await ctx.send(embed=em)
-
-    deleted = list(reversed(deleted))
-
-    em = discord.Embed(
-        description=f"{CHECK} Deleted {len(deleted)} messages in {ctx.channel.mention}",
-        color=GREEN)
-    await ctx.send(embed=em, delete_after=2)
-    data = await bot.config.find_one({"_id": ctx.guild.id})
-    try:
-        mod_logs = ctx.guild.get_channel(data['mod_logs'])
-
-    except KeyError or TypeError:
-        return
-
-    if not mod_logs:
-        return
-
-    await create_purge_file(bot, ctx, deleted)
-
-    try:
-        file = discord.File(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt')
-
-    except FileNotFoundError:
-        await create_purge_file(bot, ctx, deleted)
-
-    file = discord.File(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt')
-
-    em = discord.Embed(
-        title='Messages Purged',
-        description=f'Deleted {len(deleted)} messages in {ctx.channel.mention}\n'
-                    f'Command invoked by {ctx.author.mention}',
-        colour=discord.Colour.orange(),
-        timestamp=dt.utcnow()
-    )
-    em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
-                         "thumbs/120/mozilla/36/memo_1f4dd.png")
-    em.set_footer(text="Download the .txt file below to view deleted messages")
-    await mod_logs.send(embed=em)
-    await asyncio.sleep(0.5)
-    await mod_logs.send(file=file)
-
-
-async def create_purge_file(bot, ctx, deleted):
-    with open(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
-        f.write(f"{len(deleted)} messages deleted in the #{ctx.channel} channel by {ctx.author}:\n\n")
-        for message in deleted:
-            content = message.clean_content
-            if not message.author.bot:
-                f.write(f"{message.author} at {str(message.created_at)[:-7]} UTC"
-                        f" (ID - {message.author.id})\n"
-                        f"{content} (Message ID - {message.id})\n\n")
-
-            else:
-                f.write(f"{u'{}'.format(str(message.author))} at {str(message.created_at)[:-7]} UTC"
-                        f" (ID - {message.author.id})\n"
-                        f"{'Embed/file sent by a bot' if not content else content}\n\n")
-
-
-async def create_mute_role(bot, ctx):
-    """Create the mute role for a guild"""
-    perms = discord.Permissions(
-        send_messages=False, read_messages=True)
-    mute_role = await ctx.guild.create_role(
-        name='Muted', permissions=perms,
-        reason='Could not find a muted role in the process of muting or unmuting.')
-
-    await bot.config.update_one({"_id": ctx.guild.id},
-                                {'$set': {"mute_role": mute_role.id}}, upsert=True)
-
-    for channel in ctx.guild.channels:
-        try:
-            await channel.set_permissions(mute_role, read_messages=True, send_messages=False)
-
-        except discord.Forbidden:
-            continue
-
-        except discord.HTTPException:
-            continue
-
-    return mute_role
-
-# TODO add yes/no confirmation box style things for commands making un-doable actions
 
 # noinspection PyUnusedLocal
 class ConfirmationMenu(menus.Menu):
@@ -358,7 +266,7 @@ async def create_log(bot, member, guild, action, moderator, reason, duration=Non
         timestamp=dt.utcnow()
     )
     em.set_thumbnail(url=emote)
-    em.set_author(icon_url=member.avatar_url, name=member)
+    em.set_author(icon_url=member.avatar_url, name=member.name)
     em.set_footer(text='Case no. {}'.format(await get_last_case_id(bot, guild)))
     em.add_field(name='Member', value=member.mention, inline=False)
     em.add_field(name='Moderator', value=moderator.mention, inline=False)
@@ -457,9 +365,10 @@ async def update_log(bot, case_id, guild, action, reason):
 
 
 async def starboard_embed(message, payload):
+    desc = message.content  # if not isinstance(message, discord.Embed) else message
     em = discord.Embed(
         colour=GOLD,
-        description=f"{message.content}",
+        description=desc,
         timestamp=dt.utcnow()
     )
     em.add_field(name='Original Message', value=f"[Jump!](https://discord.com/channels/"

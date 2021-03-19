@@ -107,7 +107,6 @@ class Fun(commands.Cog):
     )
     @commands.cooldown(1, 1, commands.BucketType.member)
     async def wasted_avatar(self, ctx, member: t.Optional[discord.Member]):
-        doot = member.e
         member = member or ctx.author
         URL = f"https://some-random-api.ml/canvas/wasted/?avatar=" \
               f"{member.avatar_url_as(format='png')}"

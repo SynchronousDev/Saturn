@@ -1,7 +1,6 @@
 from .utils import *
 from .errors import *
 from .constants import *
-import logging
 
 """
 The assets package for this bot

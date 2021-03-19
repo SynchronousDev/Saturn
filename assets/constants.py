@@ -8,13 +8,14 @@ GREEN = discord.Colour.green()
 DIFF_GREEN = 0x677c1e
 DIFF_RED = 0xFF0000
 GOLD = discord.Colour.gold()
+BLUE = discord.Colour.blue()
 
 # Some default emotes
 # not too shabby
 BLANK = '\uFEFF'
 
-ERROR = '<:SaturnCross:818198526923243520>'
-CHECK = '<:SaturnCheck:818198526940807199>'
+ERROR = '<:SaturnError:822122069139521567>'
+CHECK = '<:SaturnCheck:822122069176221726>'
 WARNING = '<:SaturnAlert:818199916312002631>'
 INFO = f'<:SaturnInfo:821565551939420170>'
 PREFIX = "s."
@@ -106,5 +107,5 @@ DUEL_ATTACK_MESSAGES = [
     "{} shot {} in the head, point blank!",
     "{} teleported {} to the sun!",
     "{} squashed {} like a bug!",
-    "{} shoved into a 50 kilometre hole!"
+    "{} shoved {} into a 50 kilometre hole!"
 ]

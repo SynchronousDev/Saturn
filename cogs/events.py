@@ -1,7 +1,5 @@
-import DiscordUtils
-from better_profanity import profanity
-
 from assets import *
+from cogs.automod import profanity_check
 
 log = logging.getLogger(__name__)
 
@@ -9,36 +7,6 @@ log = logging.getLogger(__name__)
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.cooldown_messages = [
-            "Too fast!",
-            "Woah, too quick there!",
-            "Slow down!",
-            "This command's on cooldown!",
-            "Why do I hear boss music?",
-            "Take a chill pill!"
-        ]
-        self.tracker = DiscordUtils.InviteTracker(self.bot)
-
-    @commands.Cog.listener()  # invite tracking
-    # may implement some better invite tracking later on, too lazy lol
-    async def on_ready(self):
-        await self.tracker.cache_invites()
-
-    @commands.Cog.listener()
-    async def on_invite_create(self, invite):
-        await self.tracker.update_invite_cache(invite)
-
-    @commands.Cog.listener()
-    async def on_guild_join(self, guild):
-        await self.tracker.update_guild_cache(guild)
-
-    @commands.Cog.listener()
-    async def on_invite_delete(self, invite):
-        await self.tracker.remove_invite_cache(invite)
-
-    @commands.Cog.listener()
-    async def on_guild_remove(self, guild):
-        await self.tracker.remove_guild_cache(guild)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -74,7 +42,6 @@ class Events(commands.Cog):
             pass
 
         if not member.bot:
-            inviter = await self.tracker.fetch_inviter(member)  # get the inviter of the member
             guild = member.guild
             data = await self.bot.config.find_one({"_id": guild.id})
             try:
@@ -82,6 +49,8 @@ class Events(commands.Cog):
 
             except TypeError or KeyError: return
             if not member_logs: return
+
+            created_delta = (dt.utcnow() - member.created_at).total_seconds()
 
             em = discord.Embed(
                 title='Member Joined',
@@ -91,8 +60,8 @@ class Events(commands.Cog):
             )
             em.set_thumbnail(url=member.avatar_url)
             em.set_author(icon_url=member.avatar_url, name=member)
-            em.add_field(name='Account Created At', value=str(member.created_at)[:-16])
-            em.set_footer(text=f"Member no. {len(guild.members)} | Invited by {inviter}")
+            em.add_field(name='Account Created', value=convert_time(created_delta))
+            em.set_footer(text=f"Member #{len(guild.members)}")
             await member_logs.send(embed=em)  # send the member embed thing
 
     @commands.Cog.listener()
@@ -114,9 +83,9 @@ class Events(commands.Cog):
                 colour=RED,
                 timestamp=dt.utcnow()
             )
-            em.set_author(icon_url=member.avatar_url, name=member)
+            em.set_author(icon_url=member.avatar_url, name=member.name)
             em.set_thumbnail(url=member.avatar_url)
-            em.set_footer(text=f"Only {len(member.guild.members)} members left in {member.guild}")
+            em.set_footer(text=f"{len(member.guild.members)} members left")
             await member_logs.send(embed=em)
 
     @commands.Cog.listener()
@@ -164,10 +133,7 @@ class Events(commands.Cog):
         """
 
         if not after.author.bot:
-            profanity.load_censor_words()
-            if profanity.contains_profanity(after.content):
-                await after.delete()
-                return await after.channel.send("That word is not allowed in **{}**".format(after.guild))
+            await profanity_check(self.bot, after)
 
             schema = {
                 "_id": after.id,

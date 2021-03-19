@@ -171,7 +171,7 @@ class Session:
         try:
             em = discord.Embed(
                 description=f'{INFO} Closing interactive menu.',
-                colour=discord.Colour.blue()
+                colour=BLUE
             )
             await self.page.edit(content=None, embed=em)
             if self.page.guild.me.guild_permissions.manage_messages:
@@ -396,7 +396,7 @@ class Paginator(Session):
         elif control == 'number':
             em = discord.Embed(
                 description=f'{INFO} Please specify which page you want to go to in the chat.',
-                colour=discord.Colour.blue())
+                colour=BLUE)
             await ctx.send(embed=em)
             try:
                 msg = await ctx.bot.wait_for(
@@ -406,7 +406,7 @@ class Paginator(Session):
             except asyncio.TimeoutError:
                 em = discord.Embed(
                     description=f'{INFO} User did not respond in time.',
-                    colour=discord.Colour.blue())
+                    colour=BLUE)
                 await ctx.send(embed=em)
 
             else:

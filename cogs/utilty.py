@@ -83,10 +83,13 @@ class Utility(commands.Cog):
         embed.set_thumbnail(url=member.avatar_url)
         embed.set_author(icon_url=member.avatar_url, name=member.name)
 
+        join_delta = (dt.utcnow() - member.joined_at).total_seconds()
+        created_delta = (dt.utcnow() - member.created_at).total_seconds()
+
         embed.add_field(name="ID", value=member.id, inline=False)
-        embed.add_field(name="Joined Discord", value=member.created_at.strftime("%d/%m/%Y"), inline=False)
+        embed.add_field(name="Joined Discord", value=convert_time(created_delta), inline=False)
         if isinstance(member, discord.Member):
-            embed.add_field(name=f"Joined {ctx.guild}", value=member.joined_at.strftime("%d/%m/%Y"), inline=False)
+            embed.add_field(name=f"Joined {ctx.guild}", value=convert_time(join_delta), inline=False)
             embed.add_field(
                 name="Roles",
                 value=str(" ".join(reversed([f"<@&{r.id}>" for r in member.roles[1:]]))),
@@ -136,9 +139,9 @@ class Utility(commands.Cog):
     @commands.cooldown(1, 2, commands.BucketType.member)
     async def get_snipes(self, ctx, member: t.Optional[discord.Member], channel: t.Optional[discord.TextChannel]):
         em = discord.Embed(
-            colour=MAIN,
+            colour=BLUE,
         )
-        em.description = f"{SATURN} Couldn't find any deleted messages " \
+        em.description = f"{INFO} Couldn't find any deleted messages " \
                          f"{f'from {member.mention}' if member else ''}" \
                          f" in the last 10 minutes."
 
@@ -164,6 +167,7 @@ class Utility(commands.Cog):
                                   icon_url=user.avatar_url)
                     em.description = value['content']
                     em.timestamp = value['time']
+                    em.colour = ctx.author.colour
                     break
 
         await ctx.send(embed=em)
@@ -176,9 +180,9 @@ class Utility(commands.Cog):
     @commands.cooldown(1, 2, commands.BucketType.member)
     async def get_editsnipes(self, ctx, member: t.Optional[discord.Member], channel: t.Optional[discord.TextChannel]):
         em = discord.Embed(
-            colour=MAIN,
+            colour=BLUE,
         )
-        em.description = f"{SATURN} Couldn't find any edited messages " \
+        em.description = f"{INFO} Couldn't find any edited messages " \
                          f"{f'from {member.mention}' if member else ''}" \
                          f" in the last 10 minutes."
 
@@ -205,6 +209,7 @@ class Utility(commands.Cog):
                     em.description = f"**Before** - {value['before']}\n" \
                                      f"**After** - {value['after']}"
                     em.timestamp = value['time']
+                    em.colour = ctx.author.colour
                     break
 
         await ctx.send(embed=em)

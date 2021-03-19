@@ -1,156 +1,115 @@
 import os
-import re
 import typing as t
 from copy import deepcopy
+from datetime import timedelta
 from glob import glob
 
 import pytimeparse as pytp
 from dateutil.relativedelta import relativedelta
 from discord.ext import tasks
+import discord
+from discord.ext import commands
 
 from assets import *
 
 
-# noinspection PyTypeChecker
-class GuildPunishmentsMenu(menus.ListPageSource):
-    def __init__(self, ctx, data, bot):
-        self.ctx = ctx
-        self.bot = bot
+# noinspection PyUnusedLocal, SpellCheckingInspection
+async def purge_msgs(bot, ctx, limit, check):
+    await ctx.message.delete()
+    deleted = await ctx.channel.purge(
+        limit=limit,
+        after=dt.utcnow() - timedelta(weeks=2),
+        check=check)
 
-        super().__init__(data, per_page=10)
-
-    async def write_cases(self, menu, punishments):
-        offset = (menu.current_page * self.per_page) + 1
-        len_data = len(self.entries)
-
+    if not len(deleted):
         em = discord.Embed(
-            title=f'{self.ctx.guild}\'s Moderation Cases',
-            colour=MAIN,
-            timestamp=dt.utcnow())
-        em.set_thumbnail(url=self.ctx.guild.icon_url)
+            description=f"{ERROR} Could not find any messages to delete.\n"
+                        f"```Messages older than 2 weeks cannot be deleted```",
+            color=RED)
+        return await ctx.send(embed=em)
 
-        if not punishments:
-            em.description = 'This guild has a clean record! Amazing!'
+    deleted = list(reversed(deleted))
 
-        else:
-            em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} "
-                               f"of {len_data:,} punishments")
+    em = discord.Embed(
+        description=f"{CHECK} Deleted {len(deleted)} messages in {ctx.channel.mention}",
+        color=GREEN)
+    await ctx.send(embed=em, delete_after=2)
+    data = await bot.config.find_one({"_id": ctx.guild.id})
+    try:
+        mod_logs = ctx.guild.get_channel(data['mod_logs'])
+        if not mod_logs:
+            return
 
-            for case in punishments:
-                case_id, action, reason = case['case_id'], case['action'], case['reason']
-                action = action.split(' ')
+    except KeyError or TypeError:
+        return
 
-                desc = f"**Member -** <@!{case['member']}>\n**Action -** {action[0]}\n"
-                if len(action) > 1:
-                    desc += f"**Duration -** {' '.join(action[2:])}\n"
+    try:
+        await create_purge_file(bot, ctx, deleted)
 
-                desc += f"**Moderator -** <@!{case['moderator']}>\n**Reason -** {reason}"
-                em.add_field(
-                    name=f'**Case #{case_id}**',
-                    value=desc)
+    except FileNotFoundError:
+        await asyncio.sleep(0.5)
+        await create_purge_file(bot, ctx, deleted)
 
-        return em
+    try:
+        file = discord.File(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt')
 
-    async def format_page(self, menu, entries):
-        return await self.write_cases(menu, entries)
+    except FileNotFoundError:
+        await create_purge_file(bot, ctx, deleted)
+        file = discord.File(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt')
 
-
-# noinspection PyTypeChecker
-class PunishmentsMenu(menus.ListPageSource):
-    def __init__(self, ctx, data, bot, member):
-        self.ctx = ctx
-        self.bot = bot
-        self.member = member
-
-        super().__init__(data, per_page=10)
-
-    async def write_cases(self, menu, punishments):
-        offset = (menu.current_page * self.per_page) + 1
-        len_data = len(self.entries)
-
-        em = discord.Embed(
-            title='Moderation Cases',
-            colour=MAIN,
-            timestamp=dt.utcnow())
-
-        if not punishments:
-            em.description = f'{self.member.mention} has a clean record!'
-
-        else:
-            em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} "
-                               f"of {len_data:,} punishments")
-
-            for case in punishments:
-                case_id, action, reason = case['case_id'], case['action'], case['reason']
-                action = action.split(' ')
-                em.set_thumbnail(url=self.member.avatar_url)
-                desc = f"**Action** - {action[0]}\n"
-                if len(action) > 1:
-                    desc += f"**Duration -** {' '.join(action[2:])}\n"
-
-                desc += f"**Moderator -** <@!{case['moderator']}>\n**Reason -** {reason}"
-                em.add_field(
-                    name=f'**Case #{case_id}**',
-                    value=desc)
-
-        return em
-
-    async def format_page(self, menu, entries):
-        return await self.write_cases(menu, entries)
+    em = discord.Embed(
+        title='Messages Purged',
+        description=f'Deleted {len(deleted)} messages in {ctx.channel.mention}\n'
+                    f'Command invoked by {ctx.author.mention}',
+        colour=discord.Colour.orange(),
+        timestamp=dt.utcnow()
+    )
+    em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
+                         "thumbs/120/mozilla/36/memo_1f4dd.png")
+    em.set_footer(text="Download the .txt file below to view deleted messages")
+    await mod_logs.send(embed=em)
+    await asyncio.sleep(0.5)
+    await mod_logs.send(file=file)
 
 
-# noinspection PyTypeChecker, PyAbstractClass, SpellCheckingInspection
-class ActiveModerationsMenu(menus.ListPageSource):
-    def __init__(self, ctx, data, bot):
-        self.ctx = ctx
-        self.bot = bot
-        super().__init__(data, per_page=10)
+async def create_purge_file(bot, ctx, deleted):
+    with open(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
+        f.write(f"{len(deleted)} messages deleted in the #{ctx.channel} channel by {ctx.author}:\n\n")
+        for message in deleted:
+            content = message.clean_content
+            if not message.author.bot:
+                f.write(f"{message.author} at {str(message.created_at)[:-7]} UTC"
+                        f" (ID - {message.author.id})\n"
+                        f"{content} (Message ID - {message.id})\n\n")
 
-    async def write_cases(self, menu, active_mods):
-        offset = (menu.current_page * self.per_page) + 1
-        len_data = len(self.entries)
+            else:
+                f.write(f"{u'{}'.format(str(message.author))} at {str(message.created_at)[:-7]} UTC"
+                        f" (ID - {message.author.id})\n"
+                        f"{'Embed/file sent by a bot' if not content else content}\n\n")
 
-        em = discord.Embed(
-            title='Active Moderation Cases',
-            colour=MAIN,
-            timestamp=dt.utcnow()
-        )
 
-        if not len(active_mods):
-            em.description = "There are currently no active moderation cases in this guild! Hooray!"
+async def create_mute_role(bot, ctx):
+    """Create the mute role for a guild"""
+    perms = discord.Permissions(
+        send_messages=False, read_messages=True)
+    mute_role = await ctx.guild.create_role(
+        name='Muted', permissions=perms,
+        reason='Could not find a muted role in the process of muting or unmuting.')
 
-        else:
-            em.set_footer(text=f"{offset:,} - {min(len_data, offset + self.per_page - 1):,} "
-                               f"of {len_data:,} active punishments")
-            for item in active_mods:
-                for key, value in item.items():
-                    user = self.bot.get_user(value["_id"]) or await self.bot.fetch_user(value['_id'])
-                    try:
-                        end_time = value["at"] + relativedelta(seconds=value["duration"])
+    await bot.config.update_one({"_id": ctx.guild.id},
+                                {'$set': {"mute_role": mute_role.id}}, upsert=True)
 
-                    except TypeError:
-                        end_time = "Never"
+    for channel in ctx.guild.channels:
+        try:
+            await channel.set_permissions(mute_role, read_messages=True, send_messages=False)
 
-                    until_end = "Indefinite"
+        except discord.Forbidden:
+            continue
 
-                    if value['duration']:
-                        try:
-                            until_end = str(end_time - dt.utcnow())[:-7]
+        except discord.HTTPException:
+            continue
 
-                        except AttributeError:
-                            until_end = 'Indefinite'
-
-                    em.add_field(name=f'{str(value["type"]).title()}',
-                                 value=f"**Member** - {user.mention}\n"
-                                       f"**Ends at** - "
-                                       f"{str(end_time)[:-7] if not str(end_time).isalpha() else end_time}\n"
-                                       f"**Time left** - {until_end}",
-                                 inline=False)
-
-        return em
-
-    async def format_page(self, menu, entries):
-        return await self.write_cases(menu, entries)
+    return mute_role
 
 async def kick_members(bot, ctx, member, reason):
     """
@@ -421,9 +380,7 @@ class Mod(commands.Cog, name='Moderation'):
     async def check_punishments(self, ctx, member: t.Optional[discord.User]):
         member = member or ctx.author
         punishments = await get_member_mod_logs(self.bot, member, ctx.guild)
-        menu = menus.MenuPages(source=PunishmentsMenu(ctx, punishments, self.bot, member), delete_message_after=True)
-
-        await menu.start(ctx)
+        await ctx.send("TBD...")
 
     @commands.command(
         name='guildcases',
@@ -434,9 +391,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.guild_only()
     async def check_guild_punishments(self, ctx):
         punishments = await get_guild_mod_logs(self.bot, ctx.guild)
-        menu = menus.MenuPages(source=GuildPunishmentsMenu(ctx, punishments, self.bot), delete_message_after=True)
-
-        await menu.start(ctx)
+        await ctx.send("TBD...")
 
     @commands.command(
         name='deletecase',
@@ -512,8 +467,7 @@ class Mod(commands.Cog, name='Moderation'):
         for key, value in cases.items():
             active.append({key: value})
 
-        menu = menus.MenuPages(source=ActiveModerationsMenu(ctx, active, self.bot), delete_message_after=True)
-        await menu.start(ctx)
+        await ctx.send("TBD...")
 
     @commands.command(
         name='kick',
@@ -621,6 +575,8 @@ class Mod(commands.Cog, name='Moderation'):
             colour=GREEN)
         em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
         await ctx.send(embed=em)
+
+    # TODO: update paginator for moderation things
 
     @commands.command(
         name='unban',

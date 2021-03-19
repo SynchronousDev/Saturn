@@ -1,13 +1,8 @@
-import json
-import logging
 import os
 from pathlib import Path
 
 import motor.motor_asyncio
 from discord.ext import tasks
-from assets import *
-from discord.ext import commands
-import discord
 from dotenv import load_dotenv
 
 from assets import *
@@ -49,6 +44,7 @@ class SaturnBot(commands.Bot):
         self.snipes = {}
         self.banned_users = {}
         self.muted_users = {}
+        self.message_cache = {}
 
         print("Initializing database...")
         self.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(self.mongo_connection_url))

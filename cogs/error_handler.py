@@ -3,7 +3,6 @@ from assets import *
 from discord.ext import commands
 import traceback
 import sys
-import random
 
 log = logging.getLogger(__name__) 
 

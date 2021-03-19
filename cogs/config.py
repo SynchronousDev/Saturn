@@ -14,10 +14,11 @@ class Config(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(
+    @commands.group(
         name="prefixes",
         aliases=["pres", 'showprefixes'],
-        description="Show the prefixes that the bot will respond to.")
+        description="Show the prefixes that the bot will respond to.",
+        invoke_without_command=True)
     @commands.has_guild_permissions(manage_guild=True)
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
@@ -35,11 +36,36 @@ class Config(commands.Cog):
         em.set_footer(text='You can always invoke commands by mentioning me.')
         await ctx.send(embed=em)
 
+    @prefix.command(
+        name='addprefix',
+        aliases=['addpre', 'add', 'append'],
+        description='Add a prefix that the bot responds to.'
+    )
+    @commands.has_guild_permissions(manage_guild=True)
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    async def _add_prefix(self, ctx, prefix):
+        await ctx.invoke(self.bot.get_command('addprefix'), prefix=prefix)
+
+    @prefix.command(
+        name='removeprefix',
+        aliases=['delprefix', 'delpre', 'removepre', 'remove'],
+        description='Remove a prefix that the bot responds to.'
+    )
+    @commands.has_guild_permissions(manage_guild=True)
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    async def _remove_prefix(self, ctx, prefix):
+        await ctx.invoke(self.bot.get_command('removeprefix'), prefix=prefix)
+
     @commands.command(
         name='addprefix',
         aliases=['addpre'],
         description='Add a prefix that the bot responds to.'
     )
+    @commands.has_guild_permissions(manage_guild=True)
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.guild)
     async def add_prefix(self, ctx, prefix):
         if prefix != "--":
             prefix = prefix.replace("--", " ")
@@ -79,6 +105,9 @@ class Config(commands.Cog):
         aliases=['delprefix', 'delpre', 'removepre'],
         description='Remove a prefix that the bot responds to.'
     )
+    @commands.has_guild_permissions(manage_guild=True)
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.guild)
     async def remove_prefix(self, ctx, prefix):
         if prefix != "--":
             prefix = prefix.replace("--", " ")
@@ -100,7 +129,15 @@ class Config(commands.Cog):
         prefixes = data["prefix"]
 
         if isinstance(prefixes, str): pass
-        else: prefixes.remove(prefix)
+        else:
+            try:
+                prefixes.remove(prefix)
+
+            except ValueError:
+                em = discord.Embed(
+                    description=f"{ERROR} `{prefix}` is not registered as a prefix.",
+                    colour=RED)
+                return await ctx.send(embed=em)
 
         await self.bot.config.update_one({"_id": ctx.guild.id}, {'$set': {"prefix": prefixes}}, upsert=True)
         em = discord.Embed(
@@ -414,7 +451,6 @@ class Config(commands.Cog):
             colour=GREEN)
         await ctx.send(embed=em)
 
-
     @commands.group(
         name='starboard',
         aliases=['star', 'sboard'],
@@ -438,15 +474,17 @@ class Config(commands.Cog):
             colour=GREEN)
         await ctx.send(embed=em)
 
+    # TODO: Add support for embeds on the starboard
+
     @star_board.command(
         name='stars',
         aliases=['count', 'star'],
         description='Set the required number of stars needed to get a message to the starboard.'
     )
     async def set_starboard_stars(self, ctx, stars: int):
-        if stars < 3:
+        if stars < 2:
             em = discord.Embed(
-                description=f"{ERROR} Minimum number of stars cannot be less than 3.",
+                description=f"{ERROR} Minimum number of stars cannot be less than 2.",
                 colour=RED)
             return await ctx.send(embed=em)
 
