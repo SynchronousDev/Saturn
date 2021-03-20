@@ -1,4 +1,4 @@
-# Sakura
+# Saturn
 A multipurpose discord bot made in python.
 
 # Invite the bot
