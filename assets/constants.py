@@ -2,7 +2,7 @@ import discord
 
 # Colours, emotes, and useful stuff
 
-MAIN = 0x5A00D8
+MAIN = 0xF6009B
 RED = discord.Colour.red()
 GREEN = discord.Colour.green()
 DIFF_GREEN = 0x677c1e
@@ -14,17 +14,16 @@ BLUE = discord.Colour.blue()
 # not too shabby
 BLANK = '\uFEFF'
 
-ERROR = '<:SaturnError:822122069139521567>'
-CHECK = '<:SaturnCheck:822122069176221726>'
-WARNING = '<:SaturnAlert:818199916312002631>'
-INFO = f'<:SaturnInfo:821565551939420170>'
-PREFIX = "s."
+ERROR = '<:error:822122069139521567>'
+CHECK = '<:check:822122069176221726>'
+WARNING = '<:warning:818199916312002631>'
+INFO = '<:info:821565551939420170>'
+PREFIX = "sk!"
 LOCK = ':lock:'
 UNLOCK = ':unlock:'
 WEAK_SIGNAL = ':red_circle:'
 MEDIUM_SIGNAL = ':yellow_circle:'
 STRONG_SIGNAL = ':green_circle:'
-SATURN = '<:Saturn:813806979847421983>'
 NO_REPEAT = '⏭'
 REPEAT_ONE = '🔂'
 REPEAT_ALL = '🔁'

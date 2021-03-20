@@ -255,14 +255,14 @@ class Fun(commands.Cog):
             if winning_choice:
                 if winning_choice == choice:
                     win = discord.Embed(
-                        description=f"```You chose {choice}\nSaturn chose {computer_choice}```",
+                        description=f"```You chose {choice}\n{self.bot.name} chose {computer_choice}```",
                         color=GREEN)
                     win.set_author(icon_url=ctx.author.avatar_url, name='You won!')
                     await ctx.send(embed=win)
 
                 elif winning_choice == computer_choice:
                     loss = discord.Embed(
-                        description=f"```You chose {choice}\nSaturn chose {computer_choice}```",
+                        description=f"```You chose {choice}\n{self.bot.name} chose {computer_choice}```",
                         color=RED)
                     loss.set_author(icon_url=ctx.author.avatar_url, name='You lost!')
                     await ctx.send(embed=loss)
@@ -299,7 +299,7 @@ class Fun(commands.Cog):
 
             else:
                 em = discord.Embed(
-                    description=f"{ERROR} Saturn tries to roll `{amount}` dice but gets confused and fails.",
+                    description=f"{ERROR} {self.bot.name} tries to roll `{amount}` dice but gets confused and fails.",
                     color=RED)
                 await ctx.send(embed=em)
 
@@ -312,7 +312,7 @@ class Fun(commands.Cog):
 
         else:
             em = discord.Embed(
-                description=f"{ERROR} Saturn tries to roll `{amount}` dice but gets confused and fails.",
+                description=f"{ERROR} {self.bot.name} tries to roll `{amount}` dice but gets confused and fails.",
                 color=RED)
             await ctx.send(embed=em)
 
@@ -344,7 +344,7 @@ class Fun(commands.Cog):
                      'Outlook is not so good',
                      'Very doubtful']
         em = discord.Embed(
-            title='The Magic Saturn Ball',
+            title=f'The Magic {self.bot.name} Ball',
             colour=ctx.author.colour,
             timestamp=dt.utcnow()
         )

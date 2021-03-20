@@ -2,21 +2,17 @@ import asyncio
 from datetime import datetime as dt
 import logging
 
+# noinspection PyUnresolvedReferences
 import discord
 from discord.ext import commands
 
 from .constants import *
 from discord.ext import menus
 from .paginator import Paginator
-from cogs.moderation import mute_members
 
-import collections
-import re
+log = logging.getLogger(__name__)
 
-from better_profanity import profanity
-
-
-class SaturnPaginator(Paginator):
+class SakuraPaginator(Paginator):
     pass
 
 # noinspection PyShadowingNames, PyBroadException, SpellCheckingInspection
@@ -284,6 +280,8 @@ async def create_log(bot, member, guild, action, moderator, reason, duration=Non
 
     _action = action + ((' lasting ' + duration) if duration else '')
     # get the action + duration for formatting purposes
+
+    await asyncio.sleep(0.5)
 
     await _create_log(bot, member, guild, _action, moderator, reason)  # create the log
 

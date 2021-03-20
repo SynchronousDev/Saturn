@@ -7,8 +7,6 @@ from glob import glob
 import pytimeparse as pytp
 from dateutil.relativedelta import relativedelta
 from discord.ext import tasks
-import discord
-from discord.ext import commands
 
 from assets import *
 
@@ -379,7 +377,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.guild_only()
     async def check_punishments(self, ctx, member: t.Optional[discord.User]):
         member = member or ctx.author
-        punishments = await get_member_mod_logs(self.bot, member, ctx.guild)
+        await get_member_mod_logs(self.bot, member, ctx.guild)
         await ctx.send("TBD...")
 
     @commands.command(
@@ -390,7 +388,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.guild_only()
     async def check_guild_punishments(self, ctx):
-        punishments = await get_guild_mod_logs(self.bot, ctx.guild)
+        await get_guild_mod_logs(self.bot, ctx.guild)
         await ctx.send("TBD...")
 
     @commands.command(
@@ -431,19 +429,19 @@ class Mod(commands.Cog, name='Moderation'):
     async def view_case(self, ctx, case_id: int):
         logs = await get_guild_mod_logs(self.bot, ctx.guild)
 
-        for i, log in enumerate(logs, start=1):
+        for i, _log in enumerate(logs, start=1):
             if i == case_id:
                 em = discord.Embed(
                     colour=MAIN,
-                    timestamp=log['time']
+                    timestamp=_log['time']
                 )
-                moderator = self.bot.get_user(log["moderator"])
-                member = self.bot.get_user(log["member"])
+                moderator = self.bot.get_user(_log["moderator"])
+                member = self.bot.get_user(_log["member"])
                 em.set_thumbnail(url=member.avatar_url)
-                em.set_author(icon_url=moderator.avatar_url, name=f'Case #{log["case_id"]} - {log["action"]}')
+                em.set_author(icon_url=moderator.avatar_url, name=f'Case #{_log["case_id"]} - {_log["action"]}')
                 em.add_field(name='Member', value=member.mention)
                 em.add_field(name='Actioned By', value=moderator.mention)
-                em.add_field(name='Reason', value=log['reason'])
+                em.add_field(name='Reason', value=_log['reason'])
                 em.set_footer(text="Actioned at")
                 return await ctx.send(embed=em)
 
@@ -638,8 +636,8 @@ class Mod(commands.Cog, name='Moderation'):
             mute_role = ctx.guild.get_role(data['mute_role'])
             if not mute_role:
                 em = discord.Embed(
-                    description=f"{SATURN} Couldn't find a mute role to assign to {member.mention}, making one now...",
-                    colour=MAIN)
+                    description=f"{WARNING} Couldn't find a mute role to assign to {member.mention}, making one now...",
+                    colour=GOLD)
                 msg = await ctx.channel.send(embed=em)
 
                 mute_role = await create_mute_role(self.bot, ctx)
@@ -648,9 +646,9 @@ class Mod(commands.Cog, name='Moderation'):
 
         except KeyError:
             em = discord.Embed(
-                description=f"{SATURN} Couldn't find a mute role to assign to {member.mention}, making one now...",
-                colour=MAIN)
-            msg = await ctx.send(embed=em)
+                description=f"{WARNING} Couldn't find a mute role to assign to {member.mention}, making one now...",
+                colour=GOLD)
+            msg = await ctx.channel.send(embed=em)
 
             mute_role = await create_mute_role(self.bot, ctx)
 

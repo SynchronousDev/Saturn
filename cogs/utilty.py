@@ -67,8 +67,8 @@ class Utility(commands.Cog):
     @commands.command(
         name="version",
         aliases=['vers'])
-    async def saturn_version(self, ctx):
-        await ctx.reply("Saturn is currently running on version {}".format(self.bot.__version__))
+    async def _vers(self, ctx):
+        await ctx.reply(f"{self.bot.name} is currently running on version {self.bot.__version__}")
 
     @commands.command(name="userinfo",
                       aliases=["memberinfo", "ui", "mi"],

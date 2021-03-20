@@ -1,5 +1,9 @@
+import collections
+import re
+
+from better_profanity import profanity
+
 from .moderation import *
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +57,8 @@ async def profanity_check(bot, message):
                     profanity.contains_profanity(
                         "".join(collections.OrderedDict.fromkeys(msg)))  # duplicate chars
             ):
-                if await profanity_command_check(bot, message): return  # make sure that they're not adding a word
+                if await profanity_command_check(bot, message):
+                    return False  # make sure that they're not adding a word
                 # in that case then don't do stuff
 
                 await message.delete()
@@ -64,9 +69,12 @@ async def profanity_check(bot, message):
                 await automod_log(
                     bot, message, "warning",
                     f"Said || {message.content} || which contains profanity")
+                return True
+
+            return False
 
     except KeyError or TypeError:
-        pass
+        return False
 
 async def spam_check(bot, message):
     _data = await bot.config.find_one({"_id": message.guild.id})
@@ -263,7 +271,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         name='add',
         aliases=['addword', 'addcurse', 'addswear', 'addprofanity'],
         description='Adds a curse word the anti-profanity system detects. '
-                    'Use -default to include the default Saturn wordlist.'
+                    f'Use -default to include the default wordlist.'
     )
     @commands.cooldown(1, 3, commands.BucketType.member)
     async def add_curse(self, ctx, *, word: str):

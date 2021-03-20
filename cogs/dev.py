@@ -92,10 +92,10 @@ class Dev(commands.Cog):
         try:
             with ctxlib.redirect_stdout(stdout):
                 exec(
-                    f"async def saturn_evaluate():\n{textwrap.indent(code, '    ')}", local_vars
+                    f"async def eval():\n{textwrap.indent(code, '    ')}", local_vars
                 )
 
-                obj = await local_vars["saturn_evaluate"]()
+                obj = await local_vars["eval"]()
                 value = stdout.getvalue() or "None"
                 result = f'{value}\n-- {obj}\n'
                 colour = DIFF_GREEN
@@ -104,12 +104,12 @@ class Dev(commands.Cog):
             result = ''.join(format_exception(e, e, e.__traceback__))
             colour = DIFF_RED
 
-        pager = SaturnPaginator(
+        pager = SakuraPaginator(
             entries=[result[i: i + (2000 - len(code))]
                      for i in range(0, len(result), (2000 - len(code)))],
             length=1,
             colour=colour,
-            footer='Saturn Eval command',
+            footer='Sakura Eval command',
             prefix=f"```py\n{code}```\n```py\n",
             suffix='```'
         )

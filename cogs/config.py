@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 # noinspection SpellCheckingInspection
 class Config(commands.Cog):
     """
-    The Configuration cog. All commands that can help you set up or customize Saturn are included here.
+    The Configuration cog. All commands that can help you set up or customize the bot are included here.
 
     This includes changing the prefix, setting moderator and muting roles, logging, and others.
     """

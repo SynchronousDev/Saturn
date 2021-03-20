@@ -64,8 +64,8 @@ class Management(commands.Cog, name='Server Management'):
         conf = await ConfirmationMenu(f'mass add {role.mention}').prompt(ctx)
         if conf:
             em = discord.Embed(
-                description=f"{SATURN} This might take a while, please wait...",
-                colour=MAIN)
+                description=f"{INFO} This might take a while, please wait...",
+                colour=BLUE)
             msg = await ctx.send(embed=em)
             added_roles = []
             for member in ctx.guild.members:
@@ -85,8 +85,8 @@ class Management(commands.Cog, name='Server Management'):
 
         else:
             em = discord.Embed(
-                description=f"{ERROR} Action cancelled.",
-                colour=RED)
+                description=f"{INFO} Action cancelled.",
+                colour=BLUE)
             await ctx.send(embed=em)
 
     @commands.command(
@@ -99,8 +99,8 @@ class Management(commands.Cog, name='Server Management'):
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, reason: t.Optional[str]):
         em = discord.Embed(
-            description=f"{SATURN} This might take a while, please wait...",
-            colour=MAIN)
+            description=f"{INFO} This might take a while, please wait...",
+            colour=BLUE)
         msg = await ctx.send(embed=em)
         removed_roles = []
         for member in ctx.guild.members:
@@ -252,8 +252,8 @@ class Management(commands.Cog, name='Server Management'):
 
         else:
             em = discord.Embed(
-                description=f"{ERROR} Action cancelled.",
-                colour=RED)
+                description=f"{INFO} Action cancelled.",
+                colour=BLUE)
             await ctx.send(embed=em)
 
     @delete.command(
@@ -282,8 +282,8 @@ class Management(commands.Cog, name='Server Management'):
 
         else:
             em = discord.Embed(
-                description=f"{ERROR} Action cancelled.",
-                colour=RED)
+                description=f"{INFO} Action cancelled.",
+                colour=BLUE)
             await ctx.send(embed=em)
 
     @delete.command(
@@ -311,8 +311,8 @@ class Management(commands.Cog, name='Server Management'):
 
         else:
             em = discord.Embed(
-                description=f"{ERROR} Action cancelled.",
-                colour=RED)
+                description=f"{INFO} Action cancelled.",
+                colour=BLUE)
             await ctx.send(embed=em)
 
 def setup(bot):

@@ -94,8 +94,9 @@ class Events(commands.Cog):
         Fires when a message is deleted
         """
         if not message.author.bot:
-            profanity.load_censor_words()
-            if profanity.contains_profanity(message.content): return
+            if await profanity_check(self.bot, message):
+                return
+
             schema = {
                 "_id": message.id,
                 "channel": message.channel.id,

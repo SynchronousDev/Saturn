@@ -21,16 +21,17 @@ logger.addHandler(handler)
 
 
 # noinspection PyMethodMayBeStatic
-class SaturnBot(commands.Bot):
+class Saturn(commands.Bot):
     def __init__(self):
         super().__init__(
             command_prefix=get_prefix,
-            description="An all-in-one discord bot suited to your needs.",
+            description="A multipurpose discord bot made in python.",
             intents=discord.Intents.all(),
             case_insensitive=True,
             owner_ids=[531501355601494026, 704355591686062202]
         )
         self.ready = False
+        self.name = 'Saturn'
 
         self.path = Path(__file__).parents[0]
         self.path = str(self.path)
@@ -48,7 +49,7 @@ class SaturnBot(commands.Bot):
 
         print("Initializing database...")
         self.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(self.mongo_connection_url))
-        self.db = self.mongo["saturn"]
+        self.db = self.mongo[f"{self.name}"]
         self.config = self.db["config"]
         self.mutes = self.db["mutes"]
         self.blacklists = self.db["blacklists"]
@@ -58,7 +59,7 @@ class SaturnBot(commands.Bot):
         self.starboard = self.db["starboard"]
 
     def run(self):
-        print("Running Saturn...")
+        print(f"Running {self.name}...")
         super().run(self.TOKEN, reconnect=True)
 
     async def process_commands(self, message):
@@ -70,19 +71,19 @@ class SaturnBot(commands.Bot):
 
             elif not self.ready:
                 em = discord.Embed(
-                    description=f"{SATURN} I'm not quite ready to receive commands yet!",
-                    colour=MAIN)
+                    description=f"{WARNING} I'm not quite ready to receive commands yet!",
+                    colour=GOLD)
                 return await ctx.send(embed=em)
 
         await self.invoke(ctx)
 
     async def on_connect(self):
         self.change_pres.start()
-        print("Saturn connected")
+        print(f"{self.name} connected")
 
     async def on_disconnect(self):
         self.change_pres.cancel()
-        print("Saturn disconnected")
+        print(f"{self.name} disconnected")
 
     async def on_ready(self):
         if not self.ready:
@@ -101,10 +102,10 @@ class SaturnBot(commands.Bot):
             async for _doc in self.bans.find({}): bans.append(_doc)
             for ban in bans: self.banned_users[ban["_id"]] = ban
 
-            print("Saturn is ready")
+            print(f"{self.name} is ready")
 
         else:
-            print("Saturn reconnected")
+            print(f"{self.name} reconnected")
 
     async def on_message(self, message):
         await self.process_commands(message)
@@ -117,7 +118,7 @@ class SaturnBot(commands.Bot):
 
 if __name__ == '__main__':
     """Load all of the cogs and initialize the databases"""
-    saturn = SaturnBot()
-    saturn.run()  # run the bot
+    Saturn = Saturn()
+    Saturn.run()  # run the bot
     print("Event loop closed.")  # I can do this because it will not print until the event loop stops
     # all processes after this will not be run until the bot stops so oof

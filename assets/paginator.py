@@ -377,7 +377,7 @@ class Paginator(Session):
 
         elif control == 'info':
             em = discord.Embed(
-                title="How to use the Saturn Interactive Menu",
+                title="How to use the Interactive Menu",
                 description=f"""
                 {PAG_FRONT} - Go to the first page.
                 {PAG_PREVIOUS} - Go back one page.
