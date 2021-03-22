@@ -6,21 +6,36 @@ log = logging.getLogger(__name__)
 # noinspection SpellCheckingInspection
 class Config(commands.Cog):
     """
-    The Configuration cog. All commands that can help you set up or customize the bot are included here.
+    The Configuration module. All commands that can help you set up or customize the bot are included here.
 
     This includes changing the prefix, setting moderator and muting roles, logging, and others.
     """
 
     def __init__(self, bot):
         self.bot = bot
+        
+    def cog_check(self, ctx):
+        if ctx.command != self.bot.get_command('prefixes'):
+            if not ctx.guild:
+                return False
+
+            return ctx.author.guild_permissions.manage_guild
+
+        else:
+            if not ctx.invoked_subcommand:
+                return True
+
+            else:
+                if not ctx.guild:
+                    return False
+
+                return ctx.author.guild_permissions.manage_guild
 
     @commands.group(
         name="prefixes",
         aliases=["pres", 'showprefixes'],
         description="Show the prefixes that the bot will respond to.",
         invoke_without_command=True)
-    @commands.has_guild_permissions(manage_guild=True)
-    @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def prefix(self, ctx):
         em = discord.Embed(
@@ -41,8 +56,6 @@ class Config(commands.Cog):
         aliases=['addpre', 'add', 'append'],
         description='Add a prefix that the bot responds to.'
     )
-    @commands.has_guild_permissions(manage_guild=True)
-    @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def _add_prefix(self, ctx, prefix):
         await ctx.invoke(self.bot.get_command('addprefix'), prefix=prefix)
@@ -52,8 +65,6 @@ class Config(commands.Cog):
         aliases=['delprefix', 'delpre', 'removepre', 'remove'],
         description='Remove a prefix that the bot responds to.'
     )
-    @commands.has_guild_permissions(manage_guild=True)
-    @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def _remove_prefix(self, ctx, prefix):
         await ctx.invoke(self.bot.get_command('removeprefix'), prefix=prefix)
@@ -63,8 +74,6 @@ class Config(commands.Cog):
         aliases=['addpre'],
         description='Add a prefix that the bot responds to.'
     )
-    @commands.has_guild_permissions(manage_guild=True)
-    @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def add_prefix(self, ctx, prefix):
         if prefix != "--":
@@ -105,8 +114,7 @@ class Config(commands.Cog):
         aliases=['delprefix', 'delpre', 'removepre'],
         description='Remove a prefix that the bot responds to.'
     )
-    @commands.has_guild_permissions(manage_guild=True)
-    @commands.guild_only()
+
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def remove_prefix(self, ctx, prefix):
         if prefix != "--":
@@ -153,7 +161,6 @@ class Config(commands.Cog):
                     'but individual commands can always be disabled later.',
         invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
-    @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def mod_role(self, ctx):
         await ctx.invoke(self.bot.get_command('help'), entity='modrole')
@@ -163,7 +170,6 @@ class Config(commands.Cog):
         aliases=['assign'],
         description='Sets the moderator role for your guild. This role will be able to access most moderation commands,'
                     'but individual commands can always be disabled later.')
-    @commands.guild_only()
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def set_moderator_role(self, ctx, role: discord.Role):
@@ -178,7 +184,6 @@ class Config(commands.Cog):
         name='delete',
         aliases=['del', 'd'],
         description='Deletes the moderator role.')
-    @commands.guild_only()
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def mod_role_del(self, ctx):
@@ -233,7 +238,6 @@ class Config(commands.Cog):
         name='create',
         aliases=['make', 'new'],
         description='Creates the moderator role.')
-    @commands.guild_only()
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def mod_role_create(self, ctx):
@@ -279,7 +283,6 @@ class Config(commands.Cog):
                     'muted role that the bot assigns to members upon a mute.',
         invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
-    @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def mute_role(self, ctx):
         await ctx.invoke(self.bot.get_command('help'), entity='muterole')
@@ -288,7 +291,6 @@ class Config(commands.Cog):
         name='set',
         aliases=['assign'],
         description='Sets the mute role to a role.')
-    @commands.guild_only()
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def mute_role_set(self, ctx, role: discord.Role):
@@ -303,7 +305,6 @@ class Config(commands.Cog):
         name='delete',
         aliases=['del', 'd'],
         description='Deletes the mute role.')
-    @commands.guild_only()
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def mute_role_del(self, ctx):
@@ -356,7 +357,6 @@ class Config(commands.Cog):
         name='create',
         aliases=['make', 'new'],
         description='Creates the mute role.')
-    @commands.guild_only()
     @commands.has_permissions(administrator=True)
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def mute_role_create(self, ctx):

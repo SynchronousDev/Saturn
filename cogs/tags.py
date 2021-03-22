@@ -7,9 +7,9 @@ log = logging.getLogger(__name__)
 
 class Tags(commands.Cog):
     """
-    The Tags cog. Includes all commands that are related to making tags.
+    The Tags module. Includes all commands that are related to making tags.
 
-    Not much else other than tags in this cog.
+    Not much else other than tags in this module.
     """
     def __init__(self, bot):
         self.bot = bot

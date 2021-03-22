@@ -10,6 +10,8 @@ from discord.ext import tasks
 
 from assets import *
 
+import re
+
 
 # noinspection PyUnusedLocal, SpellCheckingInspection
 async def purge_msgs(bot, ctx, limit, check):
@@ -249,7 +251,7 @@ async def mod_check(ctx, member):
 # noinspection SpellCheckingInspection
 class Mod(commands.Cog, name='Moderation'):
     """
-    The Moderation cog. Includes all commands related to moderation.
+    The Moderation module. Includes all commands related to moderation.
 
     This includes commands related to kicking, banning, muting, fetching punishments, etc...
     """
@@ -388,8 +390,8 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.guild_only()
     async def check_guild_punishments(self, ctx):
-        await get_guild_mod_logs(self.bot, ctx.guild)
-        await ctx.send("TBD...")
+        logs = await get_guild_mod_logs(self.bot, ctx.guild)
+        print(logs)
 
     @commands.command(
         name='deletecase',
@@ -482,7 +484,7 @@ class Mod(commands.Cog, name='Moderation'):
                 description=f"{CHECK} Kicked {member.mention} for `{reason}`",
                 timestamp=dt.utcnow(),
                 colour=GREEN)
-            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
+            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
             await ctx.send(embed=em)
 
     @commands.command(
@@ -511,7 +513,7 @@ class Mod(commands.Cog, name='Moderation'):
             description=f"{CHECK} Banned {member.mention} for `{reason}`",
             timestamp=dt.utcnow(),
             colour=GREEN)
-        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
+        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
         await ctx.send(embed=em)
 
     @commands.command(
@@ -529,7 +531,7 @@ class Mod(commands.Cog, name='Moderation'):
                 description=f"{CHECK} Softbanned {member.mention} for `{reason}`",
                 timestamp=dt.utcnow(),
                 colour=GREEN)
-            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
+            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
             await ctx.send(embed=em)
 
     @commands.command(
@@ -571,7 +573,7 @@ class Mod(commands.Cog, name='Moderation'):
             description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
                         f", for `{reason}`", timestamp=dt.utcnow(),
             colour=GREEN)
-        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
+        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
         await ctx.send(embed=em)
 
     # TODO: update paginator for moderation things
@@ -591,7 +593,7 @@ class Mod(commands.Cog, name='Moderation'):
             description=f"{CHECK} Unbanned {member.mention} for `{reason}`",
             timestamp=dt.utcnow(),
             colour=GREEN)
-        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
+        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
         await ctx.send(embed=em)
 
     @commands.command(
@@ -608,7 +610,7 @@ class Mod(commands.Cog, name='Moderation'):
                 description=f"{CHECK} Warned {member.mention} for `{reason}`",
                 timestamp=dt.utcnow(),
                 colour=GREEN)
-            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
+            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
             await ctx.send(embed=em)
 
     @commands.command(
@@ -672,7 +674,7 @@ class Mod(commands.Cog, name='Moderation'):
                     description=f"{CHECK} Muted {member.mention} lasting `{convert_time(time)}`"
                                 f", for `{reason}`", timestamp=dt.utcnow(),
                     colour=GREEN)
-                em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
+                em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
                 await ctx.send(embed=em)
 
             else:
@@ -711,7 +713,7 @@ class Mod(commands.Cog, name='Moderation'):
                 em = discord.Embed(
                     description=f"{CHECK} Unmuted {member.mention} for `{reason}`", timestamp=dt.utcnow(),
                     colour=GREEN)
-                em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild)}")
+                em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
                 await ctx.send(embed=em)
 
             else:

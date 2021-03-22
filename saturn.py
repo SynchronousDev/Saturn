@@ -31,7 +31,7 @@ class Saturn(commands.Bot):
             owner_ids=[531501355601494026, 704355591686062202]
         )
         self.ready = False
-        self.name = 'Saturn'
+        self.__name__ = 'Saturn'
 
         self.path = Path(__file__).parents[0]
         self.path = str(self.path)
@@ -49,7 +49,7 @@ class Saturn(commands.Bot):
 
         print("Initializing database...")
         self.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(self.mongo_connection_url))
-        self.db = self.mongo[f"{self.name}"]
+        self.db = self.mongo[f"{self.__name__}"]
         self.config = self.db["config"]
         self.mutes = self.db["mutes"]
         self.blacklists = self.db["blacklists"]
@@ -59,7 +59,7 @@ class Saturn(commands.Bot):
         self.starboard = self.db["starboard"]
 
     def run(self):
-        print(f"Running {self.name}...")
+        print(f"Running {self.__name__}...")
         super().run(self.TOKEN, reconnect=True)
 
     async def process_commands(self, message):
@@ -79,11 +79,11 @@ class Saturn(commands.Bot):
 
     async def on_connect(self):
         self.change_pres.start()
-        print(f"{self.name} connected")
+        print(f"{self.__name__} connected")
 
     async def on_disconnect(self):
         self.change_pres.cancel()
-        print(f"{self.name} disconnected")
+        print(f"{self.__name__} disconnected")
 
     async def on_ready(self):
         if not self.ready:
@@ -102,10 +102,10 @@ class Saturn(commands.Bot):
             async for _doc in self.bans.find({}): bans.append(_doc)
             for ban in bans: self.banned_users[ban["_id"]] = ban
 
-            print(f"{self.name} is ready")
+            print(f"{self.__name__} is ready")
 
         else:
-            print(f"{self.name} reconnected")
+            print(f"{self.__name__} reconnected")
 
     async def on_message(self, message):
         await self.process_commands(message)
@@ -117,7 +117,7 @@ class Saturn(commands.Bot):
 
 
 if __name__ == '__main__':
-    """Load all of the cogs and initialize the databases"""
+    # Load all of the cogs and initialize the databases
     Saturn = Saturn()
     Saturn.run()  # run the bot
     print("Event loop closed.")  # I can do this because it will not print until the event loop stops

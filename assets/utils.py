@@ -9,10 +9,11 @@ from discord.ext import commands
 from .constants import *
 from discord.ext import menus
 from .paginator import Paginator
+import typing as t
 
 log = logging.getLogger(__name__)
 
-class SakuraPaginator(Paginator):
+class SaturnPaginator(Paginator):
     pass
 
 # noinspection PyShadowingNames, PyBroadException, SpellCheckingInspection
@@ -86,6 +87,12 @@ def convert_time(time):
     except Exception:
         return 'indefinitely'
 
+def general_convert_time(time):
+    """
+    Used to get a more readable time conversion
+    """
+    times = convert_time(time).split(' ')
+    return times[:2]
 
 async def syntax(command):
     """
@@ -103,7 +110,7 @@ async def syntax(command):
                 params.append(f"<{key}>")
 
     params = " ".join(params)
-    return f"```{str(command.qualified_name)} {params}```"
+    return f"{str(command.qualified_name)} {params}"
 
 
 # noinspection PyBroadException
@@ -317,17 +324,14 @@ async def get_last_case_id(bot, guild):
     await update_log_caseids(bot, guild)
 
     if not logs:
-        case_id = 1
+        return 1
 
     else:
         try:
-            case_id = int(logs[-1]["case_id"]) + 1
+            return int(logs[-1]["case_id"]) + 1
 
         except KeyError:
-            case_id = 1
-
-    return case_id
-
+            return 1
 
 async def _create_log(bot, member, guild, action, moderator, reason):
     """

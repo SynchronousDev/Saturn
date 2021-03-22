@@ -202,7 +202,7 @@ async def profanity_command_check(bot, message: discord.Message):
 # noinspection SpellCheckingInspection
 class AutoMod(commands.Cog, name='Auto Moderation'):
     """
-    The Auto Moderation cog. Includes all the commands to have a virtually endless task force of moderators.
+    The Auto Moderation module. Includes all the commands to have a virtually endless task force of moderators.
 
     Includes anti-profanity and anti-spam.
     """

@@ -19,19 +19,7 @@ class Dev(commands.Cog):
 
     @commands.command()
     async def test(self, ctx):
-        await ctx.send("TBD...")
-        # conf = await ConfirmationMenu('delete this role').prompt(ctx)
-        # if conf:
-        #     em = discord.Embed(
-        #         description=f"{CHECK} Deleted {role.mention}.",
-        #         colour=GREEN)
-        #     await ctx.send(embed=em)
-        #
-        # else:
-        #     em = discord.Embed(
-        #         description=f"{ERROR} Action cancelled.",
-        #         colour=RED)
-        #     await ctx.send(embed=em)
+        await ctx.send("haha you thought something special was gonna be here well guess what get prank'd :clown:")
 
     @commands.command(
         name='blacklist',
@@ -104,12 +92,12 @@ class Dev(commands.Cog):
             result = ''.join(format_exception(e, e, e.__traceback__))
             colour = DIFF_RED
 
-        pager = SakuraPaginator(
+        pager = SaturnPaginator(
             entries=[result[i: i + (2000 - len(code))]
                      for i in range(0, len(result), (2000 - len(code)))],
             length=1,
             colour=colour,
-            footer='Sakura Eval command',
+            footer=f'{self.bot.__name__} Eval command',
             prefix=f"```py\n{code}```\n```py\n",
             suffix='```'
         )

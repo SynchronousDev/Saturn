@@ -244,8 +244,8 @@ class Paginator(Session):
         Only available when embed=True. The thumbnail URL to set for the embedded pages.
     """
 
-    def __init__(self, *, title: str = '', footer: str = '', length: int = 10, entries: list = None,
-                 extra_pages: list = None, prefix: str = '', suffix: str = '', format: str = '',
+    def __init__(self, *, title: str = '', change_title: list = '', footer: str = '', length: int = 10,
+                 entries: list = None, extra_pages: list = None, prefix: str = '', suffix: str = '', format: str = '',
                  colour: Union[int, discord.Colour] = discord.Embed.Empty,
                  color: Union[int, discord.Colour] = discord.Embed.Empty, use_defaults: bool = True, embed: bool = True,
                  joiner: str = '\n', timeout: int = 180, thumbnail: str = None):
@@ -273,6 +273,9 @@ class Paginator(Session):
         # self._default_stop = {(0, '⏹'): Button(emoji='⏹', position=0,
         #                                        callback=partial(self._default_indexer, 'stop'))}
 
+        if title and change_title:
+            raise ValueError("Both title and change_title were passed")
+
         self.buttons = {}
 
         self.page: discord.Message = None  # noqa
@@ -282,6 +285,7 @@ class Paginator(Session):
         self._index = 0
 
         self.title = title
+        self.change_title = change_title
         self.footer = footer
         self.colour = colour or color
         self.thumbnail = thumbnail
@@ -328,8 +332,9 @@ class Paginator(Session):
             if not self.use_embed:
                 self._pages.append(self.joiner.join(chunk))
             else:
+                title = self.title or self.change_title[i - 1]
                 em = discord.Embed(
-                    title=self.title,
+                    title=title,
                     description=self.joiner.join(chunk),
                     colour=self.colour,
                     timestamp=dt.utcnow(),

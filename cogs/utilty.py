@@ -13,9 +13,9 @@ log = logging.getLogger(__name__)
 # noinspection SpellCheckingInspection
 class Utility(commands.Cog):
     """
-    The Utility cog. Includes useful things, like starboards and modmail.
+    The Utility module. Includes useful things, like starboards and modmail.
 
-    Not to be confused with the Miscellaneous cog.
+    Not to be confused with the Fun module.
     """
 
     def __init__(self, bot):
@@ -68,7 +68,7 @@ class Utility(commands.Cog):
         name="version",
         aliases=['vers'])
     async def _vers(self, ctx):
-        await ctx.reply(f"{self.bot.name} is currently running on version {self.bot.__version__}")
+        await ctx.reply(f"{self.bot.__name__} is currently running on version {self.bot.__version__}")
 
     @commands.command(name="userinfo",
                       aliases=["memberinfo", "ui", "mi"],

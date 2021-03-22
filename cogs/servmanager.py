@@ -7,7 +7,7 @@ import discord
 # noinspection SpellCheckingInspection
 class Management(commands.Cog, name='Server Management'):
     """
-    The Server Management cog. Useful for quickly doing things like adding roles and deleting channels and such.
+    The Server Management module. Useful for quickly doing things like adding roles and deleting channels and such.
 
     Essentially does most of the things that will usually take time or are annoying, like mass adding roles.
     """

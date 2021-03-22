@@ -64,7 +64,7 @@ DUEL_HEAL_MESSAGES = [
     "{} prays to the dueling gods!",
     "{} found an exploit in the code and exploited it!",
     "{} freezes time!",
-    "{} gets a gift from the gods !",
+    "{} gets a gift from the gods!",
     "{} heals!",
     "{} eats a golden apple!",
     "{} ate a hp apple to keep the doctor away!",

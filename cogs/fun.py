@@ -9,11 +9,12 @@ from io import BytesIO
 
 log = logging.getLogger(__name__)
 
+
 # noinspection SpellCheckingInspection
 class Fun(commands.Cog):
     """
-    The Fun cog. These are commands that are just fun, and can spice up the chat.
-    """
+	The Fun module. These are commands that are just fun, and can spice up the chat.
+	"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -41,13 +42,19 @@ class Fun(commands.Cog):
     @commands.cooldown(
         1, 3, commands.BucketType.member)
     async def anonymous_quote_cmd(self, ctx, channel: t.Optional[discord.TextChannel], *, quote: str):
+        if not channel:
+            await ctx.message.delete()
+
+        else:
+            await ctx.message.add_reaction(CHECK)
+
         channel = channel or ctx.channel
         em = discord.Embed(
             description=f'*"{quote}"*',
             colour=MAIN
         )
-        em.set_author(name='Anonymous', icon_url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
-                                                 "thumbs/120/mozilla/36/black-question-mark-ornament_2753.png")
+        em.set_author(name='Anonymous', icon_url="https://www.logolynx.com/images/logolynx/7a/"
+                                                 "7a19584317b8f7a04001a910d751dae4.png")
         await channel.send(embed=em)
 
     @commands.command(
@@ -134,24 +141,24 @@ class Fun(commands.Cog):
                 await ctx.send(embed=status)
 
     @commands.command(
-        name='gay',
-        aliases=['gayify', 'gay-ify', 'rainbow', 'rainbowify'],
-        description='Apply a gay overlay to someone\'s avatar!'
+        name='rainbow',
+        aliases=['rainbowify', 'party', 'skittle'],
+        description='Apply a rainbow overlay to someone\'s avatar!'
     )
     @commands.cooldown(1, 1, commands.BucketType.member)
-    async def gayify_avatar(self, ctx, member: t.Optional[discord.Member]):
+    async def rainbowify_avatar(self, ctx, member: t.Optional[discord.Member]):
         member = member or ctx.author
         URL = f"https://some-random-api.ml/canvas/gay/?avatar=" \
               f"{member.avatar_url_as(format='png')}"
         async with request('GET', URL, headers={}) as response:
             if response.status == 200:
                 data = io.BytesIO(await response.read())
-                file = discord.File(data, 'gay.jpg')
+                file = discord.File(data, 'rainbow.jpg')
                 em = discord.Embed(
-                    title=f"That's kind of gay...",
+                    title=f"SKITTLE OVERLOAD...",
                     color=discord.Colour.random()
                 )
-                em.set_image(url=f"attachment://gay.jpg")
+                em.set_image(url=f"attachment://rainbow.jpg")
                 em.set_footer(text='some-random-api.ml')
                 return await ctx.send(embed=em, file=file)
 

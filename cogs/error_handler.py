@@ -23,7 +23,7 @@ class ErrorHandler(commands.Cog):
 
             em = Embed(
                 description=f"{ERROR} Invalid argument `{parameter}` passed\n"
-                            f"{await syntax(ctx.command)}",
+                            f"```{await syntax(ctx.command)}```",
                 colour=RED)
             await ctx.send(embed=em)
 
@@ -57,7 +57,7 @@ class ErrorHandler(commands.Cog):
 
             em = Embed(
                 description=f"{ERROR} Invalid argument `{parameter}` passed\n"
-                            f"{await syntax(ctx.command)}",
+                            f"```{await syntax(ctx.command)}```",
                 colour=RED)
             await ctx.send(embed=em)
 
@@ -88,14 +88,14 @@ class ErrorHandler(commands.Cog):
         elif isinstance(exc, commands.BadArgument):
             em = Embed(
                 description=f"{ERROR} Invalid argument passed\n"
-                            f"{await syntax(ctx.command)}",
+                            f"```{await syntax(ctx.command)}```",
                 colour=RED)
             await ctx.send(embed=em)
 
         elif isinstance(exc, commands.InvalidEndOfQuotedStringError):
             em = Embed(
                 description=f"{ERROR} Invalid argument passed\n"
-                            f"{await syntax(ctx.command)}",
+                            f"```{await syntax(ctx.command)}```",
                 colour=RED)
             await ctx.send(embed=em)
 
