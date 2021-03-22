@@ -69,11 +69,15 @@ class Help(commands.Cog):
 
                 entries.append(pages)
 
-        pager = SaturnPaginator(
-            change_title=cogs,
-            entries=entries, length=1,
-            colour=MAIN)
-        await pager.start(ctx)
+            pager = Paginator(
+                change_title=cogs,
+                entries=entries, length=1,
+                colour=MAIN)
+            await pager.start(ctx)
+
+        else:
+            if self.bot.get_command(entity):
+                await ctx.send("TBD")
 
 
 def setup(bot):

@@ -332,7 +332,7 @@ class Paginator(Session):
             if not self.use_embed:
                 self._pages.append(self.joiner.join(chunk))
             else:
-                title = self.title or self.change_title[i - 1]
+                title = self.title or (self.change_title[i - 1] if self.change_title else None)
                 em = discord.Embed(
                     title=title,
                     description=self.joiner.join(chunk),

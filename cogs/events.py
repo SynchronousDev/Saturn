@@ -219,8 +219,13 @@ class Events(commands.Cog):
 
             if stars + 1 >= count:
                 if msg_id:
-                    msg = await (self.bot.get_guild(message.guild.id).get_channel(starboard.id).
-                                 fetch_message(msg_id))
+                    try:
+                        msg = await (self.bot.get_guild(message.guild.id).get_channel(starboard.id).
+                                     fetch_message(msg_id))
+
+                    except discord.NotFound:
+                        return await self.bot.starboard.delete_one({'_id': message.id})
+
                     await msg.edit(
                         content=f"**{stars + 1}** ✨ - **{message.channel.mention}**", embed=em)
 

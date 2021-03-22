@@ -474,8 +474,6 @@ class Config(commands.Cog):
             colour=GREEN)
         await ctx.send(embed=em)
 
-    # TODO: Add support for embeds on the starboard
-
     @star_board.command(
         name='stars',
         aliases=['count', 'star'],

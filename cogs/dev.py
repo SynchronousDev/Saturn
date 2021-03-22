@@ -92,7 +92,7 @@ class Dev(commands.Cog):
             result = ''.join(format_exception(e, e, e.__traceback__))
             colour = DIFF_RED
 
-        pager = SaturnPaginator(
+        pager = Paginator(
             entries=[result[i: i + (2000 - len(code))]
                      for i in range(0, len(result), (2000 - len(code)))],
             length=1,

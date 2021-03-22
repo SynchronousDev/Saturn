@@ -13,8 +13,6 @@ import typing as t
 
 log = logging.getLogger(__name__)
 
-class SaturnPaginator(Paginator):
-    pass
 
 # noinspection PyShadowingNames, PyBroadException, SpellCheckingInspection
 async def get_prefix(bot, message):
@@ -373,14 +371,37 @@ async def starboard_embed(message, payload):
         description=desc,
         timestamp=dt.utcnow()
     )
-    em.add_field(name='Original Message', value=f"[Jump!](https://discord.com/channels/"
-                                                f"{payload.guild_id}/{payload.channel_id}/{message.id})")
 
+    # attachments
     if len(message.attachments):
         attachment = message.attachments[0]
 
         em.add_field(name='Attachments', value=f"[{attachment.filename}]({attachment.url})", inline=False)
         em.set_image(url=attachment.url)
+
+    # support for embeds
+    if len(message.embeds):
+        embed = message.embeds[0]
+        em_desc = ""
+        if embed.title: em_desc += f"__**{embed.title}**__\n"
+        if embed.description: em_desc += (embed.description + '\n')
+        if embed.fields:
+            field = embed.fields[0]
+            em.add_field(name=field.name, value=field.value, inline=False)
+
+        if embed.footer: em_desc += embed.footer
+        if embed.image:
+            em.add_field(name='Embed Image', value=f"[Attachment]({embed.image.url})", inline=False)
+            em.set_image(url=embed.image.url)
+
+        if embed.thumbnail:
+            em.add_field(name='Embed Image', value=f"[Attachment]({embed.thumbnail.url})", inline=False)
+            em.set_image(url=embed.thumbnail.url)
+
+        em.description = em_desc
+
+    em.add_field(name='Original Message', value=f"[Jump!](https://discord.com/channels/"
+                                                f"{payload.guild_id}/{payload.channel_id}/{message.id})")
 
     em.set_author(icon_url=message.author.avatar_url, name=message.author)
     em.set_footer(text=f'Message ID - {message.id}')
@@ -390,10 +411,10 @@ async def starboard_embed(message, payload):
 async def update_log_caseids(bot, guild):
     logs = await get_guild_mod_logs(bot, guild)
 
-    for i, log in enumerate(logs, start=1):
-        if i != log['case_id']:
+    for i, _log in enumerate(logs, start=1):
+        if i != _log['case_id']:
             await bot.mod.update_one(
-                {"guild_id": guild.id, "case_id": log['case_id']}, {"$set": {"case_id": i}}, upsert=True)
+                {"guild_id": guild.id, "case_id": _log['case_id']}, {"$set": {"case_id": i}}, upsert=True)
 
 
 async def delete_log(bot, id, guild):

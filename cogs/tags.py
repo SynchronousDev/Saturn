@@ -3,8 +3,10 @@ import typing as t
 
 from assets import *
 
-log = logging.getLogger(__name__) 
+log = logging.getLogger(__name__)
 
+
+# noinspection SpellCheckingInspection
 class Tags(commands.Cog):
     """
     The Tags module. Includes all commands that are related to making tags.
@@ -300,7 +302,7 @@ class Tags(commands.Cog):
 
         em = discord.Embed(
             description=f"{CHECK} The tag `{name}`'s author has "
-                        f"been transfered to {new_author.mention}.",
+                        f"been transferred to {new_author.mention}.",
             colour=GREEN)
         await ctx.send(embed=em)
 
