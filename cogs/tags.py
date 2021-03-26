@@ -282,7 +282,7 @@ class Tags(commands.Cog):
                     if tag['author'] == ctx.author.id:
                         self.bot.tags.update_one(
                             {"guild_id": ctx.guild.id, "name": str(name), "author": ctx.author.id},
-                            {'$set': {"author": new_author}}, upsert=True)
+                            {'$set': {"author": new_author.id}}, upsert=True)
                         found = True
 
                     else:

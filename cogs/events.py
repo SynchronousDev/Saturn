@@ -50,17 +50,17 @@ class Events(commands.Cog):
             except TypeError or KeyError: return
             if not member_logs: return
 
-            created_delta = (dt.utcnow() - member.created_at).total_seconds()
+            created_delta = (datetime.datetime.now(datetime.timezone.utc) - member.created_at).total_seconds()
 
             em = discord.Embed(
                 title='Member Joined',
                 description=f"{member.mention} `({member})`",
                 colour=GREEN,
-                timestamp=dt.utcnow()
+                timestamp=datetime.datetime.now(datetime.timezone.utc)
             )
             em.set_thumbnail(url=member.avatar_url)
             em.set_author(icon_url=member.avatar_url, name=member)
-            em.add_field(name='Account Created', value=convert_time(created_delta))
+            em.add_field(name='Account Created', value=general_convert_time(created_delta) + ' ago')
             em.set_footer(text=f"Member #{len(guild.members)}")
             await member_logs.send(embed=em)  # send the member embed thing
 
@@ -81,7 +81,7 @@ class Events(commands.Cog):
                 title='Member Left',
                 description=f"{member.mention} `({member})`",
                 colour=RED,
-                timestamp=dt.utcnow()
+                timestamp=datetime.datetime.now(datetime.timezone.utc)
             )
             em.set_author(icon_url=member.avatar_url, name=member.name)
             em.set_thumbnail(url=member.avatar_url)
@@ -103,7 +103,7 @@ class Events(commands.Cog):
                 "author": message.author.id,
                 "content": message.content,
                 "guild": message.guild.id,
-                "time": dt.utcnow()
+                "time": datetime.datetime.now(datetime.timezone.utc)
             }
             self.bot.snipes[message.id] = schema
 
@@ -117,7 +117,7 @@ class Events(commands.Cog):
             em = discord.Embed(
                 title='Message Deleted',
                 colour=RED,
-                timestamp=dt.utcnow()
+                timestamp=datetime.datetime.now(datetime.timezone.utc)
             )
             em.set_thumbnail(url=message.author.avatar_url)
             em.set_author(icon_url=message.author.avatar_url, name=message.author)
@@ -143,7 +143,7 @@ class Events(commands.Cog):
                 "before": before.content,
                 "after": after.content,
                 "guild": after.guild.id,
-                "time": dt.utcnow()
+                "time": datetime.datetime.now(datetime.timezone.utc)
             }
             self.bot.edit_snipes[after.id] = schema
 
@@ -158,7 +158,7 @@ class Events(commands.Cog):
                 title='Message Edited',
                 description=f"[Jump!]({after.jump_url})",
                 colour=GOLD,
-                timestamp=dt.utcnow()
+                timestamp=datetime.datetime.now(datetime.timezone.utc)
             )
             em.set_thumbnail(url=after.author.avatar_url)
             em.set_author(icon_url=after.author.avatar_url, name=after.author)
@@ -172,8 +172,12 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if payload.emoji.name == "⭐":  # check if the emoji is a star for the starboard stuff
-            message = await (self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id).
-                             fetch_message(payload.message_id))
+            try:
+                message = await (self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id).
+                                 fetch_message(payload.message_id))
+
+            except discord.NotFound:
+                return
 
             data = await self.bot.config.find_one({"_id": message.guild.id})
             try:
@@ -238,8 +242,13 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         if payload.emoji.name == "⭐":
-            message = await (self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id).
-                             fetch_message(payload.message_id))
+            try:
+                message = await (self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id).
+                                 fetch_message(payload.message_id))
+
+            except discord.NotFound:
+                return
+
             data = await self.bot.config.find_one({"_id": message.guild.id})
             try:
                 if not data['starboard']:

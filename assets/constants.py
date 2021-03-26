@@ -29,13 +29,13 @@ REPEAT_ONE = '🔂'
 REPEAT_ALL = '🔁'
 
 # Pagination emotes
-PAG_FRONT = '<:front:821724241647894559>'
-PAG_PREVIOUS = '<:previous:821724241803739186>'
-PAG_NEXT = '<:next:821724241338302515>'
-PAG_BACK = '<:back:821724241510268988>'
-PAG_STOP = '<:stop:821724241882775593>'
-PAG_NUMBERS = '<:number:821724241799020554>'
-PAG_INFO = '<:info:821725311590203412>'
+PAG_FRONT = '<:pagfront:824379359867306078>'
+PAG_PREVIOUS = '<:pagleft:824379360324747364>'
+PAG_NEXT = '<:pagright:824379360302596196>'
+PAG_BACK = '<:pagback:824379493732974622>'
+PAG_STOP = '<:pagstop:824379359564529804>'
+PAG_NUMBERS = '<:pagnumbers:824379360194068520>'
+PAG_INFO = '<:paginfo:824379360059850753>'
 
 MUTE = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
        'speaker-with-cancellation-stroke_1f507.png'

@@ -107,6 +107,10 @@ class Saturn(commands.Bot):
         else:
             print(f"{self.__name__} reconnected")
 
+    async def on_command_error(self, context, exception):
+        if isinstance(exception, commands.CommandNotFound):
+            pass
+
     async def on_message(self, message):
         await self.process_commands(message)
 

@@ -3,7 +3,6 @@ import contextlib as ctxlib
 import io
 import textwrap
 from traceback import format_exception
-import typing as t
 
 from assets import *
 
@@ -19,7 +18,7 @@ class Dev(commands.Cog):
 
     @commands.command()
     async def test(self, ctx):
-        await ctx.send("haha you thought something special was gonna be here well guess what get prank'd :clown:")
+        await ctx.send(convert_to_timestamp(datetime.datetime.now(datetime.timezone.utc)))
 
     @commands.command(
         name='blacklist',
@@ -32,7 +31,7 @@ class Dev(commands.Cog):
         em = discord.Embed(
             description=f"{CHECK} Blacklisted {member.mention} for `{reason}`.",
             colour=GREEN,
-            timestamp=dt.utcnow())
+            timestamp=datetime.datetime.now(datetime.timezone.utc))
         await ctx.send(embed=em)
 
     @commands.command(
@@ -52,7 +51,7 @@ class Dev(commands.Cog):
         em = discord.Embed(
             description=f"{CHECK} Unblacklisted {member.mention} for `{reason}`.",
             colour=GREEN,
-            timestamp=dt.utcnow())
+            timestamp=datetime.datetime.now(datetime.timezone.utc))
         await ctx.send(embed=em)
 
     @commands.command(

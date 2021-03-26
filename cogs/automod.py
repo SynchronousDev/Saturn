@@ -25,7 +25,7 @@ async def automod_log(bot, message, action, reason) -> None:
                     f'**Action -** {action}\n'
                     f'**Reason -** {reason}',
         colour=discord.Colour.orange(),
-        timestamp=dt.utcnow()
+        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     em.set_author(icon_url=message.author.avatar_url, name=message.author)
     await automod.send(embed=em)
@@ -152,7 +152,7 @@ def get_cache(bot, member) -> list or None:
     try:
         for message in bot.message_cache[member.id]:
             # filter out all items in the bot._cache that were created more than 5 seconds ago
-            if dt.utcnow() - timedelta(seconds=5) > message.created_at:
+            if datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=5) > message.created_at:
                 bot.message_cache[member.id].remove(message)
 
             return bot.message_cache[member.id]

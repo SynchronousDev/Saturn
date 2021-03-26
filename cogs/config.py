@@ -46,7 +46,7 @@ class Config(commands.Cog):
                     (await retrieve_prefix(self.bot, ctx)).split('|'), start=1))
             ),
             colour=MAIN,
-            timestamp=dt.utcnow()
+            timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
         em.set_footer(text='You can always invoke commands by mentioning me.')
         await ctx.send(embed=em)

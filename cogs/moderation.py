@@ -1,7 +1,6 @@
 import os
-import typing as t
+import re
 from copy import deepcopy
-from datetime import timedelta
 from glob import glob
 
 import pytimeparse as pytp
@@ -10,15 +9,13 @@ from discord.ext import tasks
 
 from assets import *
 
-import re
-
 
 # noinspection PyUnusedLocal, SpellCheckingInspection
 async def purge_msgs(bot, ctx, limit, check):
     await ctx.message.delete()
     deleted = await ctx.channel.purge(
         limit=limit,
-        after=dt.utcnow() - timedelta(weeks=2),
+        after=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(weeks=2),
         check=check)
 
     if not len(deleted):
@@ -62,7 +59,7 @@ async def purge_msgs(bot, ctx, limit, check):
         description=f'Deleted {len(deleted)} messages in {ctx.channel.mention}\n'
                     f'Command invoked by {ctx.author.mention}',
         colour=discord.Colour.orange(),
-        timestamp=dt.utcnow()
+        timestamp=datetime.datetime.now(datetime.timezone.utc)
     )
     em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
                          "thumbs/120/mozilla/36/memo_1f4dd.png")
@@ -87,6 +84,169 @@ async def create_purge_file(bot, ctx, deleted):
                         f" (ID - {message.author.id})\n"
                         f"{'Embed/file sent by a bot' if not content else content}\n\n")
 
+# noinspection PyBroadException,SpellCheckingInspection
+async def create_log(bot, member: discord.Member, guild, action, moderator, reason, duration=None):
+    """
+    Send details about a punishment and log it in the mod logs channel.
+    """
+    colours = {
+        "kick": {"colour": discord.Colour.orange(), "emote": NO_ENTRY},
+        "ban": {"colour": discord.Colour.red(), "emote": NO_ENTRY},
+        "mute": {"colour": discord.Colour.orange(), "emote": MUTE},
+        "unmute": {"colour": discord.Colour.green(), "emote": UNMUTE},
+        "warn": {"colour": discord.Colour.gold(), "emote": WARN},
+        "unban": {"colour": discord.Colour.gold(), "emote": UNBAN},
+        "softban": {"colour": discord.Colour.red(), "emote": NO_ENTRY},
+        "tempban": {"colour": discord.Colour.red(), "emote": NO_ENTRY}
+    }
+    colour = GOLD
+    emote = None
+    for key, value in colours.items():
+        if str(key) == str(action.lower()):
+            colour, emote = value["colour"], value["emote"]
+
+    try:
+        em = discord.Embed(
+            colour=colour,
+            timestamp=datetime.datetime.now(datetime.timezone.utc)
+        )
+        em.set_thumbnail(url=emote)
+        desc = f"**Guild** - {guild}\n" \
+               f"**Moderator** - {moderator.mention}\n" \
+               f"**Action** - {action.title()}\n" \
+               f"**Reason** - {reason}\n"
+        if duration:
+            desc += f"**Duration** - {duration}\n"
+
+        em.description = desc
+
+        await member.send(embed=em)
+
+    except discord.HTTPException:
+        pass
+
+    # send it to the log channel because why not lol
+    data, mod_logs = await bot.config.find_one({"_id": guild.id}), None
+    try:
+        mod_logs = guild.get_channel(data['mod_logs'])
+
+    except KeyError or TypeError:
+        pass
+
+    action_ = action
+    if action.find("ban") != -1:
+        action_ += "ned"
+
+    elif action in ("mute", "unmute"):
+        action_ += "d"
+
+    else:
+        action_ += "ed"
+
+    em = discord.Embed(
+        title=f'Member {action_.title()}',
+        colour=colour,
+        timestamp=datetime.datetime.now(datetime.timezone.utc)
+    )
+    em.set_thumbnail(url=emote)
+    em.set_author(icon_url=member.avatar_url, name=member.name)
+    em.set_footer(text='Case no. {}'.format(await get_last_case_id(bot, guild)))
+    em.add_field(name='Member', value=member.mention, inline=False)
+    em.add_field(name='Moderator', value=moderator.mention, inline=False)
+    if duration:
+        em.add_field(name='Duration', value=duration, inline=False)
+
+    if reason:
+        em.add_field(name='Reason', value=reason, inline=False)
+
+    try:
+        await mod_logs.send(embed=em)
+
+    except AttributeError:
+        pass
+
+    except discord.HTTPException:
+        pass
+
+    _action = action + ((' for ' + duration) if duration else '')
+    # get the action + duration for formatting purposes
+    await _create_log(bot, member, guild, _action, moderator, reason)  # create the log
+
+
+async def get_member_mod_logs(bot, member, guild) -> list:
+    """
+    Fetch mod logs for a specific guild
+    Will only fetch the first 10000 punishments, because ya know, operation times suck
+    """
+    logs = []
+    cursor = bot.mod.find({"member": member.id, "guild_id": guild.id})
+    for document in await cursor.to_list(length=10000):
+        logs.append(document)
+
+    return logs
+
+
+async def get_guild_mod_logs(bot, guild) -> list:
+    """
+    Fetch mod logs for a specific guild
+    """
+    logs = []
+    cursor = bot.mod.find({"guild_id": guild.id})
+    for document in await cursor.to_list(length=10000):
+        logs.append(document)
+
+    return logs
+
+
+# noinspection SpellCheckingInspection
+async def get_last_case_id(bot, guild) -> int:
+    """
+    Return the case_id of the current case
+    """
+    logs = await get_guild_mod_logs(bot, guild)
+    await update_log_caseids(bot, guild)
+
+    if not logs:
+        return 1
+
+    else:
+        try:
+            return int(logs[-1]["case_id"]) + 1
+
+        except KeyError:
+            return 1
+
+async def _create_log(bot, member: discord.Member, guild, action, moderator, reason) -> None:
+    """
+    Create a new log object in the database
+    """
+    case_id = await get_last_case_id(bot, guild)
+
+    schema = {
+        "guild_id": guild.id,
+        "case_id": case_id,
+        "member": member.id,
+        "action": action,
+        "moderator": moderator.id,
+        "reason": reason,
+        "time": datetime.datetime.now(datetime.timezone.utc)
+    }
+    await bot.mod.insert_one(schema)
+
+
+# noinspection PyUnusedLocal
+async def update_log(bot, case_id, guild, action, reason) -> None:
+    """
+    Update a mod log
+    Used to update reasons for punishments
+    """
+    logs = await get_guild_mod_logs(bot, guild)
+
+    schema = {
+        "action": action,
+        "reason": reason
+    }
+    await bot.mod.update_one({"guild_id": guild.id, "case_id": case_id}, {"$set": schema}, upsert=True)
 
 async def create_mute_role(bot, ctx):
     """Create the mute role for a guild"""
@@ -111,12 +271,33 @@ async def create_mute_role(bot, ctx):
 
     return mute_role
 
+async def update_log_caseids(bot, guild) -> None:
+    """
+    Update the case_ids for the logs. Run when a case is deleted and you need to update the case_ids for the logs.
+    """
+    logs = await get_guild_mod_logs(bot, guild)
+
+    for i, _log in enumerate(logs, start=1):
+        if i != _log['case_id']:
+            await bot.mod.update_one(
+                {"guild_id": guild.id, "case_id": _log['case_id']}, {"$set": {"case_id": i}}, upsert=True)
+
+
+async def delete_log(bot, id, guild) -> None:
+    """
+    Delete a moderation log.
+    """
+    await bot.mod.delete_one({"guild_id": guild.id, "case_id": id})
+    await update_log_caseids(bot, guild)
+
+
 async def kick_members(bot, ctx, member, reason):
     """
     Kick members
     """
     await create_log(bot, member, ctx.guild, 'kick', ctx.author if ctx.author != member else ctx.guild.me, reason)
     await member.kick(reason=f"{ctx.author if ctx.author != member else ctx.guild.me} - " + reason)
+
 
 async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _type='ban'):
     """
@@ -125,7 +306,7 @@ async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _ty
     if time:
         schema = {
             '_id': member.id,
-            'at': dt.utcnow(),
+            'at': datetime.datetime.now(datetime.timezone.utc),
             'duration': time or None,
             'moderator': ctx.author.id,
             'guild_id': ctx.guild.id,
@@ -140,6 +321,7 @@ async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _ty
     if _type == 'softban':
         await asyncio.sleep(0.5)
         await ctx.guild.unban(member, reason=f"{ctx.author} - softban")
+
 
 async def unban_members(bot, ctx, member, reason):
     """
@@ -180,7 +362,7 @@ async def mute_members(bot, ctx, member: discord.Member, reason, mute_role, time
     """
     schema = {
         '_id': member.id,
-        'at': dt.utcnow(),
+        'at': datetime.datetime.now(datetime.timezone.utc),
         'duration': time or None,
         'moderator': ctx.author.id,
         'guild_id': ctx.guild.id,
@@ -217,6 +399,7 @@ async def unmute_members(bot, ctx, member: discord.Member, reason, mute_role):
     except discord.Forbidden:
         pass
 
+
 async def warn_members(bot, ctx, member, reason):
     """
     Warn members
@@ -226,6 +409,7 @@ async def warn_members(bot, ctx, member, reason):
 
     except discord.Forbidden:
         pass
+
 
 # kinda useful for the moderation stuff
 # I have another check in the mute command but whatever lol
@@ -248,6 +432,7 @@ async def mod_check(ctx, member):
         else:
             raise BotRoleNotHighEnough
 
+
 # noinspection SpellCheckingInspection
 class Mod(commands.Cog, name='Moderation'):
     """
@@ -266,6 +451,12 @@ class Mod(commands.Cog, name='Moderation'):
         self.mod_task.cancel()
         self.purge_task.cancel()
 
+    def cog_check(self, ctx):
+        if ctx.guild:
+            return True
+
+        return False
+
     @tasks.loop(minutes=1)
     async def update_modlogs(self):
         for guild in self.bot.guilds:
@@ -278,7 +469,7 @@ class Mod(commands.Cog, name='Moderation'):
 
     @tasks.loop(seconds=1)
     async def check_mods(self):
-        current_time = dt.utcnow()
+        current_time = datetime.datetime.now(datetime.timezone.utc)
         mutes = deepcopy(self.bot.muted_users)
         bans = deepcopy(self.bot.banned_users)
 
@@ -292,12 +483,13 @@ class Mod(commands.Cog, name='Moderation'):
             mute_role = guild.get_role(data['mute_role'])
 
             try:
-                join_delta = dt.utcnow() - member.joined_at
+                join_delta = datetime.datetime.now(datetime.timezone.utc) - member.joined_at.\
+                    replace(tzinfo=datetime.timezone.utc)
 
             except AttributeError:
                 continue
 
-            if mute_role not in member.roles and join_delta > timedelta(seconds=3):
+            if mute_role not in member.roles and join_delta > datetime.timedelta(seconds=3):
                 try:
                     await self.bot.mutes.delete_one({"_id": member.id})
                     self.bot.muted_users.pop(member.id)
@@ -312,14 +504,14 @@ class Mod(commands.Cog, name='Moderation'):
 
             unmute_time = value['at'] + relativedelta(seconds=value['duration'])
 
-            if current_time >= unmute_time:
+            if current_time >= unmute_time.replace(tzinfo=datetime.timezone.utc):
                 try:
                     await self.bot.mutes.delete_one({"_id": member.id})
                     self.bot.muted_users.pop(member.id)
 
                 except commands.MemberNotFound or KeyError:
                     pass
-                
+
                 if isinstance(member, discord.Member):
                     if mute_role in member.roles:
                         await member.remove_roles(mute_role, reason='Mute time expired')
@@ -349,7 +541,7 @@ class Mod(commands.Cog, name='Moderation'):
             guild = self.bot.get_guild(value['guild_id'])
             member = self.bot.get_user(value['_id']) or await self.bot.fetch_user(value['_id'])
 
-            if current_time >= unban_time:
+            if current_time >= unban_time.replace(tzinfo=datetime.timezone.utc):
                 try:
                     await self.bot.bans.delete_one({"_id": member.id})
                     self.bot.banned_users.pop(member.id)
@@ -376,11 +568,32 @@ class Mod(commands.Cog, name='Moderation'):
         description='View the moderation cases of a member.'
     )
     @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.guild_only()
-    async def check_punishments(self, ctx, member: t.Optional[discord.User]):
+    async def check_punishments(self, ctx, member: t.Optional[t.Union[discord.Member, discord.User]]):
         member = member or ctx.author
-        await get_member_mod_logs(self.bot, member, ctx.guild)
-        await ctx.send("TBD...")
+        logs = await get_member_mod_logs(self.bot, member, ctx.guild)
+        entries = []
+        for entry in logs:
+            time = entry["time"]
+            desc = f"""
+            **Case ID** - {entry['case_id']}
+            **Moderator** - <@!{entry['moderator']}>
+            **Action** - {entry['action']}
+            **Reason** - {entry['reason']}
+            **Time** - {convert_to_timestamp(time)}
+            """
+            entries.append(desc)
+
+        if not entries:
+            entries = [f"There are no punishments for {member.mention}! Hooray!"]
+
+        pager = Paginator(
+            title=f'Punishments for **{member.name}**',
+            colour=member.colour if isinstance(member, discord.Member) else MAIN,
+            entries=entries,
+            thumbnail=member.avatar_url,
+            length=1
+        )
+        await pager.start(ctx)
 
     @commands.command(
         name='guildcases',
@@ -388,10 +601,46 @@ class Mod(commands.Cog, name='Moderation'):
         description='View the moderation cases of your guild.'
     )
     @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.guild_only()
     async def check_guild_punishments(self, ctx):
         logs = await get_guild_mod_logs(self.bot, ctx.guild)
-        print(logs)
+        entries = []
+        for entry in logs:
+            action = entry["action"]
+            if action.find("mute") != -1 and action != "unmute":
+                _action = action.split(' ')
+                _duration = ' '.join(_action[2:])
+                desc = f"""
+                **Case ID** - {entry['case_id']}
+                **Member** - <@!{entry['member']}>            
+                **Moderator** - <@!{entry['moderator']}>
+                **Action** - {_action[0]}
+                **Duration** - {_duration}
+                **Reason** - {entry['reason']}
+                **Time** - {convert_to_timestamp(time=entry['time'])}
+                """
+
+            else:
+                desc = f"""
+                **Case ID** - {entry['case_id']}
+                **Member** - <@!{entry['member']}>            
+                **Moderator** - <@!{entry['moderator']}>
+                **Action** - {entry['action']}
+                **Reason** - {entry['reason']}
+                **Time** - {convert_to_timestamp(time=entry['time'])}
+                """
+            entries.append(desc)
+
+        if not entries:
+            entries = ["There are no punishments in this guild! Hooray!"]
+
+        pager = Paginator(
+            title=f'Punishments in **{ctx.guild}**',
+            colour=MAIN,
+            entries=entries,
+            thumbnail=ctx.guild.icon_url,
+            length=1
+        )
+        await pager.start(ctx)
 
     @commands.command(
         name='deletecase',
@@ -400,13 +649,24 @@ class Mod(commands.Cog, name='Moderation'):
     )
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
-    @commands.guild_only()
     async def delete_punishment(self, ctx, case_id: int):
         logs = await get_guild_mod_logs(self.bot, ctx.guild)
 
-        if len(logs) > case_id:
+        if len(logs) >= case_id:
             if case_id > 0:
-                await delete_log(self.bot, case_id, ctx.guild)
+                conf = await ConfirmationMenu(f'delete case `{case_id}`?').prompt(ctx)
+                if conf:
+                    await delete_log(self.bot, case_id, ctx.guild)
+                    em = discord.Embed(
+                        description=f"{CHECK} Deleted punishment number `{case_id}`",
+                        colour=GREEN)
+                    await ctx.send(embed=em)
+
+                else:
+                    em = discord.Embed(
+                        description=f"{INFO} Action cancelled.",
+                        colour=BLUE)
+                    await ctx.send(embed=em)
 
             else:
                 em = discord.Embed(
@@ -426,25 +686,43 @@ class Mod(commands.Cog, name='Moderation'):
         aliases=['viewpunishment', 'vcase', 'case'],
         description='Delete a moderation case by ID.'
     )
-    @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.guild_only()
+    @commands.cooldown(1, 1, commands.BucketType.member)
     async def view_case(self, ctx, case_id: int):
         logs = await get_guild_mod_logs(self.bot, ctx.guild)
 
-        for i, _log in enumerate(logs, start=1):
+        for i, entry in enumerate(logs, start=1):
             if i == case_id:
+                action = entry["action"]
+                if action.find("mute") != -1 and action != "unmute":
+                    _action = action.split(' ')
+                    _duration = ' '.join(_action[2:])
+                    desc = f"""
+                    **Case ID** - {entry['case_id']}
+                    **Member** - <@!{entry['member']}>            
+                    **Moderator** - <@!{entry['moderator']}>
+                    **Action** - {_action[0]}
+                    **Duration** - {_duration}
+                    **Reason** - {entry['reason']}
+                    """
+
+                else:
+                    desc = f"""
+                    **Member** - <@!{entry['member']}>            
+                    **Moderator** - <@!{entry['moderator']}>
+                    **Action** - {entry['action']}
+                    **Reason** - {entry['reason']}
+                    """
+
                 em = discord.Embed(
                     colour=MAIN,
-                    timestamp=_log['time']
+                    description=desc,
+                    timestamp=entry['time']
                 )
-                moderator = self.bot.get_user(_log["moderator"])
-                member = self.bot.get_user(_log["member"])
+                moderator = ctx.guild.get_member(entry["moderator"]) or await self.bot.fetch_user(entry["moderator"])
+                member = ctx.guild.get_member(entry["member"]) or await self.bot.fetch_user(entry["member"])
                 em.set_thumbnail(url=member.avatar_url)
-                em.set_author(icon_url=moderator.avatar_url, name=f'Case #{_log["case_id"]} - {_log["action"]}')
-                em.add_field(name='Member', value=member.mention)
-                em.add_field(name='Actioned By', value=moderator.mention)
-                em.add_field(name='Reason', value=_log['reason'])
-                em.set_footer(text="Actioned at")
+                em.set_author(icon_url=moderator.avatar_url, name=moderator)
+                em.set_footer(text=f"Case #{entry['case_id']}")
                 return await ctx.send(embed=em)
 
         else:
@@ -456,35 +734,63 @@ class Mod(commands.Cog, name='Moderation'):
 
     @commands.command(
         name='moderations',
-        aliases=['mods', 'activemods', 'activemoderations'],
+        aliases=['amods', 'activemods', 'activemoderations'],
         description='See the currently active moderation cases. These include timed mutes and bans.')
     @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.guild_only()
-    async def view_moderations(self, ctx):
+    async def view_active_moderations(self, ctx):
         bans, mutes = deepcopy(self.bot.banned_users), deepcopy(self.bot.muted_users)
         cases = bans | mutes
-        active = []
+        _entries, entries = [], []
         for key, value in cases.items():
-            active.append({key: value})
+            _entries.append({key: value})
 
-        await ctx.send("TBD...")
+        for entry in _entries:
+            for key, value in entry.items():
+                duration = value['duration']
+                if duration:
+                    ends_at = (value['at'] + datetime.timedelta(seconds=duration))\
+                        .replace(tzinfo=datetime.timezone.utc)
+                    delta = (ends_at - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+
+                else:
+                    delta = 'never'
+
+                desc = f"""
+                **Member** - <@!{value['_id']}>            
+                **Moderator** - <@!{value['moderator']}>
+                **Action** - {value['type']}
+                **Duration** - {general_convert_time(duration) if duration else 'indefinite'}
+                **Ends at** - {general_convert_time(delta) if delta != 'never' else delta}
+                **Time** - {convert_to_timestamp(value['at'])}
+                """
+                entries.append(desc)
+
+        if not entries:
+            entries = ["There are no active punishments in this guild! Hooray!"]
+
+        pager = Paginator(
+            title=f'Active Punishments in **{ctx.guild}**',
+            colour=MAIN,
+            entries=entries,
+            thumbnail=ctx.guild.icon_url,
+            length=1
+        )
+        await pager.start(ctx)
 
     @commands.command(
         name='kick',
         aliases=['k'],
         description='Kicks members from the server. 3 second cooldown, must have Kick Users permission.')
     @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.guild_only()
     @commands.bot_has_permissions(kick_members=True)
     @commands.has_permissions(kick_members=True)
     async def kick_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
             await kick_members(self.bot, ctx, member, reason)
             em = discord.Embed(
-                description=f"{CHECK} Kicked {member.mention} for `{reason}`",
-                timestamp=dt.utcnow(),
+                description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
+                            f"{member.mention} has been kicked.",
                 colour=GREEN)
-            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
             await ctx.send(embed=em)
 
     @commands.command(
@@ -493,7 +799,6 @@ class Mod(commands.Cog, name='Moderation'):
         description='Bans members from the server, with customizability on how many days of their messages '
                     'should be deleted. 3 second cooldown, must have Ban Members permission.')
     @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     async def ban_cmd(self, ctx, member: t.Union[discord.Member, discord.User],
@@ -510,10 +815,9 @@ class Mod(commands.Cog, name='Moderation'):
 
         await ban_members(self.bot, ctx, member, reason, delete_days=delete_days)
         em = discord.Embed(
-            description=f"{CHECK} Banned {member.mention} for `{reason}`",
-            timestamp=dt.utcnow(),
+            description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
+                        f"{member.mention} has been banned.",
             colour=GREEN)
-        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
         await ctx.send(embed=em)
 
     @commands.command(
@@ -521,24 +825,21 @@ class Mod(commands.Cog, name='Moderation'):
         aliases=['sban', 'sb', 'softb'],
         description='Softbans a member, essentially kicking them and deleting all of their messages.')
     @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.guild_only()
     @commands.bot_has_permissions(ban_members=True)
     @commands.has_permissions(ban_members=True)
     async def softban_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
             await ban_members(self.bot, ctx, member, reason, delete_days=7, _type='softban')
             em = discord.Embed(
-                description=f"{CHECK} Softbanned {member.mention} for `{reason}`",
-                timestamp=dt.utcnow(),
+                description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
+                            f"{member.mention} has been softbanned.",
                 colour=GREEN)
-            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
             await ctx.send(embed=em)
 
     @commands.command(
         name='tempban',
         aliases=['tb', 'tempb', 'tban'],
         description='Tempoarily bans a member, with customizability for duration.')
-    @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.bot_has_permissions(ban_members=True)
     @commands.has_permissions(ban_members=True)
@@ -549,8 +850,10 @@ class Mod(commands.Cog, name='Moderation'):
         except IndexError:
             time = None
 
-        if not time: reason = ' '.join(args)
-        else: reason = ' '.join(args[1:])
+        if not time:
+            reason = ' '.join(args)
+        else:
+            reason = ' '.join(args[1:])
         if not reason: reason = 'no reason provided'
 
         if isinstance(member, discord.Member):
@@ -570,30 +873,25 @@ class Mod(commands.Cog, name='Moderation'):
 
         await ban_members(self.bot, ctx, member, reason, time, delete_days=7, _type='tempban')
         em = discord.Embed(
-            description=f"{CHECK} Tempbanned {member.mention} lasting `{convert_time(time)}`"
-                        f", for `{reason}`", timestamp=dt.utcnow(),
+            description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
+                        f"{member.mention} has been banned for `{convert_time(time)}`",
             colour=GREEN)
-        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
         await ctx.send(embed=em)
-
-    # TODO: update paginator for moderation things
 
     @commands.command(
         name='unban',
         aliases=['ub', 'unb'],
         description='Unbans members from a server.')
     @commands.cooldown(1, 3, commands.BucketType.member)
-    @commands.guild_only()
     @commands.bot_has_permissions(ban_members=True)
     @commands.has_permissions(ban_members=True)
     async def unban_cmd(self, ctx, member: t.Union[discord.User, int],
                         *, reason: t.Optional[str] = 'no reason provided'):
         await unban_members(self.bot, ctx, member, reason)
         em = discord.Embed(
-            description=f"{CHECK} Unbanned {member.mention} for `{reason}`",
-            timestamp=dt.utcnow(),
+            description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
+                        f"{member.mention} has been unbanned.",
             colour=GREEN)
-        em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
         await ctx.send(embed=em)
 
     @commands.command(
@@ -601,16 +899,14 @@ class Mod(commands.Cog, name='Moderation'):
         aliases=['w', 'wrn'],
         description='Warns members in the server. 3 second cooldown, must have Manage Messages permission.')
     @commands.has_permissions(manage_messages=True)
-    @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.member)
     async def warn_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
             await warn_members(self.bot, ctx, member, reason)
             em = discord.Embed(
-                description=f"{CHECK} Warned {member.mention} for `{reason}`",
-                timestamp=dt.utcnow(),
+                description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
+                            f"{member.mention} has been warned.",
                 colour=GREEN)
-            em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
             await ctx.send(embed=em)
 
     @commands.command(
@@ -618,7 +914,6 @@ class Mod(commands.Cog, name='Moderation'):
         aliases=['m', 'silence'],
         description='Mutes users in the server. '
                     '3 second cooldown, must have Manage Messages permission. Cannot be bypassed.')
-    @commands.guild_only()
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True, manage_roles=True)
@@ -629,8 +924,10 @@ class Mod(commands.Cog, name='Moderation'):
         except IndexError:
             time = None
 
-        if not time: reason = ' '.join(args)
-        else: reason = ' '.join(args[1:])
+        if not time:
+            reason = ' '.join(args)
+        else:
+            reason = ' '.join(args[1:])
         if not reason: reason = 'no reason provided'
 
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
@@ -671,10 +968,10 @@ class Mod(commands.Cog, name='Moderation'):
 
                 await mute_members(self.bot, ctx, member, reason, mute_role, time)
                 em = discord.Embed(
-                    description=f"{CHECK} Muted {member.mention} lasting `{convert_time(time)}`"
-                                f", for `{reason}`", timestamp=dt.utcnow(),
+                    description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
+                                f"{member.mention} has been muted"
+                                f"{f' for `{convert_time(time)}`' if convert_time(time) != 'indefinitely' else '.'}",
                     colour=GREEN)
-                em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
                 await ctx.send(embed=em)
 
             else:
@@ -711,9 +1008,9 @@ class Mod(commands.Cog, name='Moderation'):
             if mute_role in member.roles:
                 await unmute_members(self.bot, ctx, member, reason, mute_role)
                 em = discord.Embed(
-                    description=f"{CHECK} Unmuted {member.mention} for `{reason}`", timestamp=dt.utcnow(),
+                    description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
+                                f"{member.mention} has been unmuted.",
                     colour=GREEN)
-                em.set_footer(text=f"Case #{await get_last_case_id(self.bot, ctx.guild) - 1}")
                 await ctx.send(embed=em)
 
             else:
@@ -734,7 +1031,6 @@ class Mod(commands.Cog, name='Moderation'):
         aliases=['lck', 'lk', 'lockdown'],
         description='Locks a channel. Essentially mutes the channel and no one can talk in it. '
                     'Run the command again to unlock the channel.')
-    @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def lock_cmd(self, ctx, channel: t.Optional[discord.TextChannel]):
@@ -774,7 +1070,6 @@ class Mod(commands.Cog, name='Moderation'):
         aliases=['slm', 'sl'],
         description='Changes the slowmode delay on a given channel. '
                     'Must be equal or less than 6 hours. Requires Manage Channels permission.')
-    @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
     async def slowmode_cmd(self, ctx, time: t.Union[int, pytp.parse], channel: t.Optional[discord.TextChannel]):
@@ -977,7 +1272,6 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_guild_permissions(move_members=True)
     @commands.bot_has_guild_permissions(move_members=True)
-    @commands.guild_only()
     async def voice_kick(self, ctx, member: discord.Member, *, reason: t.Optional[str] = 'no reason provided'):
         try:
             vc = member.voice.channel

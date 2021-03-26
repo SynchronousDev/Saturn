@@ -3,7 +3,7 @@ import asyncio
 import discord
 import inspect
 from discord.ext import commands
-from datetime import datetime as dt
+import datetime
 from functools import partial
 from typing import Union
 from .constants import *
@@ -248,7 +248,7 @@ class Paginator(Session):
                  entries: list = None, extra_pages: list = None, prefix: str = '', suffix: str = '', format: str = '',
                  colour: Union[int, discord.Colour] = discord.Embed.Empty,
                  color: Union[int, discord.Colour] = discord.Embed.Empty, use_defaults: bool = True, embed: bool = True,
-                 joiner: str = '\n', timeout: int = 180, thumbnail: str = None):
+                 joiner: str = '\n', timeout: int = 180, thumbnail: str = None, timestamp: datetime.datetime = None):
         super().__init__()
         self._defaults = {
             (0, PAG_FRONT): Button(emoji=PAG_FRONT, position=0, callback=partial(self._default_indexer, 'start')),
@@ -289,6 +289,7 @@ class Paginator(Session):
         self.footer = footer
         self.colour = colour or color
         self.thumbnail = thumbnail
+        self.timestamp = timestamp
         self.length = length
         self.timeout = timeout
         self.entries = entries
@@ -310,7 +311,7 @@ class Paginator(Session):
         """Format our entries, with the given options."""
         return f'{self.prefix}{self.format}{entry}{self.format[::-1]}{self.suffix}'
 
-    async def start(self, ctx: commands.Context, page=None):
+    async def start(self, ctx: commands.Context, page=None) -> None:
         """Start our Paginator session."""
         if not self.use_defaults:
             if not self._buttons:
@@ -318,7 +319,7 @@ class Paginator(Session):
 
         await self._paginate(ctx)
 
-    async def _paginate(self, ctx: commands.Context):
+    async def _paginate(self, ctx: commands.Context) -> None:
         if not self.entries and not self.extra_pages:
             raise AttributeError('You must provide at least one entry or page for pagination.')  # ^^
 
@@ -337,7 +338,7 @@ class Paginator(Session):
                     title=title,
                     description=self.joiner.join(chunk),
                     colour=self.colour,
-                    timestamp=dt.utcnow(),
+                    timestamp=self.timestamp or datetime.datetime.now(datetime.timezone.utc),
                 )
 
                 em.set_footer(text=f"Page {i} out of {len(entries)} pages {f'| {self.footer}' if self.footer else ''}")
@@ -381,6 +382,7 @@ class Paginator(Session):
             self._index = 0
 
         elif control == 'info':
+            # info embed yay?
             em = discord.Embed(
                 title="How to use the Interactive Menu",
                 description=f"""
@@ -394,7 +396,7 @@ class Paginator(Session):
                 
                 Press any button to continue.
                 """,
-                timestamp=dt.utcnow(),
+                timestamp=datetime.datetime.now(datetime.timezone.utc),
                 colour=MAIN)
             return await self.page.edit(embed=em)
 

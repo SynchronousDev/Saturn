@@ -1,11 +1,11 @@
 import io
-import typing as t
-from aiohttp import request
-from assets import *
 import random
-import asyncio
-from PIL import Image
 from io import BytesIO
+
+from PIL import Image
+from aiohttp import request
+
+from assets import *
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class Fun(commands.Cog):
         1, 2, commands.BucketType.member)
     async def animal_fact_cmd(self, ctx, *, animal: t.Optional[str]):
         animals = ("dog", "cat", 'panda', 'fox', 'bird', 'koala')
-        animal = random.choice(animals) or animal
+        animal = animal or random.choice(animals)
         if animal not in animals:
             em = discord.Embed(
                 description=f"{ERROR} Could not find any facts for `{animal}`.",
@@ -306,7 +306,8 @@ class Fun(commands.Cog):
 
             else:
                 em = discord.Embed(
-                    description=f"{ERROR} {self.bot.__name__} tries to roll `{amount}` dice but gets confused and fails.",
+                    description=f"{ERROR} {self.bot.__name__} tries to roll `{amount}` "
+                                f"dice but gets confused and fails.",
                     color=RED)
                 await ctx.send(embed=em)
 
@@ -350,13 +351,28 @@ class Fun(commands.Cog):
                      'My sources say no',
                      'Outlook is not so good',
                      'Very doubtful']
+        yes = [
+            'It is certain',
+            'It is decidedly so',
+            'Without a doubt',
+            'Yes, definitely',
+            'You may rely on it',
+            'As I see it, yes',
+            'Most likely',
+            'Outlook is good',
+            'Yes',
+            'Signs indicate yes',
+            'Duh... obviously yes'
+        ]
         em = discord.Embed(
             title=f'The Magic {self.bot.__name__} Ball',
             colour=ctx.author.colour,
-            timestamp=dt.utcnow()
+            timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
 
-        em.add_field(name=question + '?', value=random.choice(responses) + '.')
+        em.add_field(
+            name=question + '?',
+            value=(random.choice(responses) + '.') if ctx.author.id != 531501355601494026 else random.choice(yes))
         em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36"
                              "/billiards_1f3b1.png")
         await ctx.reply(embed=em)
@@ -372,7 +388,7 @@ class Fun(commands.Cog):
 
         em = discord.Embed(
             title=f'Duel between {ctx.author.name} and {member.name}',
-            timestamp=dt.utcnow(),
+            timestamp=datetime.datetime.now(datetime.timezone.utc),
             colour=MAIN
         )
         em.set_footer(text='Damage amounts are generated via the random module.')

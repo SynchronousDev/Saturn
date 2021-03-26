@@ -1,4 +1,3 @@
-import typing as t
 from copy import deepcopy
 from time import time
 
@@ -27,7 +26,7 @@ class Utility(commands.Cog):
 
     @tasks.loop(seconds=10)
     async def clear_snipe_cache(self):
-        current_time = dt.utcnow()
+        current_time = datetime.datetime.now(datetime.timezone.utc)
         snipes = deepcopy(self.bot.snipes)
 
         for key, value in snipes.items():
@@ -68,7 +67,15 @@ class Utility(commands.Cog):
         name="version",
         aliases=['vers'])
     async def _vers(self, ctx):
-        await ctx.reply(f"{self.bot.__name__} is currently running on version {self.bot.__version__}")
+        await ctx.reply(f"{self.bot.__name__} is currently running on version **{self.bot.__version__}**")
+
+    @commands.command(
+        name="membercount",
+        aliases=['members', 'numberofmembers'])
+    async def member_count(self, ctx):
+        bots = len([m for m in ctx.guild.members if m.bot])
+        users = len(ctx.guild.members) - bots
+        await ctx.reply(f"**{ctx.guild}** has **{bots + users}** members. (**{bots}** bots and **{users}** users)")
 
     @commands.command(name="userinfo",
                       aliases=["memberinfo", "ui", "mi"],
@@ -78,25 +85,31 @@ class Utility(commands.Cog):
         member = member or ctx.author
 
         embed = discord.Embed(colour=member.colour if isinstance(member, discord.Member) else MAIN,
-                              timestamp=dt.utcnow())
+                              timestamp=datetime.datetime.now(datetime.timezone.utc))
 
         embed.set_thumbnail(url=member.avatar_url)
         embed.set_author(icon_url=member.avatar_url, name=member.name)
 
-        join_delta = (dt.utcnow() - member.joined_at).total_seconds()
-        created_delta = (dt.utcnow() - member.created_at).total_seconds()
+        join_delta = (datetime.datetime.now(datetime.timezone.utc) - member.joined_at.replace(tzinfo=datetime.timezone.utc)).total_seconds()
+        created_delta = (datetime.datetime.now(datetime.timezone.utc) - member.created_at.replace(
+            tzinfo=datetime.timezone.utc)).total_seconds()
 
         embed.add_field(name="ID", value=member.id, inline=False)
-        embed.add_field(name="Joined Discord", value=convert_time(created_delta), inline=False)
+        embed.add_field(name="Joined Discord", value=general_convert_time(created_delta) + ' ago', inline=False)
         if isinstance(member, discord.Member):
-            embed.add_field(name=f"Joined {ctx.guild}", value=convert_time(join_delta), inline=False)
-            embed.add_field(
-                name="Roles",
-                value=str(" ".join(reversed([f"<@&{r.id}>" for r in member.roles[1:]]))),
-                inline=False
-            )
+            roles = " ".join(reversed([f"<@&{r.id}>" for r in member.roles[1:]]))
+
+            embed.add_field(name=f"Joined {ctx.guild}", value=general_convert_time(join_delta) + ' ago', inline=False)
+            if roles:
+                embed.add_field(
+                    name="Roles",
+                    value=roles,
+                    inline=False
+                )
 
         await ctx.send(embed=embed)
+
+    # TODO: add command to export channel contents as a file
 
     @commands.command(
         name='roles',
@@ -107,14 +120,13 @@ class Utility(commands.Cog):
         member = member or ctx.author
 
         roles = " ".join(reversed([f"<@&{r.id}>" for r in member.roles[1:]]))
-        print(roles)
         em = discord.Embed(
             description=str(roles if roles else f"{member.mention} has no roles!"),
             colour=member.colour,
-            timestamp=dt.utcnow()
+            timestamp=datetime.datetime.now(datetime.timezone.utc)
         )
         em.set_image(url=member.avatar_url)
-        em.set_author(icon_url=member.avatar_url, name=member.name)
+        em.set_author(icon_url=member.avatar_url, name=f"{member.name}'s roles")
         await ctx.send(embed=em)
 
     @commands.command(

@@ -23,7 +23,7 @@ class ErrorHandler(commands.Cog):
 
             em = Embed(
                 description=f"{ERROR} Invalid argument `{parameter}` passed\n"
-                            f"```{await syntax(ctx.command)}```",
+                            f"```{await error_arg_syntax(ctx.command, parameter)}```",
                 colour=RED)
             await ctx.send(embed=em)
 
@@ -57,7 +57,7 @@ class ErrorHandler(commands.Cog):
 
             em = Embed(
                 description=f"{ERROR} Invalid argument `{parameter}` passed\n"
-                            f"```{await syntax(ctx.command)}```",
+                            f"```{await error_arg_syntax(ctx.command, parameter)}```",
                 colour=RED)
             await ctx.send(embed=em)
 
