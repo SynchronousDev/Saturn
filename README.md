@@ -6,4 +6,3 @@ A multipurpose discord bot made in python.
 
 # Self Hosting
 Self hosting is generally not recommended, but this might change in the future. For now, please invite the bot with the link above.
-
