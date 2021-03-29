@@ -19,4 +19,3 @@ Check requirements.txt for more info.
 |Pillow         |~=8.1.0 | 
 |pytz           |~=2020.4|
 |python-dateutil|~=2.8.1 |
-|
