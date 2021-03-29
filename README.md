@@ -7,3 +7,16 @@ A multipurpose discord bot made in python.
 # Self Hosting
 Self hosting is generally not recommended, but this might change in the future. For now, please invite the bot with the link above.
 
+# Requirements
+Check requirements.txt for more info.
+|Package   |Version   |
+|---|---|
+|discord.py     |~=1.6.0 |
+|motor          |~=2.3.0 | 
+|python-dotenv  |~=0.15.0| 
+|pytimeparse    |~=1.1.8 | 
+|aiohttp        |~=3.6.3 | 
+|Pillow         |~=8.1.0 | 
+|pytz           |~=2020.4|
+|python-dateutil|~=2.8.1 |
+|
