@@ -1,10 +1,6 @@
 from discord.ext import commands
 
-# custom errors
-
-class AlreadyConnectedToChannel(commands.CommandError):
-    """Bot is already connected to another channel"""
-    pass
+# custom errors yay?
 
 class RoleNotHighEnough(commands.CommandError):
     """Raises when the command invoker's role is not higher than the target's role"""

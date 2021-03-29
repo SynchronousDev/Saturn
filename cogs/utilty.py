@@ -26,7 +26,7 @@ class Utility(commands.Cog):
 
     @tasks.loop(seconds=10)
     async def clear_snipe_cache(self):
-        current_time = datetime.datetime.now(datetime.timezone.utc)
+        current_time = utc()
         snipes = deepcopy(self.bot.snipes)
 
         for key, value in snipes.items():
@@ -81,17 +81,17 @@ class Utility(commands.Cog):
                       aliases=["memberinfo", "ui", "mi"],
                       description='Information about a user')
     @commands.cooldown(1, 2, commands.BucketType.member)
-    async def user_info(self, ctx, member: t.Optional[t.Union[discord.Member, discord.User]]):
+    async def user_info(self, ctx, member: typing.Optional[typing.Union[discord.Member, discord.User]]):
         member = member or ctx.author
 
         embed = discord.Embed(colour=member.colour if isinstance(member, discord.Member) else MAIN,
-                              timestamp=datetime.datetime.now(datetime.timezone.utc))
+                              timestamp=utc())
 
         embed.set_thumbnail(url=member.avatar_url)
         embed.set_author(icon_url=member.avatar_url, name=member.name)
 
-        join_delta = (datetime.datetime.now(datetime.timezone.utc) - member.joined_at.replace(tzinfo=datetime.timezone.utc)).total_seconds()
-        created_delta = (datetime.datetime.now(datetime.timezone.utc) - member.created_at.replace(
+        join_delta = (utc() - member.joined_at.replace(tzinfo=datetime.timezone.utc)).total_seconds()
+        created_delta = (utc() - member.created_at.replace(
             tzinfo=datetime.timezone.utc)).total_seconds()
 
         embed.add_field(name="ID", value=member.id, inline=False)
@@ -110,20 +110,21 @@ class Utility(commands.Cog):
         await ctx.send(embed=embed)
 
     # TODO: add command to export channel contents as a file
+    # TODO: add command to set timed reminders
 
     @commands.command(
         name='roles',
         description='View your roles.'
     )
     @commands.cooldown(1, 2, commands.BucketType.member)
-    async def view_roles(self, ctx, member: t.Optional[t.Union[discord.Member, discord.User]]):
+    async def view_roles(self, ctx, member: typing.Optional[typing.Union[discord.Member, discord.User]]):
         member = member or ctx.author
 
         roles = " ".join(reversed([f"<@&{r.id}>" for r in member.roles[1:]]))
         em = discord.Embed(
             description=str(roles if roles else f"{member.mention} has no roles!"),
             colour=member.colour,
-            timestamp=datetime.datetime.now(datetime.timezone.utc)
+            timestamp=utc()
         )
         em.set_image(url=member.avatar_url)
         em.set_author(icon_url=member.avatar_url, name=f"{member.name}'s roles")
@@ -134,7 +135,7 @@ class Utility(commands.Cog):
         aliases=['pfp', 'userpfp', 'av'],
         description="Shows a user's avatar")
     @commands.cooldown(1, 2, commands.BucketType.member)
-    async def get_avatar(self, ctx, member: t.Optional[discord.Member]):
+    async def get_avatar(self, ctx, member: typing.Optional[discord.Member]):
         if member is None:
             member = ctx.author
 
@@ -149,7 +150,7 @@ class Utility(commands.Cog):
         description='Retrieve deleted messages.'
     )
     @commands.cooldown(1, 2, commands.BucketType.member)
-    async def get_snipes(self, ctx, member: t.Optional[discord.Member], channel: t.Optional[discord.TextChannel]):
+    async def get_snipes(self, ctx, member: typing.Optional[discord.Member], channel: typing.Optional[discord.TextChannel]):
         em = discord.Embed(
             colour=BLUE,
         )
@@ -190,7 +191,7 @@ class Utility(commands.Cog):
         description='Retrieve edited messages.'
     )
     @commands.cooldown(1, 2, commands.BucketType.member)
-    async def get_editsnipes(self, ctx, member: t.Optional[discord.Member], channel: t.Optional[discord.TextChannel]):
+    async def get_editsnipes(self, ctx, member: typing.Optional[discord.Member], channel: typing.Optional[discord.TextChannel]):
         em = discord.Embed(
             colour=BLUE,
         )

@@ -25,7 +25,7 @@ class Fun(commands.Cog):
         description='Quote your message in chat for others to see!')
     @commands.cooldown(
         1, 3, commands.BucketType.member)
-    async def quote_cmd(self, ctx, channel: t.Optional[discord.TextChannel], *, quote: str):
+    async def quote_cmd(self, ctx, channel: typing.Optional[discord.TextChannel], *, quote: str):
         channel = channel or ctx.channel
 
         em = discord.Embed(
@@ -41,7 +41,7 @@ class Fun(commands.Cog):
         description='Quote your message in chat for others to see!')
     @commands.cooldown(
         1, 3, commands.BucketType.member)
-    async def anonymous_quote_cmd(self, ctx, channel: t.Optional[discord.TextChannel], *, quote: str):
+    async def anonymous_quote_cmd(self, ctx, channel: typing.Optional[discord.TextChannel], *, quote: str):
         if not channel:
             await ctx.message.delete()
 
@@ -63,7 +63,7 @@ class Fun(commands.Cog):
         description='Get animal facts. API may be down sometimes, but still reliable.')
     @commands.cooldown(
         1, 2, commands.BucketType.member)
-    async def animal_fact_cmd(self, ctx, *, animal: t.Optional[str]):
+    async def animal_fact_cmd(self, ctx, *, animal: typing.Optional[str]):
         animals = ("dog", "cat", 'panda', 'fox', 'bird', 'koala')
         animal = animal or random.choice(animals)
         if animal not in animals:
@@ -113,7 +113,7 @@ class Fun(commands.Cog):
         description='Apply a wasted overlay to someone\'s avatar!'
     )
     @commands.cooldown(1, 1, commands.BucketType.member)
-    async def wasted_avatar(self, ctx, member: t.Optional[discord.Member]):
+    async def wasted_avatar(self, ctx, member: typing.Optional[discord.Member]):
         member = member or ctx.author
         URL = f"https://some-random-api.ml/canvas/wasted/?avatar=" \
               f"{member.avatar_url_as(format='png')}"
@@ -146,7 +146,7 @@ class Fun(commands.Cog):
         description='Apply a rainbow overlay to someone\'s avatar!'
     )
     @commands.cooldown(1, 1, commands.BucketType.member)
-    async def rainbowify_avatar(self, ctx, member: t.Optional[discord.Member]):
+    async def rainbowify_avatar(self, ctx, member: typing.Optional[discord.Member]):
         member = member or ctx.author
         URL = f"https://some-random-api.ml/canvas/gay/?avatar=" \
               f"{member.avatar_url_as(format='png')}"
@@ -180,7 +180,7 @@ class Fun(commands.Cog):
         description='Apply a triggered overlay to someone\'s avatar!'
     )
     @commands.cooldown(1, 1, commands.BucketType.member)
-    async def triggered_avatar(self, ctx, member: t.Optional[discord.Member]):
+    async def triggered_avatar(self, ctx, member: typing.Optional[discord.Member]):
         member = member or ctx.author
         URL = f"https://some-random-api.ml/canvas/triggered/?avatar=" \
               f"{member.avatar_url_as(format='png')}"
@@ -289,7 +289,7 @@ class Fun(commands.Cog):
         name='rolldice', aliases=['rd', 'dice', 'roll'],
         description='Rolls some dice, with yourself? Or maybe roll a rick. Optional dice values.')
     @commands.cooldown(1, 2, commands.BucketType.member)
-    async def roll_dice(self, ctx, amount: t.Union[str, int], value: t.Optional[int]):
+    async def roll_dice(self, ctx, amount: typing.Union[str, int], value: typing.Optional[int]):
         value = value or 6
         if amount.isdigit():
             amount = int(amount)
@@ -367,7 +367,7 @@ class Fun(commands.Cog):
         em = discord.Embed(
             title=f'The Magic {self.bot.__name__} Ball',
             colour=ctx.author.colour,
-            timestamp=datetime.datetime.now(datetime.timezone.utc)
+            timestamp=utc()
         )
 
         em.add_field(
@@ -388,7 +388,7 @@ class Fun(commands.Cog):
 
         em = discord.Embed(
             title=f'Duel between {ctx.author.name} and {member.name}',
-            timestamp=datetime.datetime.now(datetime.timezone.utc),
+            timestamp=utc(),
             colour=MAIN
         )
         em.set_footer(text='Damage amounts are generated via the random module.')

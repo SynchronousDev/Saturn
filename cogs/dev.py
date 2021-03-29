@@ -18,27 +18,27 @@ class Dev(commands.Cog):
 
     @commands.command()
     async def test(self, ctx):
-        await ctx.send(convert_to_timestamp(datetime.datetime.now(datetime.timezone.utc)))
+        await ctx.send(convert_to_timestamp(utc()))
 
     @commands.command(
         name='blacklist',
         aliases=['bl'],
         description='A developer command. Blacklists a user from using the bot.')
-    async def blacklist_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = 'no reason provided'):
+    async def blacklist_cmd(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = 'no reason provided'):
         await self.bot.blacklists.update_one({"_id": member.id},
                                              {'$set': {"reason": reason}}, upsert=True)
 
         em = discord.Embed(
             description=f"{CHECK} Blacklisted {member.mention} for `{reason}`.",
             colour=GREEN,
-            timestamp=datetime.datetime.now(datetime.timezone.utc))
+            timestamp=utc())
         await ctx.send(embed=em)
 
     @commands.command(
         name='unblacklist',
         aliases=['ubl'],
         description='A developer command. Unblacklists a user from using the bot.')
-    async def unblacklist_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = 'no reason provided'):
+    async def unblacklist_cmd(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = 'no reason provided'):
         try:
             await self.bot.blacklists.delete_one({"_id": member.id})
 
@@ -51,7 +51,7 @@ class Dev(commands.Cog):
         em = discord.Embed(
             description=f"{CHECK} Unblacklisted {member.mention} for `{reason}`.",
             colour=GREEN,
-            timestamp=datetime.datetime.now(datetime.timezone.utc))
+            timestamp=utc())
         await ctx.send(embed=em)
 
     @commands.command(

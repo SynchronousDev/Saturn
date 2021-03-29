@@ -6,7 +6,9 @@ from discord.ext import commands
 import datetime
 from functools import partial
 from typing import Union
-from .constants import *
+from assets import *
+from assets.time import utc
+from discord.ext import menus
 
 # noinspection PyRedeclaration
 __all__ = ('Session', 'Paginator', 'button', 'inverse_button',)
@@ -136,7 +138,7 @@ class Session:
             except Exception:
                 return ctx.bot.loop.create_task(self.cancel())
 
-            emoji = self.get_emoji_as_string(payload.emoji)
+            emoji = self.get_emoji_as_str(payload.emoji)
             button = self.buttons[emoji]
 
             if self._try_remove and button.try_remove:
@@ -187,7 +189,7 @@ class Session:
             except discord.NotFound:
                 pass
 
-    def get_emoji_as_string(self, emoji):
+    def get_emoji_as_str(self, emoji):
         if emoji.is_custom_emoji():
             return f'<:{emoji.name}:{str(emoji.id)}>'
 
@@ -195,7 +197,7 @@ class Session:
 
     def check(self, payload):
         """Check which takes in a raw_reaction payload. This may be overwritten."""
-        emoji = self.get_emoji_as_string(payload.emoji)
+        emoji = self.get_emoji_as_str(payload.emoji)
 
         def inner(ctx):
             if emoji not in self.buttons.keys():
@@ -338,7 +340,7 @@ class Paginator(Session):
                     title=title,
                     description=self.joiner.join(chunk),
                     colour=self.colour,
-                    timestamp=self.timestamp or datetime.datetime.now(datetime.timezone.utc),
+                    timestamp=self.timestamp or utc(),
                 )
 
                 em.set_footer(text=f"Page {i} out of {len(entries)} pages {f'| {self.footer}' if self.footer else ''}")
@@ -396,7 +398,7 @@ class Paginator(Session):
                 
                 Press any button to continue.
                 """,
-                timestamp=datetime.datetime.now(datetime.timezone.utc),
+                timestamp=utc(),
                 colour=MAIN)
             return await self.page.edit(embed=em)
 
@@ -526,3 +528,61 @@ def inverse_button(emoji: str = None, *, try_remove=False, position: int = 666):
         return func
 
     return deco
+
+
+# noinspection PyUnusedLocal
+class ConfirmationMenu(menus.Menu):
+    """
+    A confirmation menu, for when you need to double-check that they actually want to do something.
+    """
+    def __init__(self, msg):
+        super().__init__(timeout=30.0)
+        self.msg = msg
+        self.result = None
+
+    async def send_initial_message(self, ctx, channel):
+        em = discord.Embed(
+            description=f'{WARNING} Are you sure you want to {self.msg}?',
+            colour=GOLD,
+            timestamp=utc()
+        )
+        return await ctx.send(embed=em)
+
+    @menus.button(CHECK)  # confirmation
+    async def do_confirm(self, payload):
+        self.result = True
+        self.stop()
+
+    @menus.button(ERROR)  # deny
+    async def do_deny(self, payload):
+        self.result = False
+        self.stop()
+
+    async def prompt(self, ctx):
+        await self.start(ctx, wait=True)
+        return self.result
+
+class Dueler:
+    """
+    A dueler class. Used for the duel command
+    """
+
+    def __init__(self, member: discord.Member):
+        self.member = member
+        self.health = 100
+
+    def damage(self, amount):  # do damage
+        self.health -= amount
+
+    def heal(self, amount):  # heal hp
+        self.health += amount
+
+    def health(self):
+        return self.health
+
+    @property
+    def name(self):
+        return self.member.name
+
+    def member(self):
+        return self.member

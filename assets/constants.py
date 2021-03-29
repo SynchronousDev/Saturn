@@ -44,7 +44,7 @@ UNMUTE = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/
 WARN = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
        'warning-sign_26a0.png'
 NO_ENTRY = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
-      'no-entry_26d4.png'
+           'no-entry_26d4.png'
 UNBAN = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
         'door_1f6aa.png'
 # weird emotes and stuff yay?
@@ -57,6 +57,11 @@ YOUTUBE_URL_REGEX = r"(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\
                     r"(?:watch|v|embed)(?:\.php)?(?:\?.*v=|\/))([a-zA-Z0-9\_-]+)"
 INVITE_URL_REGEX = r"discord(?:\.com|app\.com|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})"
 # i barely understand these regexes omg
+
+ADMIN_INVITE = "https://discord.com/oauth2/authorize?client_id=799328036662935572&permissions=8&redirect_uri" \
+               "=https://127.0.0.1:5000/login&scope=bot"
+NORMAL_INVITE = "https://discord.com/oauth2/authorize?client_id=799328036662935572&permissions=536145143&redirect_uri" \
+                "=https://127.0.0.1:5000/login&scope=bot"
 
 DUEL_HEAL_MESSAGES = [
     "{} drinks a chug jug!",

@@ -50,13 +50,13 @@ class Events(commands.Cog):
             except TypeError or KeyError: return
             if not member_logs: return
 
-            created_delta = (datetime.datetime.now(datetime.timezone.utc) - member.created_at).total_seconds()
+            created_delta = (utc() - member.created_at).total_seconds()
 
             em = discord.Embed(
                 title='Member Joined',
                 description=f"{member.mention} `({member})`",
                 colour=GREEN,
-                timestamp=datetime.datetime.now(datetime.timezone.utc)
+                timestamp=utc()
             )
             em.set_thumbnail(url=member.avatar_url)
             em.set_author(icon_url=member.avatar_url, name=member)
@@ -81,7 +81,7 @@ class Events(commands.Cog):
                 title='Member Left',
                 description=f"{member.mention} `({member})`",
                 colour=RED,
-                timestamp=datetime.datetime.now(datetime.timezone.utc)
+                timestamp=utc()
             )
             em.set_author(icon_url=member.avatar_url, name=member.name)
             em.set_thumbnail(url=member.avatar_url)
@@ -103,7 +103,7 @@ class Events(commands.Cog):
                 "author": message.author.id,
                 "content": message.content,
                 "guild": message.guild.id,
-                "time": datetime.datetime.now(datetime.timezone.utc)
+                "time": utc()
             }
             self.bot.snipes[message.id] = schema
 
@@ -117,7 +117,7 @@ class Events(commands.Cog):
             em = discord.Embed(
                 title='Message Deleted',
                 colour=RED,
-                timestamp=datetime.datetime.now(datetime.timezone.utc)
+                timestamp=utc()
             )
             em.set_thumbnail(url=message.author.avatar_url)
             em.set_author(icon_url=message.author.avatar_url, name=message.author)
@@ -143,7 +143,7 @@ class Events(commands.Cog):
                 "before": before.content,
                 "after": after.content,
                 "guild": after.guild.id,
-                "time": datetime.datetime.now(datetime.timezone.utc)
+                "time": utc()
             }
             self.bot.edit_snipes[after.id] = schema
 
@@ -158,7 +158,7 @@ class Events(commands.Cog):
                 title='Message Edited',
                 description=f"[Jump!]({after.jump_url})",
                 colour=GOLD,
-                timestamp=datetime.datetime.now(datetime.timezone.utc)
+                timestamp=utc()
             )
             em.set_thumbnail(url=after.author.avatar_url)
             em.set_author(icon_url=after.author.avatar_url, name=after.author)

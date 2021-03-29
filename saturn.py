@@ -49,7 +49,7 @@ class Saturn(commands.Bot):
 
         print("Initializing database...")
         self.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(self.mongo_connection_url))
-        self.db = self.mongo[f"{self.__name__}"]
+        self.db = self.mongo[self.__name__]
         self.config = self.db["config"]
         self.mutes = self.db["mutes"]
         self.blacklists = self.db["blacklists"]

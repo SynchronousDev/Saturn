@@ -15,7 +15,7 @@ async def purge_msgs(bot, ctx, limit, check):
     await ctx.message.delete()
     deleted = await ctx.channel.purge(
         limit=limit,
-        after=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(weeks=2),
+        after=utc() - datetime.timedelta(weeks=2),
         check=check)
 
     if not len(deleted):
@@ -59,7 +59,7 @@ async def purge_msgs(bot, ctx, limit, check):
         description=f'Deleted {len(deleted)} messages in {ctx.channel.mention}\n'
                     f'Command invoked by {ctx.author.mention}',
         colour=discord.Colour.orange(),
-        timestamp=datetime.datetime.now(datetime.timezone.utc)
+        timestamp=utc()
     )
     em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
                          "thumbs/120/mozilla/36/memo_1f4dd.png")
@@ -108,7 +108,7 @@ async def create_log(bot, member: discord.Member, guild, action, moderator, reas
     try:
         em = discord.Embed(
             colour=colour,
-            timestamp=datetime.datetime.now(datetime.timezone.utc)
+            timestamp=utc()
         )
         em.set_thumbnail(url=emote)
         desc = f"**Guild** - {guild}\n" \
@@ -146,7 +146,7 @@ async def create_log(bot, member: discord.Member, guild, action, moderator, reas
     em = discord.Embed(
         title=f'Member {action_.title()}',
         colour=colour,
-        timestamp=datetime.datetime.now(datetime.timezone.utc)
+        timestamp=utc()
     )
     em.set_thumbnail(url=emote)
     em.set_author(icon_url=member.avatar_url, name=member.name)
@@ -229,7 +229,7 @@ async def _create_log(bot, member: discord.Member, guild, action, moderator, rea
         "action": action,
         "moderator": moderator.id,
         "reason": reason,
-        "time": datetime.datetime.now(datetime.timezone.utc)
+        "time": utc()
     }
     await bot.mod.insert_one(schema)
 
@@ -306,7 +306,7 @@ async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _ty
     if time:
         schema = {
             '_id': member.id,
-            'at': datetime.datetime.now(datetime.timezone.utc),
+            'at': utc(),
             'duration': time or None,
             'moderator': ctx.author.id,
             'guild_id': ctx.guild.id,
@@ -319,7 +319,6 @@ async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _ty
     await ctx.guild.ban(member, reason=f"{ctx.author if ctx.author != member else ctx.guild.me} - "
                                        + reason, delete_message_days=delete_days)
     if _type == 'softban':
-        await asyncio.sleep(0.5)
         await ctx.guild.unban(member, reason=f"{ctx.author} - softban")
 
 
@@ -362,7 +361,7 @@ async def mute_members(bot, ctx, member: discord.Member, reason, mute_role, time
     """
     schema = {
         '_id': member.id,
-        'at': datetime.datetime.now(datetime.timezone.utc),
+        'at': utc(),
         'duration': time or None,
         'moderator': ctx.author.id,
         'guild_id': ctx.guild.id,
@@ -469,7 +468,7 @@ class Mod(commands.Cog, name='Moderation'):
 
     @tasks.loop(seconds=1)
     async def check_mods(self):
-        current_time = datetime.datetime.now(datetime.timezone.utc)
+        current_time = utc()
         mutes = deepcopy(self.bot.muted_users)
         bans = deepcopy(self.bot.banned_users)
 
@@ -483,7 +482,7 @@ class Mod(commands.Cog, name='Moderation'):
             mute_role = guild.get_role(data['mute_role'])
 
             try:
-                join_delta = datetime.datetime.now(datetime.timezone.utc) - member.joined_at.\
+                join_delta = utc() - member.joined_at.\
                     replace(tzinfo=datetime.timezone.utc)
 
             except AttributeError:
@@ -568,7 +567,7 @@ class Mod(commands.Cog, name='Moderation'):
         description='View the moderation cases of a member.'
     )
     @commands.cooldown(1, 3, commands.BucketType.member)
-    async def check_punishments(self, ctx, member: t.Optional[t.Union[discord.Member, discord.User]]):
+    async def check_punishments(self, ctx, member: typing.Optional[typing.Union[discord.Member, discord.User]]):
         member = member or ctx.author
         logs = await get_member_mod_logs(self.bot, member, ctx.guild)
         entries = []
@@ -616,7 +615,7 @@ class Mod(commands.Cog, name='Moderation'):
                 **Action** - {_action[0]}
                 **Duration** - {_duration}
                 **Reason** - {entry['reason']}
-                **Time** - {convert_to_timestamp(time=entry['time'])}
+                **Time** - {convert_to_timestamp(_time=entry['time'])}
                 """
 
             else:
@@ -626,7 +625,7 @@ class Mod(commands.Cog, name='Moderation'):
                 **Moderator** - <@!{entry['moderator']}>
                 **Action** - {entry['action']}
                 **Reason** - {entry['reason']}
-                **Time** - {convert_to_timestamp(time=entry['time'])}
+                **Time** - {convert_to_timestamp(_time=entry['time'])}
                 """
             entries.append(desc)
 
@@ -735,7 +734,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='moderations',
         aliases=['amods', 'activemods', 'activemoderations'],
-        description='See the currently active moderation cases. These include timed mutes and bans.')
+        description='See the currently active moderation cases.')
     @commands.cooldown(1, 3, commands.BucketType.member)
     async def view_active_moderations(self, ctx):
         bans, mutes = deepcopy(self.bot.banned_users), deepcopy(self.bot.muted_users)
@@ -750,7 +749,7 @@ class Mod(commands.Cog, name='Moderation'):
                 if duration:
                     ends_at = (value['at'] + datetime.timedelta(seconds=duration))\
                         .replace(tzinfo=datetime.timezone.utc)
-                    delta = (ends_at - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+                    delta = (ends_at - utc()).total_seconds()
 
                 else:
                     delta = 'never'
@@ -780,11 +779,11 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='kick',
         aliases=['k'],
-        description='Kicks members from the server. 3 second cooldown, must have Kick Users permission.')
+        description='Kicks members from the server.')
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.bot_has_permissions(kick_members=True)
     @commands.has_permissions(kick_members=True)
-    async def kick_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
+    async def kick_cmd(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
             await kick_members(self.bot, ctx, member, reason)
             em = discord.Embed(
@@ -797,12 +796,12 @@ class Mod(commands.Cog, name='Moderation'):
         name='ban',
         aliases=['b'],
         description='Bans members from the server, with customizability on how many days of their messages '
-                    'should be deleted. 3 second cooldown, must have Ban Members permission.')
+                    'should be deleted.')
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    async def ban_cmd(self, ctx, member: t.Union[discord.Member, discord.User],
-                      delete_days: t.Optional[int], *, reason: t.Optional[str] = "no reason provided"):
+    async def ban_cmd(self, ctx, member: typing.Union[discord.Member, discord.User],
+                      delete_days: typing.Optional[int], *, reason: typing.Optional[str] = "no reason provided"):
         delete_days = int(delete_days) if delete_days else 7
         if delete_days > 7:
             em = discord.Embed(
@@ -827,7 +826,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.bot_has_permissions(ban_members=True)
     @commands.has_permissions(ban_members=True)
-    async def softban_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
+    async def softban_cmd(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
             await ban_members(self.bot, ctx, member, reason, delete_days=7, _type='softban')
             em = discord.Embed(
@@ -843,17 +842,17 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.bot_has_permissions(ban_members=True)
     @commands.has_permissions(ban_members=True)
-    async def tempban_cmd(self, ctx, member: t.Union[discord.User, discord.Member], *args):
+    async def tempban_cmd(self, ctx, member: typing.Union[discord.User, discord.Member], *time_and_reason):
         try:
-            time = pytp.parse(args[0]) or None
+            time = pytp.parse(time_and_reason[0]) or None
 
         except IndexError:
             time = None
 
         if not time:
-            reason = ' '.join(args)
+            reason = ' '.join(time_and_reason)
         else:
-            reason = ' '.join(args[1:])
+            reason = ' '.join(time_and_reason[1:])
         if not reason: reason = 'no reason provided'
 
         if isinstance(member, discord.Member):
@@ -885,8 +884,8 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.bot_has_permissions(ban_members=True)
     @commands.has_permissions(ban_members=True)
-    async def unban_cmd(self, ctx, member: t.Union[discord.User, int],
-                        *, reason: t.Optional[str] = 'no reason provided'):
+    async def unban_cmd(self, ctx, member: typing.Union[discord.User, int],
+                        *, reason: typing.Optional[str] = 'no reason provided'):
         await unban_members(self.bot, ctx, member, reason)
         em = discord.Embed(
             description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
@@ -897,10 +896,10 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='warn',
         aliases=['w', 'wrn'],
-        description='Warns members in the server. 3 second cooldown, must have Manage Messages permission.')
+        description='Warns members in the server.')
     @commands.has_permissions(manage_messages=True)
     @commands.cooldown(1, 3, commands.BucketType.member)
-    async def warn_cmd(self, ctx, member: discord.Member, *, reason: t.Optional[str] = "no reason provided"):
+    async def warn_cmd(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
             await warn_members(self.bot, ctx, member, reason)
             em = discord.Embed(
@@ -912,22 +911,21 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='mute',
         aliases=['m', 'silence'],
-        description='Mutes users in the server. '
-                    '3 second cooldown, must have Manage Messages permission. Cannot be bypassed.')
+        description='Mutes users in the server.')
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True, manage_roles=True)
-    async def mute_cmd(self, ctx, member: discord.Member, *args):
+    async def mute_cmd(self, ctx, member: discord.Member, *time_and_reason):
         try:
-            time = pytp.parse(args[0]) or None
+            time = pytp.parse(time_and_reason[0]) or None
 
         except IndexError:
             time = None
 
         if not time:
-            reason = ' '.join(args)
+            reason = ' '.join(time_and_reason)
         else:
-            reason = ' '.join(args[1:])
+            reason = ' '.join(time_and_reason[1:])
         if not reason: reason = 'no reason provided'
 
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
@@ -983,12 +981,12 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.command(
         name='unmute',
         aliases=['um', 'umt', 'unm'],
-        description='Unmutes members in the server. 3 second cooldown, must have Manage Messages permission.')
+        description='Unmutes members in the server.')
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_roles=True, manage_messages=True)
     async def unmute_cmd(self, ctx, member: discord.Member,
-                         *, reason: t.Optional[str] = 'no reason provided'):
+                         *, reason: typing.Optional[str] = 'no reason provided'):
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
             mute_role = ctx.guild.get_role(data['mute_role'])
@@ -1033,7 +1031,7 @@ class Mod(commands.Cog, name='Moderation'):
                     'Run the command again to unlock the channel.')
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def lock_cmd(self, ctx, channel: t.Optional[discord.TextChannel]):
+    async def lock_cmd(self, ctx, channel: typing.Optional[discord.TextChannel]):
         channel = channel or ctx.channel
 
         if ctx.guild.default_role not in channel.overwrites:
@@ -1069,10 +1067,10 @@ class Mod(commands.Cog, name='Moderation'):
         name='slowmode',
         aliases=['slm', 'sl'],
         description='Changes the slowmode delay on a given channel. '
-                    'Must be equal or less than 6 hours. Requires Manage Channels permission.')
+                    'Must be equal or less than 6 hours.')
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def slowmode_cmd(self, ctx, time: t.Union[int, pytp.parse], channel: t.Optional[discord.TextChannel]):
+    async def slowmode_cmd(self, ctx, time: typing.Union[int, pytp.parse], channel: typing.Optional[discord.TextChannel]):
         channel = channel or ctx.channel
         if not time and time != 0:
             em = discord.Embed(
@@ -1116,7 +1114,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge_match(self, ctx, limit: t.Optional[int], *, match: str):
+    async def purge_match(self, ctx, limit: typing.Optional[int], *, match: str):
         def check(m):
             return (str(match.lower())) in str(m.content).lower()
 
@@ -1136,7 +1134,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge_humans(self, ctx, limit: t.Optional[int]):
+    async def purge_humans(self, ctx, limit: typing.Optional[int]):
         limit = limit or 100
 
         if 0 < limit < 1001:
@@ -1153,7 +1151,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge_bots(self, ctx, limit: t.Optional[int]):
+    async def purge_bots(self, ctx, limit: typing.Optional[int]):
         limit = limit or 100
 
         if 0 < limit < 1001:
@@ -1170,7 +1168,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge_no_match(self, ctx, limit: t.Optional[int], *, match: str):
+    async def purge_no_match(self, ctx, limit: typing.Optional[int], *, match: str):
         limit = limit or 100
 
         if 0 < limit < 1001:
@@ -1187,7 +1185,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge_starts_with(self, ctx, limit: t.Optional[int], *, match: str):
+    async def purge_starts_with(self, ctx, limit: typing.Optional[int], *, match: str):
         limit = limit or 100
 
         if 0 < limit < 1001:
@@ -1204,7 +1202,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge_ends_with(self, ctx, limit: t.Optional[int], *, match: str):
+    async def purge_ends_with(self, ctx, limit: typing.Optional[int], *, match: str):
         limit = limit or 100
 
         if 0 < limit < 1001:
@@ -1221,7 +1219,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge_links(self, ctx, limit: t.Optional[int]):
+    async def purge_links(self, ctx, limit: typing.Optional[int]):
         limit = limit or 100
 
         if 0 < limit < 1001:
@@ -1238,7 +1236,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge_invites(self, ctx, limit: t.Optional[int]):
+    async def purge_invites(self, ctx, limit: typing.Optional[int]):
         limit = limit or 100
 
         if 0 < limit < 1001:
@@ -1255,7 +1253,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge_mentions(self, ctx, limit: t.Optional[int]):
+    async def purge_mentions(self, ctx, limit: typing.Optional[int]):
         limit = limit or 100
 
         if 0 < limit < 1001:
@@ -1272,7 +1270,7 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.cooldown(1, 3, commands.BucketType.member)
     @commands.has_guild_permissions(move_members=True)
     @commands.bot_has_guild_permissions(move_members=True)
-    async def voice_kick(self, ctx, member: discord.Member, *, reason: t.Optional[str] = 'no reason provided'):
+    async def voice_kick(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = 'no reason provided'):
         try:
             vc = member.voice.channel
 

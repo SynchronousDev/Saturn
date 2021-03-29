@@ -23,8 +23,8 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def add_roles(self, ctx, role: discord.Role, member: t.Optional[discord.Member], 
-                        reason: t.Optional[str] = 'no reason provided'): 
+    async def add_roles(self, ctx, role: discord.Role, member: typing.Optional[discord.Member],
+                        reason: typing.Optional[str] = 'no reason provided'):
         member = member or ctx.author
 
         if ctx.guild.me.top_role > member.top_role and (role.position < ctx.guild.me.top_role.position):
@@ -60,7 +60,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def mass_add_roles(self, ctx, role: discord.Role, has_role: discord.Role,
-                             reason: t.Optional[str] = 'no reason provided'):
+                             reason: typing.Optional[str] = 'no reason provided'):
         conf = await ConfirmationMenu(f'mass add {role.mention}').prompt(ctx)
         if conf:
             em = discord.Embed(
@@ -97,7 +97,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, reason: t.Optional[str]):
+    async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, reason: typing.Optional[str]):
         em = discord.Embed(
             description=f"{INFO} This might take a while, please wait...",
             colour=BLUE)
@@ -127,7 +127,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def remove_roles(self, ctx, role: discord.Role,
-                           member: t.Optional[discord.Member], reason: t.Optional[str]):
+                           member: typing.Optional[discord.Member], reason: typing.Optional[str]):
         member = member or ctx.author
 
         if ctx.guild.me.top_role > member.top_role and (member != ctx.author) \
@@ -206,7 +206,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def create_role(self, ctx, name, colour: t.Optional[commands.ColourConverter], *,
+    async def create_role(self, ctx, name, colour: typing.Optional[commands.ColourConverter], *,
                           reason: str = 'no reason provided'):
         new_role = await ctx.guild.create_role(
             name=name, colour=colour if colour else discord.Color.default(), reason=reason)
@@ -233,7 +233,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def del_category(self, ctx, category: discord.CategoryChannel, *, reason: t.Optional[str]):
+    async def del_category(self, ctx, category: discord.CategoryChannel, *, reason: typing.Optional[str]):
         await category.delete(reason=reason)
         conf = await ConfirmationMenu(f'delete `{category.name}`').prompt(ctx)
         if conf:
@@ -263,7 +263,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def del_channel(self, ctx, channel: t.Optional[discord.TextChannel], *, reason: t.Optional[str]):
+    async def del_channel(self, ctx, channel: typing.Optional[discord.TextChannel], *, reason: typing.Optional[str]):
         channel = channel or ctx.channel
         conf = await ConfirmationMenu(f'delete `{channel.name}`').prompt(ctx)
         if conf:
@@ -293,7 +293,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.guild_only()
     @commands.has_guild_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
-    async def del_role(self, ctx, role: discord.Role, *, reason: t.Optional[str]):
+    async def del_role(self, ctx, role: discord.Role, *, reason: typing.Optional[str]):
         conf = await ConfirmationMenu(f'delete `{role.name}`').prompt(ctx)
         if conf:
             try:

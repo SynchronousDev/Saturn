@@ -47,7 +47,7 @@ class Tags(commands.Cog):
         aliases=['t'],
         description='The tag group. Create tags for your guild.',
         invoke_without_command=True)
-    async def tag_cmd(self, ctx, name: t.Optional[str], member: t.Optional[discord.Member]):
+    async def tag_cmd(self, ctx, name: typing.Optional[str], member: typing.Optional[discord.Member]):
         if not name:
             await ctx.invoke(self.bot.get_command('help'), entity='tag')
             return
