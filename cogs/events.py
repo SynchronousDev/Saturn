@@ -123,7 +123,7 @@ class Events(commands.Cog):
             em.set_author(icon_url=message.author.avatar_url, name=message.author)
             em.add_field(name="Author", value=message.author.mention)
             em.add_field(name="Channel", value=f"{message.channel.mention} `(#{message.channel})`")
-            em.add_field(name="Content", value=f"{message.content}", inline=False)
+            em.add_field(name="Content", value=f"{message.content}")
             em.set_footer(text=f"Message ID - {message.id}")
             await message_logs.send(embed=em)  # send the embed
 
@@ -164,8 +164,8 @@ class Events(commands.Cog):
             em.set_author(icon_url=after.author.avatar_url, name=after.author)
             em.add_field(name="Author", value=after.author.mention)
             em.add_field(name="Channel", value=f"{after.channel.mention} `(#{after.channel})`")
-            em.add_field(name="Before", value=f"{before.content}", inline=False)
-            em.add_field(name="After", value=f"{after.content}", inline=False)
+            em.add_field(name="Before", value=f"{before.content}")
+            em.add_field(name="After", value=f"{after.content}")
             em.set_footer(text=f"Message ID - {after.id}")  # footer because why not
             await message_logs.send(embed=em)  # send the embed
 

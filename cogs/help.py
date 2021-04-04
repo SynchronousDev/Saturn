@@ -9,8 +9,6 @@ from assets import *
 log = logging.getLogger(__name__)
 
 
-# TODO: Update help paginator, use custom paginator instead of discord.ext.menus
-
 # noinspection SpellCheckingInspection
 class Help(commands.Cog):
     def __init__(self, bot):
@@ -19,12 +17,12 @@ class Help(commands.Cog):
         self.unlisted_cogs = ("Events", "ErrorHandler", "Reaction Roles", "Dev", "Jishaku", 'Help')
 
     @staticmethod
-    async def can_run(cmd, ctx) -> bool:
+    async def can_run(command, ctx) -> bool:
         """
         Check if a command can be run by the author.
         """
         try:
-            if await cmd.can_run(ctx):
+            if await command.can_run(ctx):
                 return True
 
             else:
@@ -32,29 +30,46 @@ class Help(commands.Cog):
 
         except commands.CommandError:
             return False
-        
-    async def full_command_syntax(self, ctx: commands.Context, cmd: commands.Command) -> str or False:
+
+    async def full_command_syntax(self, ctx: commands.Context, command: commands.Command) -> str or False:
         """
         Get the full command syntax.
         """
-        if await self.can_run(cmd, ctx):
-            if not cmd.parent:
-                return await syntax(cmd)
-    
+        if await self.can_run(command, ctx):
+            if not command.parent:
+                return await syntax(command)
+
             else:
-                return f" ↳ {await syntax(cmd)}"
-            
-        else:
-            return False
-            
-    async def cog_command_syntax(self, ctx: commands.Context, cmd: commands.Command) -> str or False:
-        if await self.can_run(cmd, ctx):
-            if not cmd.parent:
-                return f"**{cmd.name} {'(has subcommands)' if isinstance(cmd, commands.Group) else ''}" \
-                       f"**\n`{await syntax(cmd)}` - {cmd.description}\n "
+                return f" ↳ {await syntax(command)}"
 
         else:
             return False
+
+    async def cog_command_syntax(self, ctx: commands.Context, command: commands.Command) -> str or False:
+        if await self.can_run(command, ctx):
+            if not command.parent:
+                return f"**{command.name} {'(has subcommands)' if isinstance(command, commands.Group) else ''}" \
+                       f"**\n`{await syntax(command)}` - {command.description}\n "
+
+        else:
+            return False
+
+    async def send_command_help(self, ctx, command):
+        em = discord.Embed(
+            title=f'Help for command {command.name}',
+            description=command.description,
+            colour=MAIN,
+            timestamp=utc()
+        )
+        em.add_field(name='Syntax', value=await self.full_command_syntax(ctx, command))
+        if command.aliases:
+            em.add_field(name='Aliases', value=', '.join(command.aliases))
+
+        cooldown = command.get_cooldown_retry_after(ctx)
+        if cooldown > 0:
+            em.add_field(name='Cooldown Remaining', value=convert_time(int(cooldown)))
+
+        await ctx.send(embed=em)
 
     @commands.command(
         name='help',
@@ -88,8 +103,8 @@ class Help(commands.Cog):
                 _cog = self.bot.get_cog(cog)
                 pages = ""
 
-                for cmd in _cog.walk_commands():
-                    invoke = await self.full_command_syntax(ctx, cmd)
+                for command in _cog.walk_commands():
+                    invoke = await self.full_command_syntax(ctx, command)
                     if invoke:
                         pages += f"`{invoke}`\n"
 
@@ -106,6 +121,10 @@ class Help(commands.Cog):
 
         else:
             _cog = (str(entity).lower()).title()
+            _cmd = str(entity).lower()
+            filtered_commands = flatten(
+                [[c for c in self.bot.get_cog(cog).walk_commands()] for cog in self.unlisted_cogs]
+            )
 
             if entity.lower() == 'modules':
                 desc = 'Need to know what commands are in a module? No worries!\nJust run ' \
@@ -121,22 +140,30 @@ class Help(commands.Cog):
                 return await ctx.send(embed=em)
 
             elif cog := self.bot.get_cog(_cog) and _cog not in self.unlisted_cogs:
-                for cmd in cog.walk_commands():
-                    invoke = await self.cog_command_syntax(ctx, cmd)
+                for command in cog.walk_commands():
+                    invoke = await self.cog_command_syntax(ctx, command)
                     if invoke:
                         entries.append(str(invoke))
-                    
+
                 pager = Paginator(
                     title=f"Commands in the {cog.qualified_name} module",
                     entries=entries, length=6,
                     colour=MAIN)
-                await pager.start(ctx)
+                return await pager.start(ctx)
 
-            else:
-                em = discord.Embed(
-                    description=f"{ERROR} Command/module `{entity}` does not exist (or is not listed).",
-                    colour=RED)
-                await ctx.send(embed=em)
+            elif command := self.bot.get_command(_cmd):
+                if command in filtered_commands and ctx.author.id in self.bot.owner_ids:
+                    return await self.send_command_help(ctx, command)
+                elif command not in filtered_commands:
+                    return await self.send_command_help(ctx, command)
+
+            # TODO: get started on working on individual command help I guess
+
+            em = discord.Embed(
+                description=f"{ERROR} Command/module `{entity}` does not exist (or is not listed).",
+                colour=RED)
+            await ctx.send(embed=em)
+
 
 def setup(bot):
     bot.add_cog(Help(bot))

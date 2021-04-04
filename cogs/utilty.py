@@ -2,6 +2,7 @@ from copy import deepcopy
 from time import time
 
 from dateutil.relativedelta import relativedelta
+
 from discord.ext import tasks
 
 from assets import *
@@ -94,23 +95,23 @@ class Utility(commands.Cog):
         created_delta = (utc() - member.created_at.replace(
             tzinfo=datetime.timezone.utc)).total_seconds()
 
-        embed.add_field(name="ID", value=member.id, inline=False)
-        embed.add_field(name="Joined Discord", value=general_convert_time(created_delta) + ' ago', inline=False)
+        embed.add_field(name="ID", value=member.id)
+        embed.add_field(name="Joined Discord", value=general_convert_time(created_delta) + ' ago')
         if isinstance(member, discord.Member):
             roles = " ".join(reversed([f"<@&{r.id}>" for r in member.roles[1:]]))
 
-            embed.add_field(name=f"Joined {ctx.guild}", value=general_convert_time(join_delta) + ' ago', inline=False)
+            embed.add_field(name=f"Joined {ctx.guild}", value=general_convert_time(join_delta) + ' ago')
             if roles:
                 embed.add_field(
                     name="Roles",
                     value=roles,
-                    inline=False
+
                 )
 
         await ctx.send(embed=embed)
 
-    # TODO: add command to export channel contents as a file
-    # TODO: add command to set timed reminders
+    # TODO: add command to export channel contents into .txt file (working on this rn)
+    # TODO: add reminder command yay
 
     @commands.command(
         name='roles',
@@ -129,6 +130,53 @@ class Utility(commands.Cog):
         em.set_image(url=member.avatar_url)
         em.set_author(icon_url=member.avatar_url, name=f"{member.name}'s roles")
         await ctx.send(embed=em)
+
+    @commands.command(
+        name='export',
+        aliases=['channelcontents', 'export-contents', 'exportcontents', 'downloadchannelcontents', 'dcc'],
+        description="Export a channel's content into a .txt file."
+    )
+    @commands.has_permissions(manage_messages=True)
+    @commands.cooldown(1, 20, commands.BucketType.guild)
+    async def export_channel_contents(self, ctx, channel: typing.Optional[discord.TextChannel],
+                                      limit: typing.Optional[int] = 100):
+        channel = channel or ctx.channel
+
+        em = discord.Embed(
+            description=f"{INFO} This might take a while, please wait...",
+            colour=BLUE)
+        msg = await ctx.send(embed=em)
+        async with channel.typing():
+            messages = await channel.history(limit=limit, oldest_first=True).flatten()
+            with open(f'{self.bot.path}/assets/channel_exports/{channel.id}-export.txt', 'w', encoding='utf-8') as f:
+                f.write(f"{len(messages)} messages exported from the #{channel} channel by {ctx.author}:\n\n")
+                for message in messages:
+                    content = message.clean_content
+                    if not message.author.bot:
+                        f.write(f"{message.author} {convert_to_timestamp(message.created_at)} EST"
+                                f" (ID - {message.author.id})\n"
+                                f"{content} (Message ID - {message.id})\n\n")
+    
+                    else:
+                        f.write(f"{message.author} {convert_to_timestamp(message.created_at)} EST"
+                                f" (ID - {message.author.id})\n"
+                                f"{'Embed/file sent by a bot' if not content else content}\n\n")
+    
+            file = discord.File(f'{self.bot.path}/assets/channel_exports/{channel.id}-export.txt')
+
+        await msg.delete()
+        em = discord.Embed(
+            title='Channel Export',
+            description=f"Message contents of <#{channel.id}>\n"
+                        f"Download the attached .txt file to view the contents.",
+            colour=MAIN,
+            timestamp=utc()
+        )
+        em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
+                             "thumbs/120/mozilla/36/memo_1f4dd.png")
+        await ctx.send(embed=em)
+        await asyncio.sleep(0.5)
+        await ctx.send(file=file)
 
     @commands.command(
         name='avatar',
@@ -150,7 +198,8 @@ class Utility(commands.Cog):
         description='Retrieve deleted messages.'
     )
     @commands.cooldown(1, 2, commands.BucketType.member)
-    async def get_snipes(self, ctx, member: typing.Optional[discord.Member], channel: typing.Optional[discord.TextChannel]):
+    async def get_snipes(self, ctx, member: typing.Optional[discord.Member],
+                         channel: typing.Optional[discord.TextChannel]):
         em = discord.Embed(
             colour=BLUE,
         )
@@ -191,7 +240,8 @@ class Utility(commands.Cog):
         description='Retrieve edited messages.'
     )
     @commands.cooldown(1, 2, commands.BucketType.member)
-    async def get_editsnipes(self, ctx, member: typing.Optional[discord.Member], channel: typing.Optional[discord.TextChannel]):
+    async def get_editsnipes(self, ctx, member: typing.Optional[discord.Member],
+                             channel: typing.Optional[discord.TextChannel]):
         em = discord.Embed(
             colour=BLUE,
         )
@@ -208,7 +258,7 @@ class Utility(commands.Cog):
 
                         else:
                             continue
-                        
+
                     if member:
                         if value['author'] == member.id:
                             pass

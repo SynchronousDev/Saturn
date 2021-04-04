@@ -13,7 +13,7 @@ class Config(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        
+
     def cog_check(self, ctx):
         if ctx.command != self.bot.get_command('prefixes'):
             if not ctx.guild:
@@ -114,7 +114,6 @@ class Config(commands.Cog):
         aliases=['delprefix', 'delpre', 'removepre'],
         description='Remove a prefix that the bot responds to.'
     )
-
     @commands.cooldown(1, 5, commands.BucketType.guild)
     async def remove_prefix(self, ctx, prefix):
         if prefix != "--":
@@ -136,7 +135,8 @@ class Config(commands.Cog):
 
         prefixes = data["prefix"]
 
-        if isinstance(prefixes, str): pass
+        if isinstance(prefixes, str):
+            pass
         else:
             try:
                 prefixes.remove(prefix)

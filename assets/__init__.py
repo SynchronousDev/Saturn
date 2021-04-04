@@ -1,7 +1,7 @@
 from .errors import *
 from .constants import *
 from .menu import *
-from .command import *
+from .cmd import *
 from .strings import *
 from .time import *
 import asyncio

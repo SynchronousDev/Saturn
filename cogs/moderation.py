@@ -63,7 +63,7 @@ async def purge_msgs(bot, ctx, limit, check):
     )
     em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
                          "thumbs/120/mozilla/36/memo_1f4dd.png")
-    em.set_footer(text="Download the .txt file below to view deleted messages")
+    em.set_footer(text="Download the attached .txt file to view the contents.")
     await mod_logs.send(embed=em)
     await asyncio.sleep(0.5)
     await mod_logs.send(file=file)
@@ -75,12 +75,12 @@ async def create_purge_file(bot, ctx, deleted):
         for message in deleted:
             content = message.clean_content
             if not message.author.bot:
-                f.write(f"{message.author} at {str(message.created_at)[:-7]} UTC"
+                f.write(f"{message.author} {convert_to_timestamp(message.created_at)} EST"
                         f" (ID - {message.author.id})\n"
                         f"{content} (Message ID - {message.id})\n\n")
 
             else:
-                f.write(f"{u'{}'.format(str(message.author))} at {str(message.created_at)[:-7]} UTC"
+                f.write(f"{message.author} {convert_to_timestamp(message.created_at)} EST"
                         f" (ID - {message.author.id})\n"
                         f"{'Embed/file sent by a bot' if not content else content}\n\n")
 

@@ -52,6 +52,12 @@ class ErrorHandler(commands.Cog):
                 colour=RED)
             await ctx.send(embed=em)
 
+        elif isinstance(exc, discord.HTTPException):
+            em = Embed(
+                description=f"{ERROR} Whoops, looks like that didn't go as planned. Try again later?",
+                colour=RED)
+            await ctx.send(embed=em)
+
         elif isinstance(exc, commands.BadUnionArgument):
             parameter = str(exc.param.name)
 

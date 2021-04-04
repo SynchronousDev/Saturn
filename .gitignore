@@ -1,9 +1,10 @@
 __pycache__
-/assets/config.json
 .vscode
 .idea
 .env
 assets/purge_txts
 saturn.log
+venv
 assets/profanity.txt
 assets/imgs/profile.jpg
+assets/channel_exports

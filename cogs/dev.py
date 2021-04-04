@@ -1,6 +1,7 @@
-# noinspection SpellCheckingInspection
-import contextlib as ctxlib
+import contextlib
+import inspect
 import io
+import re
 import textwrap
 from traceback import format_exception
 
@@ -8,15 +9,19 @@ from assets import *
 
 log = logging.getLogger(__name__)
 
+
 # noinspection SpellCheckingInspection
 class Dev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.env = {}
+        self.stdout = io.StringIO()
 
     async def cog_check(self, ctx: commands.Context) -> bool:
         return await ctx.bot.is_owner(ctx.author)
 
     @commands.command()
+    @commands.cooldown(1, 20, commands.BucketType.user)
     async def test(self, ctx):
         await ctx.send(convert_to_timestamp(utc()))
 
@@ -30,15 +35,15 @@ class Dev(commands.Cog):
 
         em = discord.Embed(
             description=f"{CHECK} Blacklisted {member.mention} for `{reason}`.",
-            colour=GREEN,
-            timestamp=utc())
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.command(
         name='unblacklist',
         aliases=['ubl'],
         description='A developer command. Unblacklists a user from using the bot.')
-    async def unblacklist_cmd(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = 'no reason provided'):
+    async def unblacklist_cmd(self, ctx, member: discord.Member, *,
+                              reason: typing.Optional[str] = 'no reason provided'):
         try:
             await self.bot.blacklists.delete_one({"_id": member.id})
 
@@ -50,8 +55,7 @@ class Dev(commands.Cog):
 
         em = discord.Embed(
             description=f"{CHECK} Unblacklisted {member.mention} for `{reason}`.",
-            colour=GREEN,
-            timestamp=utc())
+            colour=GREEN)
         await ctx.send(embed=em)
 
     @commands.command(
@@ -60,12 +64,22 @@ class Dev(commands.Cog):
         description='The eval command. Executes code (only accessible by me)')
     async def eval(self, ctx, *, code):
         code = clean_codeblock(code)
-        local_vars = {
+        if code == 'exit':
+            self.env = {}
+            em = discord.Embed(
+                description=f"{CHECK} Exiting session and clearing envs.",
+                colour=GREEN)
+            return await ctx.send(embed=em)
+
+        envs = {
             "discord": discord,
             "commands": commands,
             "ctx": ctx,
             "bot": self.bot,
             "self": self,
+            "datetime": datetime,
+            "inspect": inspect,
+            "contextlib": contextlib,
             "channel": ctx.channel,
             "author": ctx.author,
             "guild": ctx.guild,
@@ -73,23 +87,42 @@ class Dev(commands.Cog):
             "member": ctx.author,
             "msg": ctx.message
         }
+        self.env.update(envs)
 
-        stdout = io.StringIO()
+        # noinspection RegExpAnonymousGroup
+        if not re.search(  # Check if it's an expression
+                r"^(return|import|for|while|def|class|"
+                r"from|exit|[a-zA-Z0-9]+\s*=)", code, re.M) and len(
+            code.split("\n")) == 1:
+            code = "_ = " + code
+
+        code_ = """
+async def func():  # (None,) -> Any
+    try:
+        with contextlib.redirect_stdout(self.stdout):
+            {0}
+        if '_' in locals():
+            if inspect.isawaitable(_):
+                _ = await _
+            return _
+
+    finally:
+        self.env.update(locals())
+
+""".format(textwrap.indent(code, '    '))
 
         try:
-            with ctxlib.redirect_stdout(stdout):
-                exec(
-                    f"async def eval():\n{textwrap.indent(code, '    ')}", local_vars
-                )
+            exec(code_, self.env)
 
-                obj = await local_vars["eval"]()
-                value = stdout.getvalue() or "None"
-                result = f'{value}\n-- {obj}\n'
-                colour = DIFF_GREEN
+            func = self.env["func"]
+            result = await func()
+            colour = DIFF_GREEN
 
         except Exception as e:
             result = ''.join(format_exception(e, e, e.__traceback__))
             colour = DIFF_RED
+
+        result = str(result)
 
         pager = Paginator(
             entries=[result[i: i + (2000 - len(code))]
@@ -97,7 +130,7 @@ class Dev(commands.Cog):
             length=1,
             colour=colour,
             footer=f'{self.bot.__name__} Eval command',
-            prefix=f"```py\n{code}```\n```py\n",
+            prefix=f"```py\n{code.strip('_ = ')}```\n```py\n",
             suffix='```'
         )
 
@@ -120,30 +153,30 @@ class Dev(commands.Cog):
         aliases=['gtoggle', 'gt'],
         description='A developer command. Enable or disable commands globally.')
     async def global_toggle(self, ctx, *, command):
-        cmd = self.bot.get_command(command)
+        _command = self.bot.get_command(command)
 
-        if not cmd:
+        if not _command:
             em = discord.Embed(
                 description=f"{ERROR} Command `{command}` does not exist.",
                 colour=RED)
             return await ctx.send(embed=em)
 
-        elif ctx.command == cmd or cmd in [c for c in self.bot.get_cog('Dev').walk_commands()] \
-                or cmd == self.bot.get_command('help'):
+        elif ctx.command == _command or _command in [c for c in self.bot.get_cog('Dev').walk_commands()] \
+                or _command == self.bot.get_command('help'):
             em = discord.Embed(
                 description=f"{ERROR} This command cannot be disabled.",
                 colour=RED)
             return await ctx.send(embed=em)
 
         else:
-            cmd.enabled = not cmd.enabled
-            for _cmd in self.bot.get_cog(cmd.cog.qualified_name).walk_commands():
-                if _cmd.parent == cmd:
+            _command.enabled = not _command.enabled
+            for _cmd in self.bot.get_cog(_command.cog.qualified_name).walk_commands():
+                if _cmd.parent == _command:
                     _cmd.enabled = not _cmd.enabled
 
-            status = "enabled" if cmd.enabled else "disabled"
+            status = "enabled" if _command.enabled else "disabled"
             em = discord.Embed(
-                description=f"{CHECK} {status.title()} `{cmd.qualified_name}` and its subcommands.",
+                description=f"{CHECK} {status.title()} `{_command.qualified_name}` and its subcommands.",
                 color=GREEN)
             await ctx.send(embed=em)
 

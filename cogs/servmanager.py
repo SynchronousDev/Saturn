@@ -67,21 +67,22 @@ class Management(commands.Cog, name='Server Management'):
                 description=f"{INFO} This might take a while, please wait...",
                 colour=BLUE)
             msg = await ctx.send(embed=em)
-            added_roles = []
-            for member in ctx.guild.members:
-                if has_role in member.roles:
-                    await member.add_roles(role, reason=reason, atomic=True)
-                    added_roles.append(member)
+            async with ctx.channel.typing():
+                added_roles = []
+                for member in ctx.guild.members:
+                    if has_role in member.roles:
+                        await member.add_roles(role, reason=reason, atomic=True)
+                        added_roles.append(member)
+
+                    else:
+                        continue
 
                 else:
-                    continue
-
-            else:
-                await msg.delete()
-                em = discord.Embed(
-                    description=f"{CHECK} Added {role.mention} to `{len(added_roles)}` members.",
-                    colour=GREEN)
-                await ctx.send(embed=em)
+                    await msg.delete()
+                    em = discord.Embed(
+                        description=f"{CHECK} Added {role.mention} to `{len(added_roles)}` members.",
+                        colour=GREEN)
+                    await ctx.send(embed=em)
 
         else:
             em = discord.Embed(
