@@ -110,8 +110,8 @@ class Utility(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    # TODO: add command to export channel contents into .txt file (working on this rn)
     # TODO: add reminder command yay
+    # TODO: add source command (github repo and stuff)
 
     @commands.command(
         name='roles',

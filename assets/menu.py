@@ -7,6 +7,7 @@ import datetime
 from functools import partial
 from typing import Union
 from assets import *
+from .constants import *
 from assets.time import utc
 from discord.ext import menus
 
@@ -561,28 +562,3 @@ class ConfirmationMenu(menus.Menu):
     async def prompt(self, ctx):
         await self.start(ctx, wait=True)
         return self.result
-
-class Dueler:
-    """
-    A dueler class. Used for the duel command
-    """
-
-    def __init__(self, member: discord.Member):
-        self.member = member
-        self.health = 100
-
-    def damage(self, amount):  # do damage
-        self.health -= amount
-
-    def heal(self, amount):  # heal hp
-        self.health += amount
-
-    def health(self):
-        return self.health
-
-    @property
-    def name(self):
-        return self.member.name
-
-    def member(self):
-        return self.member

@@ -20,6 +20,8 @@ class Dev(commands.Cog):
     async def cog_check(self, ctx: commands.Context) -> bool:
         return await ctx.bot.is_owner(ctx.author)
 
+    # TODO: add command to reset cooldowns for any command (global?)
+
     @commands.command()
     @commands.cooldown(1, 20, commands.BucketType.user)
     async def test(self, ctx):
@@ -92,8 +94,7 @@ class Dev(commands.Cog):
         # noinspection RegExpAnonymousGroup
         if not re.search(  # Check if it's an expression
                 r"^(return|import|for|while|def|class|"
-                r"from|exit|[a-zA-Z0-9]+\s*=)", code, re.M) and len(
-            code.split("\n")) == 1:
+                r"from|exit|[a-zA-Z0-9]+\s*=)", code, re.M) and len(code.split("\n")) == 1:
             code = "_ = " + code
 
         code_ = """

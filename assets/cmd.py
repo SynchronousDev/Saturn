@@ -1,5 +1,6 @@
 from .strings import *
 from .constants import *
+from .time import *
 from discord.ext import commands
 
 # noinspection PyShadowingNames, PyBroadException, SpellCheckingInspection
@@ -136,3 +137,28 @@ async def starboard_embed(message, payload) -> discord.Embed:
     em.set_author(icon_url=message.author.avatar_url, name=message.author)
     em.set_footer(text=f'Message ID - {message.id}')
     return em
+
+class Dueler():
+    """
+    A dueler class. Used for the duel command
+    """
+
+    def __init__(self, member: discord.Member):
+        self.member = member
+        self.health = 100
+
+    def damage(self, amount):  # do damage
+        self.health -= amount
+
+    def heal(self, amount):  # heal hp
+        self.health += amount
+
+    def health(self):
+        return self.health
+
+    @property
+    def name(self):
+        return self.member.name
+
+    def member(self):
+        return self.member

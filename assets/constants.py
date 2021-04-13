@@ -94,7 +94,7 @@ DUEL_ATTACK_MESSAGES = [
     "{} boiled up a huge pot of water and poured it onto {}!",
     "{} did some crap from Harry Potter and teleported {} to Pluto!",
     "{} slapped {} with a big stinky fish!",
-    "{} forced {} to watch YouTube rewind !",
+    "{} forced {} to watch YouTube rewind!",
     "{1} accidentally walked off a cliff!",
     "{} took a leaf out of Mad-Eye Moody's book and turned {} into a ferret!",
     "{} pulled out a stick and whipped it at {}!",
