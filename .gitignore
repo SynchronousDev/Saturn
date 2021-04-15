@@ -3,6 +3,7 @@ __pycache__
 .idea
 .env
 assets/purge_txts
+run.bat
 saturn.log
 venv
 assets/profanity.txt
