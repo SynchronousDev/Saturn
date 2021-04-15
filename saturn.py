@@ -32,6 +32,7 @@ class Saturn(commands.Bot):
         )
         self.ready = False
         self.__name__ = 'Saturn'
+        self.src = 'https://github.com/SynchronousDev/saturn-discord-bot'
 
         self.path = Path(__file__).parents[0]
         self.path = str(self.path)

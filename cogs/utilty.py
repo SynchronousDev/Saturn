@@ -114,6 +114,22 @@ class Utility(commands.Cog):
     # TODO: add source command (github repo and stuff)
 
     @commands.command(
+        name='source',
+        aliases=['code', 'src'],
+        description='Show the source link to Saturn\'s code.'
+    )
+    @commands.cooldown(1, 2, commands.BucketType.member)
+    async def view_bot_source(self, ctx):
+        em = discord.Embed(
+            description=f'[Click here]({self.bot.src}) to view the source code.',
+            colour=MAIN)
+        em.set_author(
+            name='BSD 3-Clause License', 
+            url="https://github.com/SynchronousDev/saturn-discord-bot/blob/master/LICENSE", 
+            icon_url=self.bot.user.avatar_url)
+        await ctx.send(embed=em)
+
+    @commands.command(
         name='roles',
         description='View your roles.'
     )
