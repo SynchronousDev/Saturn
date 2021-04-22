@@ -18,6 +18,18 @@ class ErrorHandler(commands.Cog):
         if isinstance(exc, commands.CommandNotFound):
             pass
 
+        elif isinstance(exc, discord.HTTPException):
+            em = discord.Embed(
+                description=f"{ERROR} Whoops, something didn't go as intended. Check my permissions and try again.",
+                colour=RED)
+            return await ctx.send(embed=em)
+
+        elif isinstance(exc, discord.Forbidden):
+            em = discord.Embed(
+                description=f"{ERROR} I do not have permission to do that! Check my role's permissions, and try again.",
+                colour=RED)
+            return await ctx.send(embed=em)
+
         elif isinstance(exc, commands.MissingRequiredArgument):
             parameter = str(exc.param.name)
 

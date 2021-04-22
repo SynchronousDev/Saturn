@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from discord.errors import HTTPException
 
 import motor.motor_asyncio
 from discord.ext import tasks
@@ -63,6 +64,21 @@ class Saturn(commands.Bot):
         print(f"Running {self.__name__}...")
         super().run(self.TOKEN, reconnect=True)
 
+    async def on_error(self, error, *args, **kwargs):
+        if error == "on_command_error":
+            em = discord.Embed(
+                title="Something went wrong...",
+                description="An unexpected event happened.",
+                colour=RED
+            )
+            await self.stdout.send(embed=em)
+
+        em = discord.Embed(
+            title="An unexpected error occured...",
+            description="Please check logs for more details.",
+            colour=RED
+        )
+
     async def process_commands(self, message):
         ctx = await self.get_context(message)
 
@@ -87,6 +103,8 @@ class Saturn(commands.Bot):
         print(f"{self.__name__} disconnected")
 
     async def on_ready(self):
+        self.default_guild = self.get_guild(793577103794634842)
+        self.stdout = self.default_guild.get_channel(833871407544008704)
         if not self.ready:
             self.ready = True
             for _file in os.listdir(self.path + '/cogs'):
@@ -104,13 +122,17 @@ class Saturn(commands.Bot):
             for ban in bans: self.banned_users[ban["_id"]] = ban
 
             print(f"{self.__name__} is ready")
+            em = discord.Embed(
+                description=f"{CHECK} Connected and ready!",
+                colour=GREEN)
+            await self.stdout.send(embed=em)
 
         else:
             print(f"{self.__name__} reconnected")
-
-    async def on_command_error(self, context, exception):
-        if isinstance(exception, commands.CommandNotFound):
-            pass
+            em = discord.Embed(
+                description=f"{CHECK} Reconnected!",
+                colour=DIFF_GREEN)
+            await self.stdout.send(embed=em)
 
     async def on_message(self, message):
         await self.process_commands(message)
