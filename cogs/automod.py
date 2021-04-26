@@ -19,7 +19,7 @@ async def automod_log(bot, message, action, reason) -> None:
         return
     if not automod: return
 
-    em = discord.Embed(
+    em = SaturnEmbed(
         title='Automod',
         description=f'**Member -** {message.author.mention}\n'
                     f'**Action -** {action}\n'
@@ -40,7 +40,7 @@ async def profanity_check(bot, message):
                 if _data['words']:  #
                     profanity.load_censor_words(_data['words'])
 
-            except KeyError:
+            except KeyError or TypeError:
                 profanity.load_censor_words_from_file(
                     bot.path + '/assets/profanity.txt')
 
@@ -62,7 +62,7 @@ async def profanity_check(bot, message):
                 # in that case then don't do stuff
 
                 await message.delete()
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{WARNING} That word is not allowed in **{message.guild}**!",
                     colour=GOLD)
                 await message.channel.send(embed=em)
@@ -124,7 +124,7 @@ async def spam_check(bot, message):
                     bot, message, "10 second mute",
                     f"Sent {to_delete} messages in {delta} seconds")
 
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{WARNING} Spam is not allowed in **{message.guild}**!",
                     colour=GOLD)
                 await message.channel.send(embed=em)
@@ -140,7 +140,7 @@ async def update_cache(bot, message: discord.Message):
         if not bot.message_cache[message.author.id]:
             bot.message_cache[message.author.id] = []
 
-    except KeyError:
+    except KeyError or TypeError:
         bot.message_cache[message.author.id] = []
 
     bot.message_cache[message.author.id].append(message)
@@ -157,7 +157,7 @@ def get_cache(bot, member) -> list or None:
 
             return bot.message_cache[member.id]
 
-    except KeyError:
+    except KeyError or TypeError:
         return []
 
 def is_spamming(bot, member):
@@ -178,7 +178,7 @@ async def delete_cache(bot, member):
 
         bot.message_cache.pop(member.id)
 
-    except KeyError:
+    except KeyError or TypeError:
         return False
 
 async def profanity_command_check(bot, message: discord.Message):
@@ -262,7 +262,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         await self.bot.config.update_one({"_id": ctx.guild.id},
                                          {'$set': {"profanity_toggle": not toggle}}, upsert=True)
         status = "enabled" if not toggle else "disabled"
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} {status.title()} anti-profanity.",
             color=GREEN)
         await ctx.send(embed=em)
@@ -283,7 +283,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
 
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         if words and word in words:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} That word is already recognized as a curse word.",
                 colour=RED)
             return await ctx.send(embed=em)
@@ -296,7 +296,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
             else:
                 words = data['words']
                 if word in words:
-                    em = discord.Embed(
+                    em = SaturnEmbed(
                         description=f"{ERROR} That word is already recognized as a curse word.",
                         colour=RED)
                     return await ctx.send(embed=em)
@@ -312,7 +312,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         if word != '-default':
             await ctx.message.delete()
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Added "
                         f"{f'|| {word} ||' if word != '-default' else 'the default wordlist'} "
                         f"as a recognized curse word.",
@@ -336,7 +336,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
             else:
                 words = data['words']
                 if word not in words:
-                    em = discord.Embed(
+                    em = SaturnEmbed(
                         description=f"{ERROR} That word is not recognized as a curse word.",
                         colour=RED)
                     return await ctx.send(embed=em)
@@ -350,7 +350,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
                                          {'$set': {"words": words}}, upsert=True)
         await ctx.message.delete()
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Removed || {word} || as a registered curse word.",
             color=GREEN)
         await ctx.send(embed=em)
@@ -364,7 +364,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
     async def clear_curses(self, ctx):
         await self.bot.config.update_one({"_id": ctx.guild.id},
                                          {'$unset': {"words": 1}})
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Deleted all recognized curse words.",
             color=GREEN)
         await ctx.send(embed=em)
@@ -398,7 +398,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         await self.bot.config.update_one({"_id": ctx.guild.id},
                                          {'$set': {"spam_toggle": not toggle}}, upsert=True)
         status = "enabled" if not toggle else "disabled"
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} {status.title()} anti-spam.",
             color=GREEN)
         await ctx.send(embed=em)
@@ -422,7 +422,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
             whitelist = []
 
         if member.id in whitelist:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} {member.mention} is already whitelisted.",
                 colour=RED)
             return await ctx.send(embed=em)
@@ -431,7 +431,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
                                          {'$set': {"spam_whitelist": whitelist}}, upsert=True)
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Added {member.mention} to the anti-spam whitelist.",
             color=GREEN)
         await ctx.send(embed=em)
@@ -446,7 +446,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         data = await self.bot.config.find_one({"_id": ctx.guild.id})
         try:
             if not data['spam_whitelist']:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} There are no whitelists in this guild.",
                     colour=RED)
                 return await ctx.send(embed=em)
@@ -455,13 +455,13 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
                 whitelist = data['spam_whitelist']
 
         except KeyError or TypeError:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} There are no whitelists in this guild.",
                 colour=RED)
             return await ctx.send(embed=em)
 
         if member.id not in whitelist:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} {member.mention} is not whitelisted.",
                 colour=RED)
             return await ctx.send(embed=em)
@@ -470,7 +470,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
                                          {'$set': {"spam_whitelist": whitelist}}, upsert=True)
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Removed {member.mention} from the anti-spam whitelist.",
             color=GREEN)
         await ctx.send(embed=em)

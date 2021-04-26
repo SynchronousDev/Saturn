@@ -9,7 +9,7 @@ from typing import Union
 from assets import *
 from .constants import *
 from assets.time import utc
-from discord.ext import menus
+from discord.ext  import menus
 
 # noinspection PyRedeclaration
 __all__ = ('Session', 'Paginator', 'button', 'inverse_button',)
@@ -66,7 +66,7 @@ class Session:
                 sorted_ = self.sort_buttons(buttons=self._buttons)
                 try:
                     button_ = sorted_[button.emoji]
-                except KeyError:
+                except KeyError or TypeError:
                     self._buttons[button.position, button.emoji] = button
                     continue
 
@@ -95,7 +95,7 @@ class Session:
         if not page:
             page = ctx.message
 
-        if isinstance(page, discord.Embed):
+        if isinstance(page, discord.Embed) or isinstance(page, discord.Embed):
             self.page = await ctx.send(embed=page)
         elif isinstance(page, discord.Message):
             self.page = page
@@ -387,7 +387,6 @@ class Paginator(Session):
         elif control == 'info':
             # info embed yay?
             em = discord.Embed(
-                title="How to use the Interactive Menu",
                 description=f"""
                 {PAG_FRONT} - Go to the first page.
                 {PAG_PREVIOUS} - Go back one page.
@@ -400,7 +399,8 @@ class Paginator(Session):
                 Press any button to continue.
                 """,
                 timestamp=utc(),
-                colour=MAIN)
+                colour=BLUE)
+            em.set_author(name="How to use the Interactive Menu", icon_url=INFO_URL)
             return await self.page.edit(embed=em)
 
         elif control == 'number':

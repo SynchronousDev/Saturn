@@ -2,6 +2,7 @@ import os
 import re
 from copy import deepcopy
 from glob import glob
+from discord.ext.commands.errors import MemberNotFound
 
 import pytimeparse as pytp
 from dateutil.relativedelta import relativedelta
@@ -15,11 +16,11 @@ async def purge_msgs(bot, ctx, limit, check):
     await ctx.message.delete()
     deleted = await ctx.channel.purge(
         limit=limit,
-        after=utc() - datetime.timedelta(weeks=2),
+        after=datetime.datetime.utcnow() - datetime.timedelta(weeks=2),
         check=check)
 
     if not len(deleted):
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{ERROR} Could not find any messages to delete.\n"
                         f"```Messages older than 2 weeks cannot be deleted```",
             color=RED)
@@ -27,7 +28,7 @@ async def purge_msgs(bot, ctx, limit, check):
 
     deleted = list(reversed(deleted))
 
-    em = discord.Embed(
+    em = SaturnEmbed(
         description=f"{CHECK} Deleted {len(deleted)} messages in {ctx.channel.mention}",
         color=GREEN)
     await ctx.send(embed=em, delete_after=2)
@@ -48,13 +49,13 @@ async def purge_msgs(bot, ctx, limit, check):
         await create_purge_file(bot, ctx, deleted)
 
     try:
-        file = discord.File(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt')
+        file = discord.File(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt')
 
     except FileNotFoundError:
         await create_purge_file(bot, ctx, deleted)
-        file = discord.File(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt')
+        file = discord.File(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt')
 
-    em = discord.Embed(
+    em = SaturnEmbed(
         title='Messages Purged',
         description=f'Deleted {len(deleted)} messages in {ctx.channel.mention}\n'
                     f'Command invoked by {ctx.author.mention}',
@@ -70,7 +71,7 @@ async def purge_msgs(bot, ctx, limit, check):
 
 
 async def create_purge_file(bot, ctx, deleted):
-    with open(f'{bot.path}/assets/purge-txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
+    with open(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
         f.write(f"{len(deleted)} messages deleted in the #{ctx.channel} channel by {ctx.author}:\n\n")
         for message in deleted:
             content = message.clean_content
@@ -83,6 +84,7 @@ async def create_purge_file(bot, ctx, deleted):
                 f.write(f"{message.author} {convert_to_timestamp(message.created_at)} EST"
                         f" (ID - {message.author.id})\n"
                         f"{'Embed/file sent by a bot' if not content else content}\n\n")
+
 
 # noinspection PyBroadException,SpellCheckingInspection
 async def create_log(bot, member: discord.Member, guild, action, moderator, reason, duration=None):
@@ -106,7 +108,7 @@ async def create_log(bot, member: discord.Member, guild, action, moderator, reas
             colour, emote = value["colour"], value["emote"]
 
     try:
-        em = discord.Embed(
+        em = SaturnEmbed(
             colour=colour,
             timestamp=utc()
         )
@@ -120,6 +122,7 @@ async def create_log(bot, member: discord.Member, guild, action, moderator, reas
 
         em.description = desc
 
+        # noinspection PyTypeChecker
         await member.send(embed=em)
 
     except discord.HTTPException:
@@ -143,7 +146,7 @@ async def create_log(bot, member: discord.Member, guild, action, moderator, reas
     else:
         action_ += "ed"
 
-    em = discord.Embed(
+    em = SaturnEmbed(
         title=f'Member {action_.title()}',
         colour=colour,
         timestamp=utc()
@@ -151,13 +154,13 @@ async def create_log(bot, member: discord.Member, guild, action, moderator, reas
     em.set_thumbnail(url=emote)
     em.set_author(icon_url=member.avatar_url, name=member.name)
     em.set_footer(text='Case no. {}'.format(await get_last_case_id(bot, guild)))
-    em.add_field(name='Member', value=member.mention, inline=False)
-    em.add_field(name='Moderator', value=moderator.mention, inline=False)
+    em.add_field(name='Member', value=member.mention)
+    em.add_field(name='Moderator', value=moderator.mention)
     if duration:
-        em.add_field(name='Duration', value=duration, inline=False)
+        em.add_field(name='Duration', value=duration)
 
     if reason:
-        em.add_field(name='Reason', value=reason, inline=False)
+        em.add_field(name='Reason', value=reason)
 
     try:
         await mod_logs.send(embed=em)
@@ -213,8 +216,9 @@ async def get_last_case_id(bot, guild) -> int:
         try:
             return int(logs[-1]["case_id"]) + 1
 
-        except KeyError:
+        except KeyError or TypeError:
             return 1
+
 
 async def _create_log(bot, member: discord.Member, guild, action, moderator, reason) -> None:
     """
@@ -248,6 +252,7 @@ async def update_log(bot, case_id, guild, action, reason) -> None:
     }
     await bot.mod.update_one({"guild_id": guild.id, "case_id": case_id}, {"$set": schema}, upsert=True)
 
+
 async def create_mute_role(bot, ctx):
     """Create the mute role for a guild"""
     perms = discord.Permissions(
@@ -270,6 +275,7 @@ async def create_mute_role(bot, ctx):
             continue
 
     return mute_role
+
 
 async def update_log_caseids(bot, guild) -> None:
     """
@@ -299,6 +305,7 @@ async def kick_members(bot, ctx, member, reason):
     await member.kick(reason=f"{ctx.author if ctx.author != member else ctx.guild.me} - " + reason)
 
 
+# noinspection PyShadowingNames
 async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _type='ban'):
     """
     Ban members
@@ -315,9 +322,10 @@ async def ban_members(bot, ctx, member, reason, time=None, delete_days=None, _ty
         await bot.bans.update_one({"_id": member.id}, {'$set': schema}, upsert=True)
         bot.banned_users[member.id] = schema
 
-    await create_log(bot, member, ctx.guild, _type, ctx.author if ctx.author != member else ctx.guild.me, reason)
     await ctx.guild.ban(member, reason=f"{ctx.author if ctx.author != member else ctx.guild.me} - "
                                        + reason, delete_message_days=delete_days)
+    await create_log(bot, member, ctx.guild, _type, ctx.author if ctx.author != member else ctx.guild.me, reason)
+
     if _type == 'softban':
         await ctx.guild.unban(member, reason=f"{ctx.author} - softban")
 
@@ -349,12 +357,13 @@ async def unban_members(bot, ctx, member, reason):
     try:
         bot.banned_users.pop(user.id)
 
-    except KeyError:
+    except KeyError or TypeError:
         pass
 
     await create_log(bot, member, ctx.guild, "unban", ctx.author if ctx.author != member else ctx.guild.me, reason)
 
 
+# noinspection PyShadowingNames
 async def mute_members(bot, ctx, member: discord.Member, reason, mute_role, time=None):
     """
     Mute members
@@ -432,7 +441,7 @@ async def mod_check(ctx, member):
             raise BotRoleNotHighEnough
 
 
-# noinspection SpellCheckingInspection
+# noinspection SpellCheckingInspection,PyShadowingNames
 class Mod(commands.Cog, name='Moderation'):
     """
     The Moderation module. Includes all commands related to moderation.
@@ -463,7 +472,7 @@ class Mod(commands.Cog, name='Moderation'):
 
     @tasks.loop(seconds=30)
     async def purge_files(self):
-        for file in glob(self.bot.path + '/purge_txts/*.txt'):
+        for file in glob(self.bot.path + 'assets/purge_txts/*.txt'):
             os.unlink(file)
 
     @tasks.loop(seconds=1)
@@ -482,7 +491,7 @@ class Mod(commands.Cog, name='Moderation'):
             mute_role = guild.get_role(data['mute_role'])
 
             try:
-                join_delta = utc() - member.joined_at.\
+                join_delta = utc() - member.joined_at. \
                     replace(tzinfo=datetime.timezone.utc)
 
             except AttributeError:
@@ -528,7 +537,7 @@ class Mod(commands.Cog, name='Moderation'):
                             except commands.MemberNotFound or KeyError:
                                 pass
 
-                    except KeyError:
+                    except KeyError or TypeError:
                         pass
 
         for key, value in bans.items():
@@ -560,6 +569,42 @@ class Mod(commands.Cog, name='Moderation'):
     @update_modlogs.before_loop
     async def before_update_modlogs(self):
         await self.bot.wait_until_ready()
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        # check for mute stuff
+        data = await self.bot.config.find_one({"_id": after.guild.id})
+        try:
+            if not data['mute_role']: return
+        except TypeError or KeyError:
+            return
+
+        mute_role = after.guild.get_role(data['mute_role'])
+
+        if (mute_role in before.roles) and (mute_role not in after.roles):
+            try:
+                await self.bot.mutes.delete_one({"_id": after.id})
+                self.bot.muted_users.pop(after.id)
+
+            except commands.MemberNotFound or KeyError:
+                pass
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        """
+        Fires when a member joins the server
+        """
+        try:
+            if self.bot.muted_users[member.id]:
+                data = await self.bot.config.find_one({"_id": member.guild.id})
+                mute_role = member.guild.get_role(data['mute_role'])
+                if mute_role:
+                    await member.add_roles(mute_role, reason='Role Persists', atomic=True)
+                    # check if the member left the server while they were muted
+                    # anti-mute bypass yes
+
+        except KeyError or TypeError:
+            pass
 
     @commands.command(
         name='cases',
@@ -653,28 +698,28 @@ class Mod(commands.Cog, name='Moderation'):
 
         if len(logs) >= case_id:
             if case_id > 0:
-                conf = await ConfirmationMenu(f'delete case `{case_id}`?').prompt(ctx)
+                conf = await ConfirmationMenu(f'delete case `{case_id}`').prompt(ctx)
                 if conf:
                     await delete_log(self.bot, case_id, ctx.guild)
-                    em = discord.Embed(
+                    em = SaturnEmbed(
                         description=f"{CHECK} Deleted punishment number `{case_id}`",
                         colour=GREEN)
                     await ctx.send(embed=em)
 
                 else:
-                    em = discord.Embed(
+                    em = SaturnEmbed(
                         description=f"{INFO} Action cancelled.",
                         colour=BLUE)
                     await ctx.send(embed=em)
 
             else:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} Cases can't go into the negatives! It's just common sense.",
                     colour=RED)
                 await ctx.send(embed=em)
 
         else:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} An invalid case ID was given."
                             f"```Please pick from {len(logs)} cases```",
                 colour=RED)
@@ -712,7 +757,7 @@ class Mod(commands.Cog, name='Moderation'):
                     **Reason** - {entry['reason']}
                     """
 
-                em = discord.Embed(
+                em = SaturnEmbed(
                     colour=MAIN,
                     description=desc,
                     timestamp=entry['time']
@@ -725,7 +770,7 @@ class Mod(commands.Cog, name='Moderation'):
                 return await ctx.send(embed=em)
 
         else:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} An invalid case ID was given."
                             f"```Please pick from {len(logs)} cases```",
                 colour=RED)
@@ -747,7 +792,7 @@ class Mod(commands.Cog, name='Moderation'):
             for key, value in entry.items():
                 duration = value['duration']
                 if duration:
-                    ends_at = (value['at'] + datetime.timedelta(seconds=duration))\
+                    ends_at = (value['at'] + datetime.timedelta(seconds=duration)) \
                         .replace(tzinfo=datetime.timezone.utc)
                     delta = (ends_at - utc()).total_seconds()
 
@@ -786,7 +831,7 @@ class Mod(commands.Cog, name='Moderation'):
     async def kick_cmd(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
             await kick_members(self.bot, ctx, member, reason)
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
                             f"{member.mention} has been kicked.",
                 colour=GREEN)
@@ -804,16 +849,16 @@ class Mod(commands.Cog, name='Moderation'):
                       delete_days: typing.Optional[int], *, reason: typing.Optional[str] = "no reason provided"):
         delete_days = int(delete_days) if delete_days else 7
         if delete_days > 7:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} The `days_delete` parameter has to be either equal or less than 7.",
                 colour=RED)
             return await ctx.send(embed=em)
 
         if isinstance(member, discord.Member):
-            if await mod_check(ctx, member): pass
+            if not await mod_check(ctx, member): return
 
         await ban_members(self.bot, ctx, member, reason, delete_days=delete_days)
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
                         f"{member.mention} has been banned.",
             colour=GREEN)
@@ -829,7 +874,7 @@ class Mod(commands.Cog, name='Moderation'):
     async def softban_cmd(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
             await ban_members(self.bot, ctx, member, reason, delete_days=7, _type='softban')
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
                             f"{member.mention} has been softbanned.",
                 colour=GREEN)
@@ -861,20 +906,76 @@ class Mod(commands.Cog, name='Moderation'):
 
         try:
             if self.bot.banned_users[member.id]:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} {member.mention} is already banned! "
                                 f"Talk about adding insult to injury.",
                     colour=RED)
                 return await ctx.send(embed=em)
 
-        except KeyError:
+        except KeyError or TypeError:
             pass
 
         await ban_members(self.bot, ctx, member, reason, time, delete_days=7, _type='tempban')
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
                         f"{member.mention} has been banned for `{convert_time(time)}`",
             colour=GREEN)
+        await ctx.send(embed=em)
+
+    @commands.command(
+        name='massban',
+        aliases=['mb', 'massb', 'mban'],
+        description="Ban up to five members with a single command."
+    )
+    @commands.cooldown(1, 5, commands.BucketType.member)
+    @commands.bot_has_permissions(ban_members=True)
+    @commands.has_permissions(ban_members=True)
+    async def mass_ban(self, ctx, members: commands.Greedy[discord.Member],
+                       *, reason: typing.Optional[str] = "no reason provided"):
+        if not members or len(members) > 5:
+            em = SaturnEmbed(
+                description=f"{ERROR} Invalid members specified."
+                            f"```Limit must be between 1 and 5 members```",
+                colour=RED)
+            return await ctx.send(embed=em)
+
+        else:
+            banned, failed = [], []
+            for member in members:
+                try:
+                    await ctx.guild.ban(member, reason=reason, delete_message_days=7)
+                    await create_log(
+                        self.bot, member, ctx.guild, 'massban', ctx.author, reason)
+                    banned.append(member)
+
+                except TypeError:
+                    failed.append(member)
+
+        if not len(failed) and not len(banned):
+            em = SaturnEmbed(
+                description=f"{ERROR} Invalid members specified."
+                            f"```No members were given```",
+                colour=RED)
+            return await ctx.send(embed=em)
+
+        if not len(failed):
+            last_case = await get_last_case_id(self.bot, ctx.guild) - 1
+            em = SaturnEmbed(
+                description=(f"{CHECK} `Case #{last_case - len(members)} to #{last_case}`"
+                             if len(members) > 1 else f"{CHECK} `Case #{last_case}`"),
+                colour=GREEN)
+
+        else:
+            em = SaturnEmbed(
+                description=f"{ERROR} `Could not ban all members.`",
+                colour=RED)
+
+        if len(banned) > 0:
+            em.add_field(name='Successful Bans', value="\n".join(reversed([f"<@1{m.id}>" for m in banned])))
+
+        if len(failed) > 0:
+            em.add_field(name='Failed Bans', value="\n".join(reversed([f"<@!{m.id}>" for m in failed])))
+
         await ctx.send(embed=em)
 
     @commands.command(
@@ -887,7 +988,7 @@ class Mod(commands.Cog, name='Moderation'):
     async def unban_cmd(self, ctx, member: typing.Union[discord.User, int],
                         *, reason: typing.Optional[str] = 'no reason provided'):
         await unban_members(self.bot, ctx, member, reason)
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
                         f"{member.mention} has been unbanned.",
             colour=GREEN)
@@ -902,7 +1003,7 @@ class Mod(commands.Cog, name='Moderation'):
     async def warn_cmd(self, ctx, member: discord.Member, *, reason: typing.Optional[str] = "no reason provided"):
         if await mod_check(ctx, member):
             await warn_members(self.bot, ctx, member, reason)
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
                             f"{member.mention} has been warned.",
                 colour=GREEN)
@@ -932,7 +1033,7 @@ class Mod(commands.Cog, name='Moderation'):
         try:
             mute_role = ctx.guild.get_role(data['mute_role'])
             if not mute_role:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{WARNING} Couldn't find a mute role to assign to {member.mention}, making one now...",
                     colour=GOLD)
                 msg = await ctx.channel.send(embed=em)
@@ -941,8 +1042,8 @@ class Mod(commands.Cog, name='Moderation'):
 
                 await msg.delete()
 
-        except KeyError:
-            em = discord.Embed(
+        except KeyError or TypeError:
+            em = SaturnEmbed(
                 description=f"{WARNING} Couldn't find a mute role to assign to {member.mention}, making one now...",
                 colour=GOLD)
             msg = await ctx.channel.send(embed=em)
@@ -955,17 +1056,17 @@ class Mod(commands.Cog, name='Moderation'):
             if not member.guild_permissions.administrator:
                 try:
                     if mute_role in member.roles:
-                        em = discord.Embed(
+                        em = SaturnEmbed(
                             description=f"{ERROR} {member.mention} is already muted! "
                                         f"Talk about adding insult to injury.",
                             colour=RED)
                         return await ctx.send(embed=em)
 
-                except KeyError:
+                except KeyError or TypeError:
                     pass
 
                 await mute_members(self.bot, ctx, member, reason, mute_role, time)
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
                                 f"{member.mention} has been muted"
                                 f"{f' for `{convert_time(time)}`' if convert_time(time) != 'indefinitely' else '.'}",
@@ -973,7 +1074,7 @@ class Mod(commands.Cog, name='Moderation'):
                 await ctx.send(embed=em)
 
             else:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} {member.mention} has the `Administrator` permission.",
                     color=RED)
                 await ctx.send(embed=em)
@@ -991,13 +1092,13 @@ class Mod(commands.Cog, name='Moderation'):
         try:
             mute_role = ctx.guild.get_role(data['mute_role'])
             if not mute_role:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} This guild does not have a mute role set up.",
                     colour=RED)
                 return await ctx.send(embed=em)
 
-        except KeyError:
-            em = discord.Embed(
+        except KeyError or TypeError:
+            em = SaturnEmbed(
                 description=f"{ERROR} This guild does not have a mute role set up.",
                 colour=RED)
             return await ctx.send(embed=em)
@@ -1005,7 +1106,7 @@ class Mod(commands.Cog, name='Moderation'):
         if await mod_check(ctx, member):
             if mute_role in member.roles:
                 await unmute_members(self.bot, ctx, member, reason, mute_role)
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{CHECK} `Case #{await get_last_case_id(self.bot, ctx.guild) - 1}` "
                                 f"{member.mention} has been unmuted.",
                     colour=GREEN)
@@ -1019,7 +1120,7 @@ class Mod(commands.Cog, name='Moderation'):
                 except commands.MemberNotFound or KeyError:
                     pass
 
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} {member.mention} is not muted.",
                     colour=RED)
                 return await ctx.send(embed=em)
@@ -1039,7 +1140,7 @@ class Mod(commands.Cog, name='Moderation'):
                 ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False)
             }
             await channel.edit(overwrites=overwrites)
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{LOCK} {channel.mention} is now locked.",
                 colour=RED)
             await ctx.send(embed=em)
@@ -1049,7 +1150,7 @@ class Mod(commands.Cog, name='Moderation'):
             overwrites = channel.overwrites[ctx.guild.default_role]
             overwrites.send_messages = False
             await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites)
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{LOCK} {channel.mention} is now locked.",
                 colour=RED)
             await ctx.send(embed=em)
@@ -1058,7 +1159,7 @@ class Mod(commands.Cog, name='Moderation'):
             overwrites = channel.overwrites[ctx.guild.default_role]
             overwrites.send_messages = True
             await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites)
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{UNLOCK} {channel.mention} is now unlocked.",
                 colour=GREEN)
             await ctx.send(embed=em)
@@ -1070,23 +1171,24 @@ class Mod(commands.Cog, name='Moderation'):
                     'Must be equal or less than 6 hours.')
     @commands.has_guild_permissions(manage_channels=True)
     @commands.bot_has_guild_permissions(manage_channels=True)
-    async def slowmode_cmd(self, ctx, time: typing.Union[int, pytp.parse], channel: typing.Optional[discord.TextChannel]):
+    async def slowmode_cmd(self, ctx, time: typing.Union[int, pytp.parse],
+                           channel: typing.Optional[discord.TextChannel]):
         channel = channel or ctx.channel
         if not time and time != 0:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} Please provide a valid time.",
                 colour=RED)
             return await ctx.send(embed=em)
 
         if time > 21600 or time < 0:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} Slowmode time should be equal or less than 6 hours.",
                 colour=RED)
             return await ctx.send(embed=em)
 
         await channel.edit(slowmode_delay=time,
                            reason=f"{ctx.author}" + 'Slowmode delay edited by {ctx.author} via slowmode command')
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Slowmode delay for {channel.mention} was set to `{convert_time(time)}`",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -1275,14 +1377,14 @@ class Mod(commands.Cog, name='Moderation'):
             vc = member.voice.channel
 
         except AttributeError:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} {member.mention} is not in a voice channel.",
                 color=RED)
             return await ctx.send(embed=em)
 
         await member.move_to(channel=None, reason=f"{ctx.author} - " + reason)
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Kicked {member.mention} from `{vc}`",
             color=GREEN)
         await ctx.send(embed=em)

@@ -30,7 +30,7 @@ class Tags(commands.Cog):
         description='View all of your guild\'s tags')
     async def view_tags(self, ctx):
         tags = await self.get_tag_content(ctx)
-        em = discord.Embed(
+        em = SaturnEmbed(
             title='{0}\'s Tags ({1})'.format(ctx.guild, len(tags)), colour=MAIN)
 
         desc = []
@@ -72,7 +72,7 @@ class Tags(commands.Cog):
 
         else:
             if not found:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} The tag `{name}` does not exist.",
                     colour=RED)
                 await ctx.send(embed=em)
@@ -89,7 +89,7 @@ class Tags(commands.Cog):
 
         for letter in name:
             if letter not in list(self.accepted_chars):
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} The tag `{content}` contains unacceptable characters. "
                                 f"Tag names can only contain letters, digits, hyphens and underscores.",
                     colour=RED)
@@ -103,7 +103,7 @@ class Tags(commands.Cog):
 
         for tag in tags:
             if tag['name'] == str(name):
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} The tag `{name}` already exists.",
                     colour=RED)
                 await ctx.send(embed=em)
@@ -117,7 +117,7 @@ class Tags(commands.Cog):
         }
         await self.bot.tags.insert_one(data)
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} The tag `{name}` was created.",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -140,7 +140,7 @@ class Tags(commands.Cog):
                         found = True
 
                     else:
-                        em = discord.Embed(
+                        em = SaturnEmbed(
                             description=f"{ERROR} The tag `{name}` does not belong to you.",
                             colour=RED)
                         await ctx.send(embed=em)
@@ -148,13 +148,13 @@ class Tags(commands.Cog):
 
         else:
             if not found:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} The tag `{name}` does not exist.",
                     colour=RED)
                 await ctx.send(embed=em)
                 return
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} The tag `{name}` was deleted.",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -176,7 +176,7 @@ class Tags(commands.Cog):
 
         else:
             if not found:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} The tag `{name}` does not exist.",
                     colour=RED)
                 await ctx.send(embed=em)
@@ -195,7 +195,7 @@ class Tags(commands.Cog):
 
         for tag in tags:
             if tag['name'] == str(new_name):
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} A tag already exists with a name or alias `{new_name}`",
                     colour=RED)
                 await ctx.send(embed=em)
@@ -210,7 +210,7 @@ class Tags(commands.Cog):
                         found = True
 
                     else:
-                        em = discord.Embed(
+                        em = SaturnEmbed(
                             description=f"{ERROR} The tag `{name}` does not belong to you.",
                             colour=RED)
                         await ctx.send(embed=em)
@@ -218,13 +218,13 @@ class Tags(commands.Cog):
 
         else:
             if not found:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} The tag `{name}` does not exist.",
                     colour=RED)
                 await ctx.send(embed=em)
                 return
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} The tag `{name}` was renamed to `{new_name}`",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -248,7 +248,7 @@ class Tags(commands.Cog):
                         found = True
 
                     else:
-                        em = discord.Embed(
+                        em = SaturnEmbed(
                             description=f"{ERROR} The tag `{name}` does not belong to you.",
                             colour=RED)
                         await ctx.send(embed=em)
@@ -256,13 +256,13 @@ class Tags(commands.Cog):
 
         else:
             if not found:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} The tag `{name}` does not exist.",
                     colour=RED)
                 await ctx.send(embed=em)
                 return
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} The tag `{name}` was edited.",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -286,7 +286,7 @@ class Tags(commands.Cog):
                         found = True
 
                     else:
-                        em = discord.Embed(
+                        em = SaturnEmbed(
                             description=f"{ERROR} The tag `{name}` does not belong to you.",
                             colour=RED)
                         await ctx.send(embed=em)
@@ -294,13 +294,13 @@ class Tags(commands.Cog):
 
         else:
             if not found:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} The tag `{name}` does not exist.",
                     colour=RED)
                 await ctx.send(embed=em)
                 return
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} The tag `{name}`'s author has "
                         f"been transferred to {new_author.mention}.",
             colour=GREEN)

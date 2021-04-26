@@ -26,3 +26,10 @@ def flatten(l: typing.Union[list, tuple]) -> list:
             _list.append(e)
 
     return list(reversed(_list))
+
+def diff_lists(li1, li2):
+    """
+    Retrieve the difference between two lists
+    """
+    return [list(list(set(li1) - set(li2)) + list(set(li2) - set(li1)))]
+ 

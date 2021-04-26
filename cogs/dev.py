@@ -35,7 +35,7 @@ class Dev(commands.Cog):
         await self.bot.blacklists.update_one({"_id": member.id},
                                              {'$set': {"reason": reason}}, upsert=True)
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Blacklisted {member.mention} for `{reason}`.",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -50,12 +50,12 @@ class Dev(commands.Cog):
             await self.bot.blacklists.delete_one({"_id": member.id})
 
         except commands.MemberNotFound:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} {member.mention} is not blacklisted from this bot.",
                 colour=RED)
             await ctx.send(embed=em)
 
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Unblacklisted {member.mention} for `{reason}`.",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -68,7 +68,7 @@ class Dev(commands.Cog):
         code = clean_codeblock(code)
         if code == 'exit':
             self.env = {}
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{CHECK} Exiting session and clearing envs.",
                 colour=GREEN)
             return await ctx.send(embed=em)
@@ -142,7 +142,7 @@ async def func():  # (None,) -> Any
         aliases=['exit'],
         description='A developer command. Closes the websocket connection and logs the bot out.')
     async def logout_cmd(self, ctx):
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Closing the websocket connection.",
             color=GREEN)
         await ctx.send(embed=em, delete_after=2)
@@ -157,14 +157,14 @@ async def func():  # (None,) -> Any
         _command = self.bot.get_command(command)
 
         if not _command:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} Command `{command}` does not exist.",
                 colour=RED)
             return await ctx.send(embed=em)
 
         elif ctx.command == _command or _command in [c for c in self.bot.get_cog('Dev').walk_commands()] \
                 or _command == self.bot.get_command('help'):
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} This command cannot be disabled.",
                 colour=RED)
             return await ctx.send(embed=em)
@@ -176,7 +176,7 @@ async def func():  # (None,) -> Any
                     _cmd.enabled = not _cmd.enabled
 
             status = "enabled" if _command.enabled else "disabled"
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{CHECK} {status.title()} `{_command.qualified_name}` and its subcommands.",
                 color=GREEN)
             await ctx.send(embed=em)

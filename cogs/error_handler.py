@@ -19,13 +19,13 @@ class ErrorHandler(commands.Cog):
             pass
 
         elif isinstance(exc, discord.HTTPException):
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} Whoops, something didn't go as intended. Check my permissions and try again.",
                 colour=RED)
             return await ctx.send(embed=em)
 
         elif isinstance(exc, discord.Forbidden):
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} I do not have permission to do that! Check my role's permissions, and try again.",
                 colour=RED)
             return await ctx.send(embed=em)
@@ -142,56 +142,58 @@ class ErrorHandler(commands.Cog):
             await ctx.send(embed=em)
 
         elif isinstance(exc, Blacklisted):
-            em = discord.Embed(
+            em = SaturnEmbed(
                     description=f"{ERROR} You are blacklisted.",
                     colour=RED)
             await ctx.send(embed=em)
 
         elif isinstance(exc, RoleNotHighEnough):
-            em = discord.Embed(
+            em = SaturnEmbed(
                     description=f"{ERROR} You are not high enough in the role hierarchy to perform this action.",
                     color=RED)
             await ctx.send(embed=em)
 
         elif isinstance(exc, BotRoleNotHighEnough):
-            em = discord.Embed(
+            em = SaturnEmbed(
                     description=f"{ERROR} I am not high enough in the role hierarchy to perform this action.",
                     color=RED)
             await ctx.send(embed=em)
 
         elif isinstance(exc, InvalidLimit):
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} The limit provided is not within acceptable boundaries.\n"
                             f"```Limit must be in between 1 and 1000 messages```",
                 color=RED)
             await ctx.send(embed=em)
 
         elif isinstance(exc, IsAdministrator):
-            em = discord.Embed(
+            em = SaturnEmbed(
                     description=f"{ERROR} This member has the `administrator` permission.",
                     color=RED)
             await ctx.send(embed=em)
 
         elif isinstance(exc, commands.NoPrivateMessage):
-            em = discord.Embed(
+            em = SaturnEmbed(
                     description=f"{ERROR} This command cannot be used in private messages.",
                     color=RED)
             await ctx.send(embed=em)
 
         elif hasattr(exc, "original"):
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} Something went wrong. Whoops!"
                             f"```{exc}```",
                 color=RED)
             await ctx.send(embed=em)
+            await self.bot.stdout.send(embed=em)
             raise exc.original
 
         else:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} Something went wrong. Whoops!"
                             f"```{exc}```",
                 color=RED)
             await ctx.send(embed=em)
+            await self.bot.stdout.send(embed=em)
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
             traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
             log.warning("Something went wrong.")

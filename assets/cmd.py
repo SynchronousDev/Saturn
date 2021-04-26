@@ -1,6 +1,7 @@
 from .strings import *
 from .constants import *
 from .time import *
+from .emb import SaturnEmbed
 from discord.ext import commands
 
 # noinspection PyShadowingNames, PyBroadException, SpellCheckingInspection
@@ -21,10 +22,11 @@ async def get_prefix(bot, message) -> commands.when_mentioned_or():
         pre = flatten(data['prefix'])
         return commands.when_mentioned_or(*pre)(bot, message)
 
-    except Exception as e:
+    except Exception:
         return commands.when_mentioned_or(PREFIX)(bot, message)
 
-# noinspection SpellCheckingInspection
+
+# noinspection SpellCheckingInspection,PyShadowingNames
 async def syntax(cmd) -> str:
     """
     Get the syntax/usage for a command.
@@ -68,6 +70,8 @@ async def retrieve_raw_prefix(bot, message) -> list:
     except Exception:
         return PREFIX
 
+
+# noinspection PyShadowingNames
 async def error_arg_syntax(cmd, arg):
     cmd_syntax = await syntax(cmd)
     chars = cmd_syntax.rpartition(arg)[0]
@@ -92,12 +96,12 @@ async def retrieve_prefix(bot, message) -> str:
         prefix = flatten(prefix)
         return ' | '.join(prefix)
 
-async def starboard_embed(message, payload) -> discord.Embed:
+async def starboard_embed(message, payload) -> SaturnEmbed:
     """
     Create a starboard embed
     """
     desc = message.content  # if not isinstance(message, discord.Embed) else message
-    em = discord.Embed(
+    em = SaturnEmbed(
         colour=GOLD,
         description=desc,
         timestamp=utc()
@@ -107,7 +111,7 @@ async def starboard_embed(message, payload) -> discord.Embed:
     if len(message.attachments):
         attachment = message.attachments[0]
 
-        em.add_field(name='Attachments', value=f"[{attachment.filename}]({attachment.url})", inline=False)
+        em.add_field(name='Attachments', value=f"[{attachment.filename}]({attachment.url})")
         em.set_image(url=attachment.url)
 
     # support for embeds
@@ -118,15 +122,15 @@ async def starboard_embed(message, payload) -> discord.Embed:
         if embed.description: em_desc += (embed.description + '\n')
         if embed.fields:
             field = embed.fields[0]
-            em.add_field(name=field.name, value=field.value, inline=False)
+            em.add_field(name=field.name, value=field.value)
 
         if embed.footer: em_desc += embed.footer
         if embed.image:
-            em.add_field(name='Embed Image', value=f"[Attachment]({embed.image.url})", inline=False)
+            em.add_field(name='Embed Image', value=f"[Attachment]({embed.image.url})")
             em.set_image(url=embed.image.url)
 
         if embed.thumbnail:
-            em.add_field(name='Embed Image', value=f"[Attachment]({embed.thumbnail.url})", inline=False)
+            em.add_field(name='Embed Image', value=f"[Attachment]({embed.thumbnail.url})")
             em.set_image(url=embed.thumbnail.url)
 
         em.description = em_desc
@@ -138,7 +142,7 @@ async def starboard_embed(message, payload) -> discord.Embed:
     em.set_footer(text=f'Message ID - {message.id}')
     return em
 
-class Dueler():
+class Dueler:
     """
     A dueler class. Used for the duel command
     """

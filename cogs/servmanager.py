@@ -30,13 +30,13 @@ class Management(commands.Cog, name='Server Management'):
         if ctx.guild.me.top_role > member.top_role and (role.position < ctx.guild.me.top_role.position):
             if ctx.author.top_role > member.top_role and member != ctx.author:
                 await member.add_roles(role, reason=reason)
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{CHECK} Added {role.mention} to {member.mention}",
                     colour=GREEN)
                 await ctx.send(embed=em)
 
             else:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} You are not high enough in the role"
                                 f" hierarchy to perform this action.",
                     colour=RED)
@@ -44,7 +44,7 @@ class Management(commands.Cog, name='Server Management'):
                 return
 
         else:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} I am not high enough in the member"
                             f" hierarchy to perform this action.",
                 colour=RED)
@@ -63,7 +63,7 @@ class Management(commands.Cog, name='Server Management'):
                              reason: typing.Optional[str] = 'no reason provided'):
         conf = await ConfirmationMenu(f'mass add {role.mention}').prompt(ctx)
         if conf:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{INFO} This might take a while, please wait...",
                 colour=BLUE)
             msg = await ctx.send(embed=em)
@@ -79,13 +79,13 @@ class Management(commands.Cog, name='Server Management'):
 
                 else:
                     await msg.delete()
-                    em = discord.Embed(
+                    em = SaturnEmbed(
                         description=f"{CHECK} Added {role.mention} to `{len(added_roles)}` members.",
                         colour=GREEN)
                     await ctx.send(embed=em)
 
         else:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{INFO} Action cancelled.",
                 colour=BLUE)
             await ctx.send(embed=em)
@@ -99,7 +99,7 @@ class Management(commands.Cog, name='Server Management'):
     @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def mass_remove_roles(self, ctx, role: discord.Role, has_role: discord.Role, reason: typing.Optional[str]):
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{INFO} This might take a while, please wait...",
             colour=BLUE)
         msg = await ctx.send(embed=em)
@@ -114,7 +114,7 @@ class Management(commands.Cog, name='Server Management'):
 
         else:
             await msg.delete()
-            em = discord.Embed(
+            em = SaturnEmbed(
                     description=f"{CHECK} Removed {role.mention} from `{len(removed_roles)}` members.",
                     colour=GREEN)
             await ctx.send(embed=em)
@@ -135,13 +135,13 @@ class Management(commands.Cog, name='Server Management'):
                 and (role.position < ctx.guild.me.top_role.position):
             if ctx.author.top_role > member.top_role and member != ctx.author:
                 await member.remove_roles(role, reason=reason)
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{CHECK} Added {role.mention} to {member.mention}",
                     colour=GREEN)
                 await ctx.send(embed=em)
 
             else:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} You are not high enough in the role"
                                 f" hierarchy to perform this action.",
                     colour=RED)
@@ -149,7 +149,7 @@ class Management(commands.Cog, name='Server Management'):
                 return
 
         else:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} I am not high enough in the member"
                             f" hierarchy to perform this action.",
                 colour=RED)
@@ -178,7 +178,7 @@ class Management(commands.Cog, name='Server Management'):
             ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             ctx.guild.me: discord.PermissionOverwrite(read_messages=True)}
         category = await ctx.guild.create_category(name=name, overwrites=overwrites)
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Created category `{category.name}`",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -195,7 +195,7 @@ class Management(commands.Cog, name='Server Management'):
             ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             ctx.guild.me: discord.PermissionOverwrite(read_messages=True)}
         channel = await ctx.guild.create_text_channel(name=name, overwrites=overwrites)
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Created channel {channel.mention}",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -211,7 +211,7 @@ class Management(commands.Cog, name='Server Management'):
                           reason: str = 'no reason provided'):
         new_role = await ctx.guild.create_role(
             name=name, colour=colour if colour else discord.Color.default(), reason=reason)
-        em = discord.Embed(
+        em = SaturnEmbed(
             description=f"{CHECK} Created role {new_role.mention}",
             colour=GREEN)
         await ctx.send(embed=em)
@@ -240,19 +240,19 @@ class Management(commands.Cog, name='Server Management'):
         if conf:
             try:
                 await category.delete(reason=reason)
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{CHECK} Deleted category `{category.name}`",
                     colour=GREEN)
                 await ctx.send(embed=em)
 
             except discord.HTTPException:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} I cannot delete that category.",
                     colour=RED)
                 await ctx.send(embed=em)
 
         else:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{INFO} Action cancelled.",
                 colour=BLUE)
             await ctx.send(embed=em)
@@ -270,19 +270,19 @@ class Management(commands.Cog, name='Server Management'):
         if conf:
             try:
                 await channel.delete(reason=reason)
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{CHECK} Deleted channel `{channel.name}`",
                     colour=GREEN)
                 await ctx.send(embed=em)
 
             except discord.HTTPException:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} I cannot delete that channel.",
                     colour=RED)
                 await ctx.send(embed=em)
 
         else:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{INFO} Action cancelled.",
                 colour=BLUE)
             await ctx.send(embed=em)
@@ -299,19 +299,19 @@ class Management(commands.Cog, name='Server Management'):
         if conf:
             try:
                 await role.delete(reason=reason)
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{CHECK} Deleted role `{role.name}`",
                     colour=GREEN)
                 await ctx.send(embed=em)
 
             except discord.HTTPException:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{ERROR} I cannot delete that role.",
                     colour=RED)
                 await ctx.send(embed=em)
 
         else:
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{INFO} Action cancelled.",
                 colour=BLUE)
             await ctx.send(embed=em)

@@ -43,7 +43,7 @@ class Help(commands.Cog):
                 return f" ↳ {await syntax(command)}"
 
         else:
-            return False
+            return "You cannot run this command."
 
     async def cog_command_syntax(self, ctx: commands.Context, command: commands.Command) -> str or False:
         if await self.can_run(command, ctx):
@@ -55,7 +55,7 @@ class Help(commands.Cog):
             return False
 
     async def send_command_help(self, ctx, command):
-        em = discord.Embed(
+        em = SaturnEmbed(
             title=f'Help for command {command.name}',
             description=command.description,
             colour=MAIN,
@@ -97,7 +97,7 @@ class Help(commands.Cog):
                 f"Saturn is a multipurpose discord bot.\n"
                 f"[Invite (Recommended)]({NORMAL_INVITE})\n"
                 f"[Invite (Administrator)]({ADMIN_INVITE})\n\n" +
-                '\n'.join([f"`Page {index} - {c}`" for index, c in enumerate(cogs, start=1)]) +
+                '\n'.join([f"`Page {index} - {c}`" for index, c in enumerate(cogs, start=2)]) +
                 f"\n\nPress the numbers emote to skip to a page.")
             for cog in cogs:
                 _cog = self.bot.get_cog(cog)
@@ -130,7 +130,7 @@ class Help(commands.Cog):
                 desc = 'Need to know what commands are in a module? No worries!\nJust run ' \
                        'the help command and add in the module name.\n\n' + \
                        '\n'.join([f'`{str(cog).lower()}`' for cog in cogs])
-                em = discord.Embed(
+                em = SaturnEmbed(
                     title="Saturn's Modules",
                     description=desc,
                     timestamp=utc(),
@@ -158,8 +158,9 @@ class Help(commands.Cog):
                     return await self.send_command_help(ctx, command)
 
             # TODO: get started on working on individual command help I guess
+            # TODO: Fix syntax
 
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{ERROR} Command/module `{entity}` does not exist (or is not listed).",
                 colour=RED)
             await ctx.send(embed=em)

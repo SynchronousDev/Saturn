@@ -1,3 +1,4 @@
+from assets.strings import diff_lists
 from assets import *
 from cogs.automod import profanity_check
 
@@ -12,14 +13,14 @@ class Events(commands.Cog):
     async def on_message(self, message):
         if message.content == f"<@!{self.bot.user.id}>":
             try:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f":bell: The prefix(es) for `{message.guild}` is currently "
                                 f"set to `{await retrieve_prefix(self.bot, message)}`",
                     color=GOLD)
                 await message.channel.send(embed=em)
 
             except TypeError:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f":bell: Your guild does not have any set prefixes!",
                     color=GOLD)
                 await message.channel.send(embed=em)
@@ -29,40 +30,29 @@ class Events(commands.Cog):
         """
         Fires when a member joins the server
         """
-        try:
-            if self.bot.muted_users[member.id]:
-                data = await self.bot.config.find_one({"_id": member.guild.id})
-                mute_role = member.guild.get_role(data['mute_role'])
-                if mute_role:
-                    await member.add_roles(mute_role, reason='Role Persists', atomic=True)
-                    # check if the member left the server while they were muted
-                    # anti-mute bypass yes
-
-        except KeyError:
-            pass
-
         if not member.bot:
-            guild = member.guild
-            data = await self.bot.config.find_one({"_id": guild.id})
-            try:
-                member_logs = member.guild.get_channel(data['member_logs'])
+            if await self.member_log_level_check("LOW", member.guild):
+                guild = member.guild
+                data = await self.bot.config.find_one({"_id": guild.id})
+                try:
+                    member_logs = member.guild.get_channel(data['member_logs'])
 
-            except TypeError or KeyError: return
-            if not member_logs: return
+                except TypeError or KeyError: return
+                # if not member_logs: return
 
-            created_delta = (utc() - member.created_at).total_seconds()
+                created_delta = (utc() - member.created_at.replace(tzinfo=datetime.timezone.utc)).total_seconds()
 
-            em = discord.Embed(
-                title='Member Joined',
-                description=f"{member.mention} `({member})`",
-                colour=GREEN,
-                timestamp=utc()
-            )
-            em.set_thumbnail(url=member.avatar_url)
-            em.set_author(icon_url=member.avatar_url, name=member)
-            em.add_field(name='Account Created', value=general_convert_time(created_delta) + ' ago')
-            em.set_footer(text=f"Member #{len(guild.members)}")
-            await member_logs.send(embed=em)  # send the member embed thing
+                em = SaturnEmbed(
+                    title='Member Joined',
+                    description=f"{member.mention} `({member})`",
+                    colour=GREEN,
+                    timestamp=utc()
+                )
+                em.set_thumbnail(url=member.avatar_url)
+                em.set_author(icon_url=member.avatar_url, name=member)
+                em.add_field(name='Account Created', value=general_convert_time(created_delta) + ' ago')
+                em.set_footer(text=f"Member #{len(guild.members)}")
+                await member_logs.send(embed=em)  # send the member embed thing
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -70,23 +60,24 @@ class Events(commands.Cog):
         Fires when a member leaves the server
         """
         if not member.bot:
-            data = await self.bot.config.find_one({"_id": member.guild.id})
-            try:
-                member_logs = member.guild.get_channel(data['member_logs'])
+            if await self.member_log_level_check("LOW", member.guild):        
+                data = await self.bot.config.find_one({"_id": member.guild.id})
+                try:
+                    member_logs = member.guild.get_channel(data['member_logs'])
 
-            except TypeError or KeyError: return
-            if not member_logs: return
+                except TypeError or KeyError: return
+                if not member_logs: return
 
-            em = discord.Embed(
-                title='Member Left',
-                description=f"{member.mention} `({member})`",
-                colour=RED,
-                timestamp=utc()
-            )
-            em.set_author(icon_url=member.avatar_url, name=member.name)
-            em.set_thumbnail(url=member.avatar_url)
-            em.set_footer(text=f"{len(member.guild.members)} members left")
-            await member_logs.send(embed=em)
+                em = SaturnEmbed(
+                    title='Member Left',
+                    description=f"{member.mention} `({member})`",
+                    colour=RED,
+                    timestamp=utc()
+                )
+                em.set_author(icon_url=member.avatar_url, name=member.name)
+                em.set_thumbnail(url=member.avatar_url)
+                em.set_footer(text=f"{len(member.guild.members)} members left")
+                await member_logs.send(embed=em)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -114,7 +105,7 @@ class Events(commands.Cog):
             except KeyError or TypeError:
                 return
 
-            em = discord.Embed(
+            em = SaturnEmbed(
                 title='Message Deleted',
                 colour=RED,
                 timestamp=utc()
@@ -132,9 +123,13 @@ class Events(commands.Cog):
         """
         Fires when a message is edited
         """
-
         if not after.author.bot:
             await profanity_check(self.bot, after)
+            if before.content == after.content:
+                return
+
+            if not before.content and not after.content:
+                return
 
             schema = {
                 "_id": after.id,
@@ -154,7 +149,7 @@ class Events(commands.Cog):
             except KeyError or TypeError:
                 return
 
-            em = discord.Embed(
+            em = SaturnEmbed(
                 title='Message Edited',
                 description=f"[Jump!]({after.jump_url})",
                 colour=GOLD,
@@ -203,7 +198,7 @@ class Events(commands.Cog):
                 stars = _starboard['stars']
                 msg_id = _starboard['star_id']
 
-            except KeyError:
+            except KeyError or TypeError:
                 msg_id = None
 
             except TypeError:
@@ -267,7 +262,8 @@ class Events(commands.Cog):
 
             try:
                 msg_id = _starboard['star_id']
-            except KeyError:
+                
+            except KeyError or TypeError:
                 msg_id = None
 
             if not _starboard:  # check if there are stars on that message
@@ -303,23 +299,101 @@ class Events(commands.Cog):
                     await msg.edit(
                         content=f"**{stars - 1}** ✨ - **{message.channel.mention}**", embed=em)
 
+    async def member_log_level_check(self, level, guild):
+        data = await self.bot.config.find_one({"_id": guild.id})
+        try:
+            guild_level = data['member_log_level']
+
+        except KeyError or TypeError:
+            return "HIGH"
+
+        indexes = ("OFF", "LOW", "MEDIUM", "HIGH")
+        index_of_level = indexes.index(level)
+        index_of_guild_level = indexes.index(guild_level)
+
+        if index_of_guild_level >= index_of_level:
+            return True
+
+        return False
+
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         data = await self.bot.config.find_one({"_id": after.guild.id})
         try:
-            if not data['mute_role']: return
+            member_logs = after.guild.get_channel(data['member_logs'])
+
         except TypeError or KeyError: return
+        if not member_logs: return
 
-        mute_role = after.guild.get_role(data['mute_role'])
+        # LOW - member join and leaves
+        # MEDIUM - role changes
+        # HIGH - nickname change
 
-        if (mute_role in before.roles) and (mute_role not in after.roles):
-            try:
-                await self.bot.mutes.delete_one({"_id": after.id})
-                self.bot.muted_users.pop(after.id)
+        if await self.member_log_level_check("MEDIUM", before.guild):
+            if before.roles != after.roles:
+                for role in before.roles:
+                    if role not in after.roles:
+                        em = SaturnEmbed(
+                            title='Role Removed',
+                            description=f"{role.mention} `({role.name})`",
+                            colour=SLIGHTLY_DARKER_BLUE,
+                            timestamp=utc()
+                        )
+                        em.set_author(icon_url=after.avatar_url, name=after.name)
+                        em.set_thumbnail(url=after.avatar_url)
+                        await member_logs.send(embed=em)
 
-            except commands.MemberNotFound or KeyError:
-                pass
+                    else:
+                        continue
 
+                for role in after.roles:
+                    if role not in before.roles:
+                        em = SaturnEmbed(
+                            title='Role Added',
+                            description=f"{role.mention} `({role.name})`",
+                            colour=BLUE,
+                            timestamp=utc()
+                        )
+                        em.set_author(icon_url=after.avatar_url, name=after.name)
+                        em.set_thumbnail(url=after.avatar_url)
+                        await member_logs.send(embed=em) 
+
+        if await self.member_log_level_check("HIGH", before.guild):
+            if before.nick != after.nick:
+                em = SaturnEmbed(
+                    title='Nickname Changed',
+                    colour=DARKER_BLUE,
+                    timestamp=utc()
+                )
+                em.set_author(icon_url=after.avatar_url, name=after.name)
+                em.set_thumbnail(url=after.avatar_url)
+                em.add_field(name='Before', value=before.nick)
+                em.add_field(name='After', value=after.nick)
+                await member_logs.send(embed=em)     
+
+    # @commands.Cog.listener()
+    # async def on_user_update(self, before, after):
+    #     data = await self.bot.config.find_one({"_id": after.guild.id})
+    #     try:
+    #         member_logs = after.guild.get_channel(data['member_logs'])
+
+    #     except TypeError or KeyError: return
+    #     if not member_logs: return
+
+        # if await self.member_log_level_check("HIGH", before.guild):
+        #     if before.avatar != after.avatar:                   
+        #         em = SaturnEmbed(
+        #             title='Avatar Changed',
+        #             colour=SLIGHTLY_LIGHTER_BLUE,
+        #             timestamp=utc()
+        #         )
+        #         em.set_author(icon_url=after.avatar_url, name=after.name)
+        #         em.set_thumbnail(url=after.avatar_url)
+        #         em.add_field(name="Before", value=before.avatar_url)
+        #         await member_logs.send(embed=em)     
+
+
+    
 
 def setup(bot):
     bot.add_cog(Events(bot))  # add this stupid cog i'm tired

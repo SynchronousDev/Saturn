@@ -8,7 +8,10 @@ GREEN = discord.Colour.green()
 DIFF_GREEN = 0x677c1e
 DIFF_RED = 0xFF0000
 GOLD = discord.Colour.gold()
-BLUE = discord.Colour.blue()
+BLUE = 0x24ACF2
+SLIGHTLY_LIGHTER_BLUE = 0x0091FF
+SLIGHTLY_DARKER_BLUE = 0x0087D2
+DARKER_BLUE = 0x11618B
 
 # Some default emotes
 # not too shabby
@@ -16,7 +19,7 @@ BLANK = '\uFEFF'
 
 ERROR = '<:error:822122069139521567>'
 CHECK = '<:check:822122069176221726>'
-WARNING = '<:warning:818199916312002631>'
+WARNING = '<:warn:818199916312002631>'
 INFO = '<:info:821565551939420170>'
 PREFIX = "sk!"
 LOCK = ':lock:'
@@ -47,6 +50,7 @@ NO_ENTRY = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/12
            'no-entry_26d4.png'
 UNBAN = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
         'door_1f6aa.png'
+INFO_URL = 'https://cdn.discordapp.com/emojis/821565551939420170.png?v=1'
 # weird emotes and stuff yay?
 
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s(" \
@@ -65,10 +69,15 @@ NORMAL_INVITE = "https://discord.com/oauth2/authorize?client_id=7993280366629355
 
 DUEL_HEAL_MESSAGES = [
     "{} drinks a chug jug!",
+    "{} washes their hands!",
+    "{} eats a chicken nugget!",
     "{} pulls out a first aid kit!",
+    "{} drinks an exploding toilet!",
     "{} prays to the dueling gods!",
+    "{} reveals toilet paper and gets fan support!",
     "{} found an exploit in the code and exploited it!",
     "{} freezes time!",
+    "{} vibes to music!",
     "{} gets a gift from the gods!",
     "{} heals!",
     "{} eats a golden apple!",
@@ -76,11 +85,17 @@ DUEL_HEAL_MESSAGES = [
 ]
 DUEL_ATTACK_MESSAGES = [
     "{} does an impressive combo on {}!",
+    '{} says "NO APPLES FOR YOU!" and steals {}\'s apples!'
+    "{} throws an exploding toilet at {}!",
     "{} steals all of {}'s lunch money and throws them into the sun!",
     "{} absolutely DESTROYS {}!",
     "{} forces {} to look at Synchronous' code!",
     "{} pulls out a machine gun and BLIZZASTED {} into shreds!",
     "{} snipes {} from 2 MILES AWAY!",
+    "{} breathes COVID-19 into {}'s face!",
+    "{} clicks a suspicious link sent from {}!",
+    "{} thought {} was the imposter!"
+    "{} was the imposter and stabbed {}!"
     "{} throws around {} like a small child!",
     "{} karate-chopped {} and broke all 206 bones of his body!",
     "{} nukes {}!",
@@ -91,6 +106,8 @@ DUEL_ATTACK_MESSAGES = [
     "{} did some weird stuff and {} turned into a pile of ashes!",
     "{} drove a car straight into {}!",
     "{} throws {} into the void!",
+    "{} gives {} multiple paper cuts! Yeouch!",
+    "{} ejects {} into space!",
     "{} boiled up a huge pot of water and poured it onto {}!",
     "{} did some crap from Harry Potter and teleported {} to Pluto!",
     "{} slapped {} with a big stinky fish!",
@@ -107,7 +124,7 @@ DUEL_ATTACK_MESSAGES = [
     "{} forced {} to spam in front of the automod!",
     "{} sliced {} open with a katana and poured salt over his wound! Ouch!",
     "{} hacked {} and downloaded a virus!",
-    "{} tested {} on RegExs, and {}'s brain exploded!",
+    "{} tested {} on RegExs!",
     "{} shot {} in the head, point blank!",
     "{} teleported {} to the sun!",
     "{} squashed {} like a bug!",

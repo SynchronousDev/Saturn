@@ -1,3 +1,4 @@
+from discord.ext.commands.converter import clean_content
 from assets.cmd import Dueler
 import io
 import random
@@ -29,12 +30,7 @@ class Fun(commands.Cog):
 	async def quote_cmd(self, ctx, channel: typing.Optional[discord.TextChannel], *, quote: str):
 		channel = channel or ctx.channel
 
-		em = discord.Embed(
-			description=f'*"{quote}"*',
-			colour=ctx.author.colour
-		)
-		em.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-		await channel.send(embed=em)
+		await channel.send(f'*"{quote}"*\n\n- **{ctx.author}**')
 
 	@commands.command(
 		name='anonymousecho',
@@ -49,14 +45,8 @@ class Fun(commands.Cog):
 		else:
 			await ctx.message.add_reaction(CHECK)
 
-		channel = channel or ctx.channel
-		em = discord.Embed(
-			description=f'*"{quote}"*',
-			colour=MAIN
-		)
-		em.set_author(name='Anonymous', icon_url="https://www.logolynx.com/images/logolynx/7a/"
-												 "7a19584317b8f7a04001a910d751dae4.png")
-		await channel.send(embed=em)
+		await channel.send(f'*"{quote}"*\n\n- **Someone**')
+
 
 	@commands.command(
 		name='animalfact',
@@ -69,7 +59,7 @@ class Fun(commands.Cog):
 			animals = ("dog", "cat", 'panda', 'fox', 'bird', 'koala')
 			animal = animal or random.choice(animals)
 			if animal not in animals:
-				em = discord.Embed(
+				em = SaturnEmbed(
 					description=f"{ERROR} Could not find any facts for `{animal}`.",
 					color=RED)
 				await ctx.send(embed=em)
@@ -88,7 +78,7 @@ class Fun(commands.Cog):
 			async with request('GET', URL, headers={}) as response:
 				if response.status == 200:
 					data = await response.json()
-					fact_em = discord.Embed(
+					fact_em = SaturnEmbed(
 						title=f"Did you know?",
 						description=data['fact'],
 						color=MAIN)
@@ -98,13 +88,13 @@ class Fun(commands.Cog):
 					return await ctx.send(embed=fact_em)
 
 				if response.status == 503:
-					status = discord.Embed(
+					status = SaturnEmbed(
 						description=f"{ERROR} API is currently offline.",
 						color=RED)
 					await ctx.send(embed=status)
 
 				else:
-					status = discord.Embed(
+					status = SaturnEmbed(
 						description=f"{ERROR} API returned with a response status `{response.status}`",
 						color=RED)
 					await ctx.send(embed=status)
@@ -124,7 +114,7 @@ class Fun(commands.Cog):
 				if response.status == 200:
 					data = io.BytesIO(await response.read())
 					file = discord.File(data, 'wasted.jpg')
-					em = discord.Embed(
+					em = SaturnEmbed(
 						title=f"Wasted...",
 						color=RED)
 					em.set_image(url=f"attachment://wasted.jpg")
@@ -132,13 +122,13 @@ class Fun(commands.Cog):
 					return await ctx.send(embed=em, file=file)
 
 				if response.status == 503:
-					status = discord.Embed(
+					status = SaturnEmbed(
 						description=f"{ERROR} API is currently offline.",
 						color=RED)
 					await ctx.send(embed=status)
 
 				else:
-					status = discord.Embed(
+					status = SaturnEmbed(
 						description=f"{ERROR} API returned with a response status `{response.status}`",
 						color=RED)
 					await ctx.send(embed=status)
@@ -158,7 +148,7 @@ class Fun(commands.Cog):
 				if response.status == 200:
 					data = io.BytesIO(await response.read())
 					file = discord.File(data, 'rainbow.jpg')
-					em = discord.Embed(
+					em = SaturnEmbed(
 						title=f"SKITTLE OVERLOAD...",
 						color=discord.Colour.random()
 					)
@@ -167,13 +157,13 @@ class Fun(commands.Cog):
 					return await ctx.send(embed=em, file=file)
 
 				if response.status == 503:
-					status = discord.Embed(
+					status = SaturnEmbed(
 						description=f"{ERROR} API is currently offline.",
 						color=RED)
 					await ctx.send(embed=status)
 
 				else:
-					status = discord.Embed(
+					status = SaturnEmbed(
 						description=f"{ERROR} API returned with a response status `{response.status}`",
 						color=RED)
 					await ctx.send(embed=status)
@@ -193,7 +183,7 @@ class Fun(commands.Cog):
 				if response.status == 200:
 					data = io.BytesIO(await response.read())
 					file = discord.File(data, 'triggered.gif')
-					em = discord.Embed(
+					em = SaturnEmbed(
 						title=f"Very triggered indeed...",
 						color=discord.Colour.orange()
 					)
@@ -202,13 +192,13 @@ class Fun(commands.Cog):
 					return await ctx.send(embed=em, file=file)
 
 				if response.status == 503:
-					status = discord.Embed(
+					status = SaturnEmbed(
 						description=f"{ERROR} API is currently offline.",
 						color=RED)
 					await ctx.send(embed=status)
 
 				else:
-					status = discord.Embed(
+					status = SaturnEmbed(
 						description=f"{ERROR} API returned with a response status `{response.status}`",
 						color=RED)
 					await ctx.send(embed=status)
@@ -266,26 +256,26 @@ class Fun(commands.Cog):
 
 			if winning_choice:
 				if winning_choice == choice:
-					win = discord.Embed(
+					win = SaturnEmbed(
 						description=f"```You chose {choice}\n{self.bot.__name__} chose {computer_choice}```",
 						color=GREEN)
 					win.set_author(icon_url=ctx.author.avatar_url, name='You won!')
 					await ctx.send(embed=win)
 
 				elif winning_choice == computer_choice:
-					loss = discord.Embed(
+					loss = SaturnEmbed(
 						description=f"```You chose {choice}\n{self.bot.__name__} chose {computer_choice}```",
 						color=RED)
 					loss.set_author(icon_url=ctx.author.avatar_url, name='You lost!')
 					await ctx.send(embed=loss)
 			else:
-				tie = discord.Embed(
+				tie = SaturnEmbed(
 					description=f"```You both chose {choice}```",
 					color=GOLD)
 				tie.set_author(icon_url=ctx.author.avatar_url, name='You tied!')
 				await ctx.send(embed=tie)
 		else:
-			invalid_choice = discord.Embed(
+			invalid_choice = SaturnEmbed(
 				description=f"{ERROR} Expected either `rock`, `paper` or `scissors`, not `{choice}`",
 				color=RED)
 			await ctx.send(embed=invalid_choice)
@@ -303,28 +293,28 @@ class Fun(commands.Cog):
 				# noinspection PyUnusedLocal
 				rolls = [random.randint(1, value) for i in range(amount)]
 
-				em = discord.Embed(
+				em = SaturnEmbed(
 					description=f"```You rolled a {sum(rolls)}!```",
 					color=MAIN)
 				em.set_author(icon_url=ctx.author.avatar_url, name=f"{ctx.author.name}'s Dice Roll")
 				return await ctx.send(embed=em)
 
 			else:
-				em = discord.Embed(
+				em = SaturnEmbed(
 					description=f"{ERROR} {self.bot.__name__} tries to roll `{amount}` "
 								f"dice but gets confused and fails.",
 					color=RED)
 				await ctx.send(embed=em)
 
 		elif amount.isalpha():
-			em = discord.Embed(
+			em = SaturnEmbed(
 				title="Definitely not a suspicious link!",
 				description="[Click me!](https://www.youtube.com/watch?v=dQw4w9WgXcQ)",
 				colour=MAIN)
 			await ctx.send(embed=em)
 
 		else:
-			em = discord.Embed(
+			em = SaturnEmbed(
 				description=f"{ERROR} {self.bot.__name__} tries to roll `{amount}` dice but gets confused and fails.",
 				color=RED)
 			await ctx.send(embed=em)
@@ -369,7 +359,7 @@ class Fun(commands.Cog):
 			'Signs indicate yes',
 			'Duh... obviously yes'
 		]
-		em = discord.Embed(
+		em = SaturnEmbed(
 			title=f'The Magic {self.bot.__name__} Ball',
 			colour=ctx.author.colour,
 			timestamp=utc()
@@ -391,7 +381,7 @@ class Fun(commands.Cog):
 		p1, p2, play = Dueler(ctx.author), Dueler(member), True
 		order = [(p1, p2), (p2, p1)]
 
-		em = discord.Embed(
+		em = SaturnEmbed(
 			title=f'Duel between {ctx.author.name} and {member.name}',
 			timestamp=utc(),
 			colour=MAIN
@@ -437,12 +427,12 @@ class Fun(commands.Cog):
 				symbol, colour = '+' if not will_attack else '-', \
 								 DIFF_GREEN if not will_attack else DIFF_RED
 				if not will_attack:
-					text.append("{} {}".format(symbol, random.choice(DUEL_HEAL_MESSAGES).format(attacker.name, amount)))
+					text.append("{} {}".format(symbol, random.choice(DUEL_HEAL_MESSAGES).format(attacker.name)))
 					attacker.heal(amount if not (attacker.health + amount > 100) else (100 - attacker.health))
 
 				else:
 					text.append("{} {}".format(
-						symbol, random.choice(DUEL_ATTACK_MESSAGES).format(attacker.name, defender.name, amount)))
+						symbol, random.choice(DUEL_ATTACK_MESSAGES).format(attacker.name, defender.name)))
 					defender.damage(amount if not (defender.health - amount < 0) else defender.health)
 
 				em.description = "**{}** - {} HP\n**{}** - {} HP\n```diff\n{}```".format(
