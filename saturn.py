@@ -20,6 +20,10 @@ handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 
+intents = discord.Intents.all()
+mentions = discord.AllowedMentions.all()
+mentions.everyone = False
+
 
 # noinspection PyMethodMayBeStatic
 class Saturn(commands.Bot):
@@ -27,9 +31,10 @@ class Saturn(commands.Bot):
         super().__init__(
             command_prefix=get_prefix,
             description="A multipurpose discord bot made in python.",
-            intents=discord.Intents.all(),
+            intents=intents,
             case_insensitive=True,
-            owner_ids=[531501355601494026, 704355591686062202]
+            owner_ids=[531501355601494026],
+            allowed_mentions=mentions
         )
         self.ready = False
         self.__name__ = 'Saturn'
@@ -64,30 +69,48 @@ class Saturn(commands.Bot):
         print(f"Running {self.__name__}...")
         super().run(self.TOKEN, reconnect=True)
 
-    async def on_error(self, error, *args, **kwargs):
-        if error == "on_command_error":
-            em = discord.Embed(
-                title="Something went wrong...",
-                description="An unexpected event happened.",
-                colour=RED
-            )
-            await self.stdout.send(embed=em)
+    # async def on_error(self, error, *args, **kwargs):
+    #     if error == "on_command_error":
+    #         em = SaturnEmbed(
+    #             title="Something went wrong...",
+    #             description="An unexpected event happened.",
+    #             colour=RED
+    #         )
+    #         await self.stdout.send(embed=em)
 
-        em = discord.Embed(
-            title="An unexpected error occured...",
-            description="Please check logs for more details.",
-            colour=RED
-        )
+    #     em = SaturnEmbed(
+    #         title="An unexpected error occurred...",
+    #         description="Please check logs for more details.",
+    #         colour=RED
+    #     )
+    #     await self.stdout.send(embed=em)
+    #     raise
 
     async def process_commands(self, message):
         ctx = await self.get_context(message)
 
         if ctx.command and ctx.guild:
+            if not ctx.guild.me.guild_permissions.send_messages:
+                em = SaturnEmbed(
+                    description=f"{WARNING} Oops! I can't send messages! Please update my permissions and try again.",
+                    colour=GOLD)
+                return await ctx.author.send(embed=em)
+
+            elif not ctx.guild.me.guild_permissions.embed_links:
+                return await ctx.send("Hey! Please enable the `Embed Links` permission for me!")
+
+            elif not ctx.guild.me.guild_permissions.external_emojis:
+                em = SaturnEmbed(
+                    description=f"{WARNING} Oops! Please make sure that I have the following permissions:"
+                                f"```Send Messages, Embed Links, Use External Emojis```",
+                    colour=GOLD)
+                return await ctx.send(embed=em)
+
             if await self.blacklists.find_one({"_id": ctx.author.id}):
                 raise Blacklisted
 
             elif not self.ready:
-                em = discord.Embed(
+                em = SaturnEmbed(
                     description=f"{WARNING} I'm not quite ready to receive commands yet!",
                     colour=GOLD)
                 return await ctx.send(embed=em)
@@ -102,6 +125,7 @@ class Saturn(commands.Bot):
         self.change_pres.cancel()
         print(f"{self.__name__} disconnected")
 
+    # noinspection PyAttributeOutsideInit
     async def on_ready(self):
         self.default_guild = self.get_guild(793577103794634842)
         self.stdout = self.default_guild.get_channel(833871407544008704)
@@ -122,16 +146,16 @@ class Saturn(commands.Bot):
             for ban in bans: self.banned_users[ban["_id"]] = ban
 
             print(f"{self.__name__} is ready")
-            em = discord.Embed(
+            em = SaturnEmbed(
                 description=f"{CHECK} Connected and ready!",
                 colour=GREEN)
             await self.stdout.send(embed=em)
 
         else:
             print(f"{self.__name__} reconnected")
-            em = discord.Embed(
-                description=f"{CHECK} Reconnected!",
-                colour=DIFF_GREEN)
+            em = SaturnEmbed(
+                description=f"{INFO} Reconnected!",
+                colour=BLUE)
             await self.stdout.send(embed=em)
 
     async def on_message(self, message):
