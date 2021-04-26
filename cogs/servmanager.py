@@ -84,12 +84,6 @@ class Management(commands.Cog, name='Server Management'):
                         colour=GREEN)
                     await ctx.send(embed=em)
 
-        else:
-            em = SaturnEmbed(
-                description=f"{INFO} Action cancelled.",
-                colour=BLUE)
-            await ctx.send(embed=em)
-
     @commands.command(
         name='massremoverole',
         aliases=['mrmvr', 'mremover', 'mrrole'],
@@ -251,12 +245,6 @@ class Management(commands.Cog, name='Server Management'):
                     colour=RED)
                 await ctx.send(embed=em)
 
-        else:
-            em = SaturnEmbed(
-                description=f"{INFO} Action cancelled.",
-                colour=BLUE)
-            await ctx.send(embed=em)
-
     @delete.command(
         name='channel',
         aliases=['chnl'],
@@ -281,12 +269,6 @@ class Management(commands.Cog, name='Server Management'):
                     colour=RED)
                 await ctx.send(embed=em)
 
-        else:
-            em = SaturnEmbed(
-                description=f"{INFO} Action cancelled.",
-                colour=BLUE)
-            await ctx.send(embed=em)
-
     @delete.command(
         name='role',
         aliases=['r', 'rle', 'ro'],
@@ -309,12 +291,6 @@ class Management(commands.Cog, name='Server Management'):
                     description=f"{ERROR} I cannot delete that role.",
                     colour=RED)
                 await ctx.send(embed=em)
-
-        else:
-            em = SaturnEmbed(
-                description=f"{INFO} Action cancelled.",
-                colour=BLUE)
-            await ctx.send(embed=em)
 
 def setup(bot):
     bot.add_cog(Management(bot))

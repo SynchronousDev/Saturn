@@ -706,12 +706,6 @@ class Mod(commands.Cog, name='Moderation'):
                         colour=GREEN)
                     await ctx.send(embed=em)
 
-                else:
-                    em = SaturnEmbed(
-                        description=f"{INFO} Action cancelled.",
-                        colour=BLUE)
-                    await ctx.send(embed=em)
-
             else:
                 em = SaturnEmbed(
                     description=f"{ERROR} Cases can't go into the negatives! It's just common sense.",

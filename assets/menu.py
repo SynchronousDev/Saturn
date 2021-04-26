@@ -532,33 +532,40 @@ def inverse_button(emoji: str = None, *, try_remove=False, position: int = 666):
 
 
 # noinspection PyUnusedLocal
-class ConfirmationMenu(menus.Menu):
+class ConfirmationMenu:
     """
     A confirmation menu, for when you need to double-check that they actually want to do something.
     """
     def __init__(self, msg):
-        super().__init__(timeout=30.0)
         self.msg = msg
         self.result = None
 
-    async def send_initial_message(self, ctx, channel):
+    async def prompt(self, ctx):
         em = discord.Embed(
             description=f'{WARNING} Are you sure you want to {self.msg}?',
             colour=GOLD,
             timestamp=utc()
         )
-        return await ctx.send(embed=em)
+        msg = await ctx.send(embed=em)
+        await msg.add_reaction(CHECK)
+        await msg.add_reaction(ERROR)
 
-    @menus.button(CHECK)  # confirmation
-    async def do_confirm(self, payload):
-        self.result = True
-        self.stop()
+        def check(r, u):
+            return u == ctx.author and str(r.emoji) in (CHECK, ERROR)
 
-    @menus.button(ERROR)  # deny
-    async def do_deny(self, payload):
-        self.result = False
-        self.stop()
+        try:
+            reaction, user = await ctx.bot.wait_for('reaction_add', timeout=30.0, check=check)
 
-    async def prompt(self, ctx):
-        await self.start(ctx, wait=True)
-        return self.result
+        except asyncio.TimeoutError:
+            return False
+
+        else:
+            if str(reaction.emoji) == CHECK:
+                return True
+
+            else:
+                em = SaturnEmbed(
+                    description=f"{INFO} Action cancelled.",
+                    colour=BLUE)
+                await ctx.send(embed=em)
+                return False

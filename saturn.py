@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from discord.errors import HTTPException
 
 import motor.motor_asyncio
 from discord.ext import tasks

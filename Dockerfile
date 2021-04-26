@@ -1,5 +1,8 @@
 # For more information, please refer to https://aka.ms/vscode-docker-python
-FROM python:3.9-slim-buster
+FROM python:3.8-slim-buster
+
+# Install git so I can install discord-ext-menus lol
+RUN apt install -y git
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -8,15 +11,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install pip requirements
-RUN python -m pip install discord.py[voice] 
-RUN python -m pip install better-profanity 
-RUN python -m pip install -U git+https://github.com/Rapptz/discord-ext-menus
-RUN python -m pip install jishaku
-RUN python -m pip install Pillow
-RUN python -m pip install motor
-RUN python -m pip install python-dateutil
-RUN python -m pip install python-dotenv
-RUN python -m pip install pytimeparse
+COPY requirements.txt .
+RUN python -m pip install -r requirements.txt
 
 WORKDIR /app
 COPY . /app
