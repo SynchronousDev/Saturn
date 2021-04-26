@@ -8,8 +8,15 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install pip requirements
-COPY requirements.txt .
-RUN python -m pip install -r requirements.txt
+RUN python -m pip install discord.py[voice] 
+RUN python -m pip install better-profanity 
+RUN python -m pip install -U git+https://github.com/Rapptz/discord-ext-menus
+RUN python -m pip install jishaku
+RUN python -m pip install Pillow
+RUN python -m pip install motor
+RUN python -m pip install python-dateutil
+RUN python -m pip install python-dotenv
+RUN python -m pip install pytimeparse
 
 WORKDIR /app
 COPY . /app
