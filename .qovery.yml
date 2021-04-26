@@ -1,0 +1,20 @@
+---
+application:
+  name: "saturn-discord-bot"
+  project: "Saturn"
+  organization: "QoveryCommunity"
+  storage:
+  - name: "saturn"
+    size: "100"
+    type: "fast_ssd"
+    mount_point: "/mnt/saturn"
+databases:
+- type: "MONGODB"
+  name: "saturn-discord-bot"
+  version: "4.4"
+routers:
+- name: "main-saturn-discord-bot"
+  routes:
+  - application_name: "saturn-discord-bot"
+    paths:
+    - "/*"
