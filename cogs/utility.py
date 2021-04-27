@@ -66,7 +66,8 @@ class Utility(commands.Cog):
     # noinspection SpellCheckingInspection
     @commands.command(
         name="version",
-        aliases=['vers'])
+        aliases=['vers'],
+        description="Show the bot's current version.")
     async def _vers(self, ctx):
         await ctx.reply(
             embed=discord.Embed(
@@ -77,7 +78,8 @@ class Utility(commands.Cog):
 
     @commands.command(
         name="membercount",
-        aliases=['members', 'numberofmembers'])
+        aliases=['members', 'numberofmembers'],
+        description="Show the guild's member count.")
     async def member_count(self, ctx):
         async with ctx.channel.typing():
             bots = len([m for m in ctx.guild.members if m.bot])

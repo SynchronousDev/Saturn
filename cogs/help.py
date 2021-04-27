@@ -139,7 +139,8 @@ class Help(commands.Cog):
                 em.set_footer(text="Make sure the name of the module is exactly the same as listed above.")
                 return await ctx.send(embed=em)
 
-            elif cog := self.bot.get_cog(_cog) and _cog not in self.unlisted_cogs:
+            elif self.bot.get_cog(_cog) and _cog not in self.unlisted_cogs:
+                cog = self.bot.get_cog(_cog)                
                 for command in cog.walk_commands():
                     invoke = await self.cog_command_syntax(ctx, command)
                     if invoke:
