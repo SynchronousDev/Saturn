@@ -161,7 +161,7 @@ class Saturn(commands.Bot):
     @tasks.loop(minutes=1)
     async def change_pres(self):
         await self.change_presence(
-            activity=discord.Game(name=f"{PREFIX}help | V{self.__version__}"))
+            activity=discord.Game(name=f"I'm in beta."))
 
 
 if __name__ == '__main__':
