@@ -9,7 +9,6 @@ from typing import Union
 from assets import *
 from .constants import *
 from assets.time import utc
-from discord.ext  import menus
 
 # noinspection PyRedeclaration
 __all__ = ('Session', 'Paginator', 'button', 'inverse_button',)
@@ -66,7 +65,7 @@ class Session:
                 sorted_ = self.sort_buttons(buttons=self._buttons)
                 try:
                     button_ = sorted_[button.emoji]
-                except KeyError or TypeError:
+                except (TypeError, KeyError):
                     self._buttons[button.position, button.emoji] = button
                     continue
 

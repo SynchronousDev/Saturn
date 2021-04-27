@@ -12,7 +12,6 @@ import typing
 import discord
 import pytz
 from discord.ext import commands
-from discord.ext import menus
 from .emb import SaturnEmbed
 
 """

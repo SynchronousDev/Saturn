@@ -42,7 +42,6 @@ class Saturn(commands.Bot):
         self.path = Path(__file__).parents[0]
         self.path = str(self.path)
         self.__version__ = '1.1.0'
-        print("Loading info from .env file...")
 
         self.mongo_connection_url = os.environ.get("MONGO")
         self.TOKEN = os.environ.get("TOKEN")
@@ -53,7 +52,6 @@ class Saturn(commands.Bot):
         self.muted_users = {}
         self.message_cache = {}
 
-        print("Initializing database...")
         self.mongo = motor.motor_asyncio.AsyncIOMotorClient(str(self.mongo_connection_url))
         self.db = self.mongo[self.__name__]
         self.config = self.db["config"]

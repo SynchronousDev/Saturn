@@ -38,7 +38,7 @@ async def purge_msgs(bot, ctx, limit, check):
         if not mod_logs:
             return
 
-    except KeyError or TypeError:
+    except (TypeError, KeyError):
         return
 
     try:
@@ -133,7 +133,7 @@ async def create_log(bot, member: discord.Member, guild, action, moderator, reas
     try:
         mod_logs = guild.get_channel(data['mod_logs'])
 
-    except KeyError or TypeError:
+    except (TypeError, KeyError):
         pass
 
     action_ = action
@@ -216,7 +216,7 @@ async def get_last_case_id(bot, guild) -> int:
         try:
             return int(logs[-1]["case_id"]) + 1
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             return 1
 
 
@@ -357,7 +357,7 @@ async def unban_members(bot, ctx, member, reason):
     try:
         bot.banned_users.pop(user.id)
 
-    except KeyError or TypeError:
+    except (TypeError, KeyError):
         pass
 
     await create_log(bot, member, ctx.guild, "unban", ctx.author if ctx.author != member else ctx.guild.me, reason)
@@ -537,7 +537,7 @@ class Mod(commands.Cog, name='Moderation'):
                             except commands.MemberNotFound or KeyError:
                                 pass
 
-                    except KeyError or TypeError:
+                    except (TypeError, KeyError):
                         pass
 
         for key, value in bans.items():
@@ -576,7 +576,7 @@ class Mod(commands.Cog, name='Moderation'):
         data = await self.bot.config.find_one({"_id": after.guild.id})
         try:
             if not data['mute_role']: return
-        except TypeError or KeyError:
+        except (TypeError, KeyError):
             return
 
         mute_role = after.guild.get_role(data['mute_role'])
@@ -603,7 +603,7 @@ class Mod(commands.Cog, name='Moderation'):
                     # check if the member left the server while they were muted
                     # anti-mute bypass yes
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             pass
 
     @commands.command(
@@ -906,7 +906,7 @@ class Mod(commands.Cog, name='Moderation'):
                     colour=RED)
                 return await ctx.send(embed=em)
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             pass
 
         await ban_members(self.bot, ctx, member, reason, time, delete_days=7, _type='tempban')
@@ -1036,7 +1036,7 @@ class Mod(commands.Cog, name='Moderation'):
 
                 await msg.delete()
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             em = SaturnEmbed(
                 description=f"{WARNING} Couldn't find a mute role to assign to {member.mention}, making one now...",
                 colour=GOLD)
@@ -1056,7 +1056,7 @@ class Mod(commands.Cog, name='Moderation'):
                             colour=RED)
                         return await ctx.send(embed=em)
 
-                except KeyError or TypeError:
+                except (TypeError, KeyError):
                     pass
 
                 await mute_members(self.bot, ctx, member, reason, mute_role, time)
@@ -1091,7 +1091,7 @@ class Mod(commands.Cog, name='Moderation'):
                     colour=RED)
                 return await ctx.send(embed=em)
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             em = SaturnEmbed(
                 description=f"{ERROR} This guild does not have a mute role set up.",
                 colour=RED)

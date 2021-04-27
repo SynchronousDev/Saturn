@@ -15,7 +15,7 @@ async def automod_log(bot, message, action, reason) -> None:
     try:
         automod = message.guild.get_channel(data['automod_logs'])
 
-    except TypeError or KeyError:
+    except (TypeError, KeyError):
         return
     if not automod: return
 
@@ -40,7 +40,7 @@ async def profanity_check(bot, message):
                 if _data['words']:  #
                     profanity.load_censor_words(_data['words'])
 
-            except KeyError or TypeError:
+            except (TypeError, KeyError):
                 profanity.load_censor_words_from_file(
                     bot.path + '/assets/profanity.txt')
 
@@ -73,7 +73,7 @@ async def profanity_check(bot, message):
 
             return False
 
-    except KeyError or TypeError:
+    except (TypeError, KeyError):
         return False
 
 async def spam_check(bot, message):
@@ -102,14 +102,14 @@ async def spam_check(bot, message):
                     if message.author.id in whitelist: return
                     # check that the author isn't in the spam whitelist
 
-                except KeyError or TypeError:
+                except (TypeError, KeyError):
                     pass  # if there is no whitelist
 
                 try:
                     if not (mute_role := message.guild.get_role(_data['mute_role'])):
                         mute_role = await create_mute_role(bot, message)
 
-                except TypeError or KeyError:
+                except (TypeError, KeyError):
                     # create the mute role
                     mute_role = await create_mute_role(bot, message)
 
@@ -129,7 +129,7 @@ async def spam_check(bot, message):
                     colour=GOLD)
                 await message.channel.send(embed=em)
 
-    except KeyError or TypeError:
+    except (TypeError, KeyError):
         pass
 
 async def update_cache(bot, message: discord.Message):
@@ -140,7 +140,7 @@ async def update_cache(bot, message: discord.Message):
         if not bot.message_cache[message.author.id]:
             bot.message_cache[message.author.id] = []
 
-    except KeyError or TypeError:
+    except (TypeError, KeyError):
         bot.message_cache[message.author.id] = []
 
     bot.message_cache[message.author.id].append(message)
@@ -157,7 +157,7 @@ def get_cache(bot, member) -> list or None:
 
             return bot.message_cache[member.id]
 
-    except KeyError or TypeError:
+    except (TypeError, KeyError):
         return []
 
 def is_spamming(bot, member):
@@ -178,7 +178,7 @@ async def delete_cache(bot, member):
 
         bot.message_cache.pop(member.id)
 
-    except KeyError or TypeError:
+    except (TypeError, KeyError):
         return False
 
 async def profanity_command_check(bot, message: discord.Message):
@@ -256,7 +256,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
             else:
                 toggle = data['profanity_toggle']
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             toggle = False
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
@@ -303,7 +303,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
 
                 words.append(word)
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             words.append(word)
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
@@ -343,7 +343,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
 
                 words.remove(word)
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             words.remove(word)
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
@@ -392,7 +392,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
             else:
                 toggle = data['spam_toggle']
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             toggle = False
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
@@ -418,7 +418,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
             else:
                 whitelist = data['spam_whitelist']
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             whitelist = []
 
         if member.id in whitelist:
@@ -454,7 +454,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
             else:
                 whitelist = data['spam_whitelist']
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             em = SaturnEmbed(
                 description=f"{ERROR} There are no whitelists in this guild.",
                 colour=RED)

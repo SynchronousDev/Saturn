@@ -37,7 +37,7 @@ class Events(commands.Cog):
                 try:
                     member_logs = member.guild.get_channel(data['member_logs'])
 
-                except TypeError or KeyError: return
+                except (TypeError, KeyError): return
                 # if not member_logs: return
 
                 created_delta = (utc() - member.created_at.replace(tzinfo=datetime.timezone.utc)).total_seconds()
@@ -65,7 +65,7 @@ class Events(commands.Cog):
                 try:
                     member_logs = member.guild.get_channel(data['member_logs'])
 
-                except TypeError or KeyError: return
+                except (TypeError, KeyError): return
                 if not member_logs: return
 
                 em = SaturnEmbed(
@@ -102,7 +102,7 @@ class Events(commands.Cog):
             try:
                 message_logs = message.guild.get_channel(data['message_logs'])
 
-            except KeyError or TypeError:
+            except (TypeError, KeyError):
                 return
 
             em = SaturnEmbed(
@@ -146,7 +146,7 @@ class Events(commands.Cog):
             try:
                 message_logs = after.guild.get_channel(data['message_logs'])
 
-            except KeyError or TypeError:
+            except (TypeError, KeyError):
                 return
 
             em = SaturnEmbed(
@@ -179,7 +179,7 @@ class Events(commands.Cog):
                 if not data['starboard']:
                     return
 
-            except KeyError or TypeError:
+            except (TypeError, KeyError):
                 return
 
             count = data['count'] or 3
@@ -198,7 +198,7 @@ class Events(commands.Cog):
                 stars = _starboard['stars']
                 msg_id = _starboard['star_id']
 
-            except KeyError or TypeError:
+            except (TypeError, KeyError):
                 msg_id = None
 
             except TypeError:
@@ -249,7 +249,7 @@ class Events(commands.Cog):
                 if not data['starboard']:
                     return
 
-            except KeyError or TypeError:
+            except (TypeError, KeyError):
                 return
 
             _starboard = await self.bot.starboard.find_one({"_id": message.id})
@@ -257,13 +257,13 @@ class Events(commands.Cog):
             try:
                 stars = _starboard['stars']
 
-            except KeyError or TypeError:
+            except (TypeError, KeyError):
                 return
 
             try:
                 msg_id = _starboard['star_id']
                 
-            except KeyError or TypeError:
+            except (TypeError, KeyError):
                 msg_id = None
 
             if not _starboard:  # check if there are stars on that message
@@ -304,7 +304,7 @@ class Events(commands.Cog):
         try:
             guild_level = data['member_log_level']
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             return "HIGH"
 
         indexes = ("OFF", "LOW", "MEDIUM", "HIGH")
@@ -322,7 +322,7 @@ class Events(commands.Cog):
         try:
             member_logs = after.guild.get_channel(data['member_logs'])
 
-        except TypeError or KeyError: return
+        except (TypeError, KeyError): return
         if not member_logs: return
 
         # LOW - member join and leaves
@@ -377,7 +377,7 @@ class Events(commands.Cog):
     #     try:
     #         member_logs = after.guild.get_channel(data['member_logs'])
 
-    #     except TypeError or KeyError: return
+    #     except (TypeError, KeyError): return
     #     if not member_logs: return
 
         # if await self.member_log_level_check("HIGH", before.guild):

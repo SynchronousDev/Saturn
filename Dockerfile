@@ -1,13 +1,10 @@
 # For more information, please refer to https://aka.ms/vscode-docker-python
-FROM python:3.8-slim-buster
-
-# Install git so I can install discord-ext-menus lol
-RUN apt install -y git
+FROM python:3.9-slim-buster
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Turns off buffering for easier container logging
+# # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
 # Install pip requirements

@@ -129,7 +129,7 @@ class Config(commands.Cog):
                     colour=RED)
                 return await ctx.send(embed=em)
 
-        except TypeError or KeyError:
+        except (TypeError, KeyError):
             em = SaturnEmbed(
                 description=f"{ERROR} Your guild does not have any prefixes!",
                 colour=RED)
@@ -200,7 +200,7 @@ class Config(commands.Cog):
                 await ctx.send(embed=em)
                 return
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             em = SaturnEmbed(
                 description=f"{ERROR} The moderator role does not exist! "
                             f"Run `modrole set <role>` or `modrole create`",
@@ -254,7 +254,7 @@ class Config(commands.Cog):
                 await ctx.send(embed=em)
                 return
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             pass
 
         perms = discord.Permissions(
@@ -320,7 +320,7 @@ class Config(commands.Cog):
                 await ctx.send(embed=em)
                 return
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             em = SaturnEmbed(
                 description=f"{ERROR} The mute role does not exist! Run `muterole set <role>` or `muterole create`",
                 colour=RED)
@@ -371,7 +371,7 @@ class Config(commands.Cog):
                     colour=RED)
                 return await ctx.send(embed=em)
 
-        except KeyError or TypeError:
+        except (TypeError, KeyError):
             pass
 
         perms = discord.Permissions(
@@ -488,7 +488,7 @@ class Config(commands.Cog):
         try:
             member_log_level = data['member_log_level']
 
-        except TypeError or KeyError: member_log_level = "HIGH"
+        except (TypeError, KeyError): member_log_level = "HIGH"
 
         em = SaturnEmbed(
             description=f"{INFO} The member logs level is currently set to `{member_log_level.upper()}`\n"
