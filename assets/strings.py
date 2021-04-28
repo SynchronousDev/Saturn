@@ -1,15 +1,6 @@
 from assets import *
 import typing
 
-def clean_codeblock(content) -> str:
-    """
-    Clean a codeblock of the ``` and the pys.
-    """
-    if content.startswith("```") and content.endswith("```"):
-        return "\n".join(content.split("\n")[1:])[:-3]
-    else:
-        return content
-
 
 def flatten(l: typing.Union[list, tuple]) -> list:
     """

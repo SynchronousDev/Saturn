@@ -1,3 +1,4 @@
+from assets.strings import flatten
 from assets import *
 
 # Admin invite: https://discord.com/oauth2/authorize?client_id=799328036662935572&permissions=8&redirect_uri

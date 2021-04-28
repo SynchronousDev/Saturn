@@ -20,6 +20,8 @@ class Utility(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.polls = {}
+        self.numbers = ('1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟')
         self.snipe_task = self.clear_snipe_cache.start()
 
     def cog_unload(self):
@@ -39,6 +41,94 @@ class Utility(commands.Cog):
     @clear_snipe_cache.before_loop
     async def before_clear_snipe_cache(self):
         await self.bot.wait_until_ready()
+
+    # @commands.command(
+    #     name='poll',
+    #     aliases=['pl', 'question'],
+    #     description="Start a poll for others to vote on."
+    # )
+    # @commands.cooldown(1, 3, commands.BucketType.member)
+    # async def new_poll(self, ctx, *, questions_and_choices):
+    #     questions_and_choices = questions_and_choices.split(' ')
+    #     question, choices = [], []
+
+    #     for item in questions_and_choices:
+    #         if item.startswith('"') and item.endswith('"') and len(item) > 2:
+    #             if item in choices:
+    #                 continue
+
+    #             choices.append(item)
+
+    #         else:
+    #             question.append(item)
+
+    #     question = ' '.join(question)
+
+    #     if not question or not choices:
+    #         em = SaturnEmbed(
+    #             description=f"{ERROR} Please include both a question and choices.",
+    #             color=RED)
+    #         return await ctx.send(embed=em)
+
+    #     if len(choices) > 10 or len(choices) < 2:
+    #         em = SaturnEmbed(
+    #             description=f"{ERROR} The amount of choices provided is not within acceptable boundaries.\n"
+    #                         f"```Number of choices must be in between 1 and 10```",
+    #             color=RED)
+    #         return await ctx.send(embed=em)
+
+    #     em = discord.Embed(
+    #         title=question,
+    #         description='\n\n'.join(
+    #             ["{0} {1}".format(self.numbers[num], choice.replace('"', '')) for num, choice in enumerate(choices)]
+    #         ),
+    #         colour=MAIN,
+    #         timestamp=utc()
+    #     )
+    #     em.set_footer(text=f"Poll by {ctx.author.name}")
+    #     msg = await ctx.send(embed=em)
+
+    #     valid_emotes = self.numbers[:(len(choices))]
+    #     for emoji in valid_emotes:
+    #         await msg.add_reaction(emoji)
+
+    # @commands.Cog.listener()
+    # async def on_raw_reaction_add(self, payload):
+    #     reaction = str(_reaction.emoji)
+    #     r_index = (valid_emotes.index(reaction)) + 1
+
+    #     self.polls[msg.id] = {
+    #         "1": 0,
+    #         "2": 0,
+    #         "3": 0,
+    #         "4": 0,
+    #         "5": 0,
+    #         "6": 0,
+    #         "7": 0,
+    #         "8": 0,
+    #         "9": 0,
+    #         "10": 0,
+    #         "guild_id": ctx.guild.id,
+    #         "message_author_id": ctx.author.id
+    #     }
+    #     self.polls[msg.id][str(r_index)] += 1
+
+    @commands.command(
+        name='uptime',
+        aliases=['onlinesince', 'onlinetime'],
+        description='Check the bot\'s uptime.'
+    )
+    async def view_uptime(self, ctx):
+        time = (utc() - self.bot.start_time).total_seconds()
+        formatted_time = str(general_convert_time(time))
+
+        await ctx.reply(
+            embed=discord.Embed(
+                description=f"{self.bot.__name__} has been online for **{formatted_time}**",
+                colour=MAIN
+            )
+        )
+
 
     @commands.command(
         name='ping',

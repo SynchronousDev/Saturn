@@ -126,6 +126,8 @@ class Saturn(commands.Bot):
     async def on_ready(self):
         self.default_guild = self.get_guild(793577103794634842)
         self.stdout = self.default_guild.get_channel(833871407544008704)
+        self.start_time = utc()
+
         if not self.ready:
             self.ready = True
             for _file in os.listdir(self.path + '/cogs'):

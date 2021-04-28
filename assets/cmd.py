@@ -40,6 +40,9 @@ async def syntax(cmd) -> str:
             if key.lower() == 'time_and_reason':  # this is a special case for the timed bans and mute commands
                 params.append("[time] [reason]")  # both are optional
 
+            elif key.lower() == 'questions_and_choices':
+                params.append("<question> <choices>")
+
             elif "optional" in value.lower() or "greedy" in value.lower():
                 params.append(f"[{key}]")
 

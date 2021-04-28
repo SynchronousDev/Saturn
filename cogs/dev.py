@@ -3,7 +3,8 @@ import inspect
 import io
 import re
 import textwrap
-from traceback import format_exception
+import traceback
+# from traceback import format_exception
 
 from assets import *
 
@@ -65,7 +66,10 @@ class Dev(commands.Cog):
         aliases=['ev', 'exec', 'evaluate'],
         description='The eval command. Executes code (only accessible by me)')
     async def eval(self, ctx, *, code):
-        code = clean_codeblock(code)
+        code = code.strip("`")
+        if re.match('py(thon)?\n', code):
+            code = "\n".join(code.split("\n")[1:])
+
         if code == 'exit':
             self.env = {}
             em = SaturnEmbed(
@@ -94,42 +98,41 @@ class Dev(commands.Cog):
         # noinspection RegExpAnonymousGroup
         if not re.search(  # Check if it's an expression
                 r"^(return|import|for|while|def|class|"
-                r"from|exit|[a-zA-Z0-9]+\s*=)", code, re.M) and len(code.split("\n")) == 1:
+                r"from|exit|[a-zA-Z0-9]+\s*=)", code) and len(
+                    code.split("\n")) == 1:
             code = "_ = " + code
 
         code_ = """
 async def func():  # (None,) -> Any
     try:
         with contextlib.redirect_stdout(self.stdout):
-            {0}
+{0}
         if '_' in locals():
             if inspect.isawaitable(_):
                 _ = await _
             return _
-
     finally:
         self.env.update(locals())
-
-""".format(textwrap.indent(code, '    '))
+""".format(textwrap.indent(code, '            '))
 
         try:
             exec(code_, self.env)
-
-            func = self.env["func"]
-            result = await func()
+            func = self.env['func']
+            res = await func()
             colour = DIFF_GREEN
 
-        except Exception as e:
-            result = ''.join(format_exception(e, e, e.__traceback__))
+        except Exception:
+            res = traceback.format_exc()
             colour = DIFF_RED
 
-        result = str(result)
+        res = str(res)
 
         pager = Paginator(
-            entries=[result[i: i + (2000 - len(code))]
-                     for i in range(0, len(result), (2000 - len(code)))],
+            entries=[res[i: i + (2000 - len(code))]
+                     for i in range(0, len(res), (2000 - len(code)))],
             length=1,
             colour=colour,
+            title="Eval Job Completed" if colour == DIFF_GREEN else "Eval Failed",
             footer=f'{self.bot.__name__} Eval command',
             prefix=f"```py\n{code.strip('_ = ')}```\n```py\n",
             suffix='```'
