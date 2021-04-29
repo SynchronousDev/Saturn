@@ -62,7 +62,7 @@ class Fun(commands.Cog):
 				em = SaturnEmbed(
 					description=f"{ERROR} Could not find any facts for `{animal}`.",
 					color=RED)
-				await ctx.send(embed=em)
+				return await ctx.send(embed=em)
 
 			URL = f'https://some-random-api.ml/facts/{animal.lower()}'
 			IMAGE_URL = f"https://some-random-api.ml/img/{'birb' if animal == 'bird' else animal.lower()}"
@@ -91,13 +91,13 @@ class Fun(commands.Cog):
 					status = SaturnEmbed(
 						description=f"{ERROR} API is currently offline.",
 						color=RED)
-					await ctx.send(embed=status)
+					return await ctx.send(embed=status)
 
 				else:
 					status = SaturnEmbed(
 						description=f"{ERROR} API returned with a response status `{response.status}`",
 						color=RED)
-					await ctx.send(embed=status)
+					return await ctx.send(embed=status)
 
 	@commands.command(
 		name='wasted',
