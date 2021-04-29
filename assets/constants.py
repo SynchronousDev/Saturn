@@ -85,7 +85,7 @@ DUEL_HEAL_MESSAGES = [
 ]
 DUEL_ATTACK_MESSAGES = [
     "{} does an impressive combo on {}!",
-    '{} says "NO APPLES FOR YOU!" and steals {}\'s apples!'
+    '{} says "NO APPLES FOR YOU!" and steals {}\'s apples!',
     "{} throws an exploding toilet at {}!",
     "{} steals all of {}'s lunch money and throws them into the sun!",
     "{} absolutely DESTROYS {}!",
@@ -94,8 +94,8 @@ DUEL_ATTACK_MESSAGES = [
     "{} snipes {} from 2 MILES AWAY!",
     "{} breathes COVID-19 into {}'s face!",
     "{} clicks a suspicious link sent from {}!",
-    "{} thought {} was the imposter!"
-    "{} was the imposter and stabbed {}!"
+    "{} thought {} was the imposter!",
+    "{} was the imposter and stabbed {}!",
     "{} throws around {} like a small child!",
     "{} karate-chopped {} and broke all 206 bones of his body!",
     "{} nukes {}!",
@@ -128,5 +128,5 @@ DUEL_ATTACK_MESSAGES = [
     "{} shot {} in the head, point blank!",
     "{} teleported {} to the sun!",
     "{} squashed {} like a bug!",
-    "{} shoved {} into a 50 kilometre hole!"
+    "{} shoved {} into a 50 kilometre hole!",
 ]
