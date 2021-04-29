@@ -55,7 +55,6 @@ class Fun(commands.Cog):
 	@commands.cooldown(
 		1, 2, commands.BucketType.member)
 	async def animal_fact_cmd(self, ctx, *, animal: typing.Optional[str]):
-		async with ctx.channel.typing():
 			animals = ("dog", "cat", 'panda', 'fox', 'bird', 'koala')
 			animal = animal or random.choice(animals)
 			if animal not in animals:
@@ -67,37 +66,38 @@ class Fun(commands.Cog):
 			URL = f'https://some-random-api.ml/facts/{animal.lower()}'
 			IMAGE_URL = f"https://some-random-api.ml/img/{'birb' if animal == 'bird' else animal.lower()}"
 
-			async with request('GET', IMAGE_URL, headers={}) as response:
-				if response.status == 200:
-					data = await response.json()
-					image_link = data['link']
+			async with ctx.channel.typing():
+				async with request('GET', IMAGE_URL, headers={}) as response:
+					if response.status == 200:
+						data = await response.json()
+						image_link = data['link']
 
-				else:
-					image_link = None
+					else:
+						image_link = None
 
-			async with request('GET', URL, headers={}) as response:
-				if response.status == 200:
-					data = await response.json()
-					fact_em = SaturnEmbed(
-						title=f"Did you know?",
-						description=data['fact'],
-						color=MAIN)
-					if IMAGE_URL is not None:
-						fact_em.set_image(url=image_link)
-					fact_em.set_footer(text='some-random-api.ml')
-					return await ctx.send(embed=fact_em)
+				async with request('GET', URL, headers={}) as response:
+					if response.status == 200:
+						data = await response.json()
+						fact_em = SaturnEmbed(
+							title=f"Did you know?",
+							description=data['fact'],
+							color=MAIN)
+						if IMAGE_URL is not None:
+							fact_em.set_image(url=image_link)
+						fact_em.set_footer(text='some-random-api.ml')
+						return await ctx.send(embed=fact_em)
 
-				if response.status == 503:
-					status = SaturnEmbed(
-						description=f"{ERROR} API is currently offline.",
-						color=RED)
-					return await ctx.send(embed=status)
+					if response.status == 503:
+						status = SaturnEmbed(
+							description=f"{ERROR} API is currently offline.",
+							color=RED)
+						return await ctx.send(embed=status)
 
-				else:
-					status = SaturnEmbed(
-						description=f"{ERROR} API returned with a response status `{response.status}`",
-						color=RED)
-					return await ctx.send(embed=status)
+					else:
+						status = SaturnEmbed(
+							description=f"{ERROR} API returned with a response status `{response.status}`",
+							color=RED)
+						return await ctx.send(embed=status)
 
 	@commands.command(
 		name='wasted',
