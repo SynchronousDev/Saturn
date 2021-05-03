@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import motor.motor_asyncio
+import mystbin
 from discord.ext import tasks
 from dotenv import load_dotenv
 
@@ -32,8 +33,8 @@ class Saturn(commands.Bot):
             description="A multipurpose discord bot made in python.",
             intents=intents,
             case_insensitive=True,
-            owner_ids=[531501355601494026],
-            allowed_mentions=mentions
+            owner_ids=[int(owner_id) for owner_id in os.environ.get("OWNER_IDS").split(" ")],
+            allowed_mentions=mentions   
         )
         self.ready = False
         self.__name__ = 'Saturn'
@@ -61,6 +62,8 @@ class Saturn(commands.Bot):
         self.mod = self.db["mod"]
         self.bans = self.db["bans"]
         self.starboard = self.db["starboard"]
+
+        self.paste = mystbin.Client()
 
     def run(self):
         print(f"Running {self.__name__}...")

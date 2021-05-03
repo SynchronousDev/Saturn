@@ -97,24 +97,23 @@ class Dev(commands.Cog):
 
         # noinspection RegExpAnonymousGroup
         if not re.search(  # Check if it's an expression
-                r"^(return|import|for|while|def|class|"
-                r"from|exit|[a-zA-Z0-9]+\s*=)", code) and len(
+                r"^(return|import|for|while|def|class|raise|print"
+                r"from|exit|[a-zA-Z0-9]+\s*=)", code, re.M) and len(
                     code.split("\n")) == 1:
             code = "_ = " + code
 
-        code_ = """
-async def func():  # (None,) -> Any
+        code_ = f"""
+async def func():
     try:
         with contextlib.redirect_stdout(self.stdout):
-{0}
+{textwrap.indent(code, '            ')}
         if '_' in locals():
             if inspect.isawaitable(_):
                 _ = await _
             return _
     finally:
         self.env.update(locals())
-""".format(textwrap.indent(code, '            '))
-
+"""
         try:
             exec(code_, self.env)
             func = self.env['func']
