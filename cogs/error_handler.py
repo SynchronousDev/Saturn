@@ -191,7 +191,7 @@ class ErrorHandler(commands.Cog):
                 description=f"{ERROR} Something went wrong. Whoops!"
                             f"```{exc}```",
                 color=RED)
-            em.set_author(name=f"[View full error output]({await self.bot.paste.post(exc, syntax='cmd')})")
+            em.set_author(name=f"[View full error output]({await self.bot.paste.post(str(exc), syntax='py')})")
             await ctx.send(embed=em)
             await self.bot.stdout.send(embed=em)
             await self.bot.stdout.send()
@@ -200,9 +200,9 @@ class ErrorHandler(commands.Cog):
         else:
             em = SaturnEmbed(
                 description=f"{ERROR} Something went wrong. Whoops!"
-                            f"```{exc}```",
+                            f"```{str(exc)}```",
                 color=RED)
-            em.set_author(name=f"[View full error output]({await self.bot.paste.post(exc, syntax='cmd')})")
+            em.set_author(name=f"[View full error output]({await self.bot.paste.post(str(exc), syntax='py')})")
             await ctx.send(embed=em)
             await self.bot.stdout.send(embed=em)
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
