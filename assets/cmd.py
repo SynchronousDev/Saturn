@@ -40,9 +40,6 @@ async def syntax(cmd) -> str:
             if key.lower() == 'time_and_reason':  # this is a special case for the timed bans and mute commands
                 params.append("[time] [reason]")  # both are optional
 
-            elif key.lower() == 'questions_and_choices':
-                params.append("<question> <choices>")
-
             elif "optional" in value.lower() or "greedy" in value.lower():
                 params.append(f"[{key}]")
 
@@ -51,6 +48,21 @@ async def syntax(cmd) -> str:
 
     params = " ".join(params)
     return f"{str(cmd.qualified_name)} {params}"
+
+# noinspection PyShadowingNames
+async def error_arg_syntax(cmd, arg):
+    cmd_syntax = await syntax(cmd)
+    chars = cmd_syntax.rpartition(arg)[0]
+
+    spaces = chars.count(' ')  # calculate how many spaces are in the sentence before the args
+    num_of_letters = len(''.join(chars.split(' ')))  # get the number of letters minus the spaces
+
+    before_pointers = ' ' * (spaces + num_of_letters)  # get the number of spaces before the pointer
+    pointers = '^' * len(arg)
+
+    return f"{cmd_syntax}\n{before_pointers}{pointers}"  # return the syntax with the ^^^^^ under
+    # to indicate which argument is parsed wrongly
+
 
 # noinspection PyBroadException
 async def retrieve_raw_prefix(bot, message) -> list:
@@ -72,21 +84,6 @@ async def retrieve_raw_prefix(bot, message) -> list:
 
     except Exception:
         return PREFIX
-
-
-# noinspection PyShadowingNames
-async def error_arg_syntax(cmd, arg):
-    cmd_syntax = await syntax(cmd)
-    chars = cmd_syntax.rpartition(arg)[0]
-
-    spaces = chars.count(' ')  # calculate how many spaces are in the sentence before the args
-    num_of_letters = len(''.join(chars.split(' ')))  # get the number of letters minus the spaces
-
-    before_pointers = ' ' * (spaces + num_of_letters)  # get the number of spaces before the pointer
-    pointers = '^' * len(arg)
-
-    return f"{cmd_syntax}\n{before_pointers}{pointers}"  # return the syntax with the ^^^^^ under
-    # to indicate which argument is parsed wrongly
 
 async def retrieve_prefix(bot, message) -> str:
     """

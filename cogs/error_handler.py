@@ -1,6 +1,8 @@
 from discord import Embed
 from assets import *
 from discord.ext import commands
+import assets
+from assets.cmd import *
 import traceback
 import sys
 
@@ -13,7 +15,7 @@ class ErrorHandler(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, exc):
         if hasattr(ctx.command, 'on_error'):
-            return
+            return 
 
         if isinstance(exc, commands.CommandNotFound):
             pass
@@ -159,8 +161,14 @@ class ErrorHandler(commands.Cog):
                     color=RED)
             await ctx.send(embed=em)
 
-        elif isinstance(exc, InvalidLimit):
+        elif isinstance(exc, assets.errors.Blacklisted):
             em = SaturnEmbed(
+                    description=f"{ERROR} You are blacklisted from using this bot.",
+                    color=RED)
+            await ctx.send(embed=em)
+
+        elif isinstance(exc, InvalidLimit):
+            em = SaturnEmbed(   
                 description=f"{ERROR} The limit provided is not within acceptable boundaries.\n"
                             f"```Limit must be in between 1 and 1000 messages```",
                 color=RED)
@@ -183,8 +191,10 @@ class ErrorHandler(commands.Cog):
                 description=f"{ERROR} Something went wrong. Whoops!"
                             f"```{exc}```",
                 color=RED)
+            em.set_author(name=f"[View full error output]({await self.bot.paste.post(exc, syntax='cmd')})")
             await ctx.send(embed=em)
             await self.bot.stdout.send(embed=em)
+            await self.bot.stdout.send()
             raise exc.original
 
         else:
@@ -192,6 +202,7 @@ class ErrorHandler(commands.Cog):
                 description=f"{ERROR} Something went wrong. Whoops!"
                             f"```{exc}```",
                 color=RED)
+            em.set_author(name=f"[View full error output]({await self.bot.paste.post(exc, syntax='cmd')})")
             await ctx.send(embed=em)
             await self.bot.stdout.send(embed=em)
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)

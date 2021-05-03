@@ -60,7 +60,8 @@ SPOTIFY_PLAYLIST_URL_REGEX = r"[\bhttps://open.\b]*spotify[\b.com\b]*[/:]*playli
 YOUTUBE_URL_REGEX = r"(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/" \
                     r"(?:watch|v|embed)(?:\.php)?(?:\?.*v=|\/))([a-zA-Z0-9\_-]+)"
 INVITE_URL_REGEX = r"discord(?:\.com|app\.com|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})"
-# i barely understand these regexes omg
+MESSAGE_LINK_REGEX = r"discord.com/channels/\d{18}/\d{18}/\d{18}"
+# i barely understand these regexes
 
 ADMIN_INVITE = "https://discord.com/oauth2/authorize?client_id=799328036662935572&permissions=8&redirect_uri" \
                "=https://127.0.0.1:5000/login&scope=bot"

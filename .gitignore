@@ -2,10 +2,7 @@ __pycache__
 .vscode
 .idea
 .env
-assets/purge_txts
 run.bat
 saturn.log
 venv
-assets/profanity.txt
 assets/imgs/profile.jpg
-assets/channel_exports
