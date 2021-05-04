@@ -140,7 +140,8 @@ class Config(commands.Cog):
         prefixes = data["prefix"]
 
         if isinstance(prefixes, str):
-            pass
+            prefixes = None
+
         else:
             try:
                 prefixes.remove(prefix)
