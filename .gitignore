@@ -6,3 +6,5 @@ run.bat
 saturn.log
 venv
 assets/imgs/profile.jpg
+assets/purge_txts/*.txt
+assets/channel_exports/*.txt
