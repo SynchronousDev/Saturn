@@ -141,7 +141,7 @@ async def func():
 
     @commands.command(
         name='logout',
-        aliases=['exit'],
+        aliases=['exit', 'disconnect'],
         description='A developer command. Closes the websocket connection and logs the bot out.')
     async def logout_cmd(self, ctx):
         em = SaturnEmbed(
@@ -152,8 +152,8 @@ async def func():
         await self.bot.logout()
 
     @commands.command(
-        name='global_toggle',
-        aliases=['gtoggle', 'gt'],
+        name='globaltoggle',
+        aliases=['gtoggle', 'gt', 'global-toggle', 'globalt', 'global_toggle'],
         description='A developer command. Enable or disable commands globally.')
     async def global_toggle(self, ctx, *, command):
         _command = self.bot.get_command(command)

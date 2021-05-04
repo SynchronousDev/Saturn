@@ -50,6 +50,8 @@ NO_ENTRY = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/12
            'no-entry_26d4.png'
 UNBAN = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/' \
         'door_1f6aa.png'
+NOTE = "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/" \
+       "thumbs/120/mozilla/36/memo_1f4dd.png"
 INFO_URL = 'https://cdn.discordapp.com/emojis/821565551939420170.png?v=1'
 # weird emotes and stuff yay?
 

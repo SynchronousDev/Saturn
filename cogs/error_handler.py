@@ -12,6 +12,27 @@ class ErrorHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def raise_exception(self, exc, ctx: commands.Context) -> None:
+        print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+        _traceback = traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
+        tb = ''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        
+        paste = await self.bot.paste.post(tb, syntax='py')
+
+        send_embed = SaturnEmbed(
+            description=f"{ERROR} Something went wrong. Whoops! "
+                        f"Please report this error in our [Support Server](https://discord.gg/A4DFFUD3zX)",
+            colour=RED
+        )
+        stdout_embed = SaturnEmbed(
+            description=f"{ERROR} Something went wrong. Whoops!"
+                        f"```{str(exc)}```\n"
+                        f"[View full error output]({paste})",
+            color=RED
+        )
+        await ctx.send(embed=send_embed)
+        await self.bot.stdout.send(content="|| <@&835148459312021534> ||", embed=stdout_embed)
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx, exc):
         if hasattr(ctx.command, 'on_error'):
@@ -187,28 +208,10 @@ class ErrorHandler(commands.Cog):
             await ctx.send(embed=em)
 
         elif hasattr(exc, "original"):
-            em = SaturnEmbed(
-                description=f"{ERROR} Something went wrong. Whoops!"
-                            f"```{exc}```",
-                color=RED)
-            em.set_author(name=f"[View full error output]({await self.bot.paste.post(str(exc), syntax='py')})")
-            await ctx.send(embed=em)
-            await self.bot.stdout.send(embed=em)
-            await self.bot.stdout.send()
-            raise exc.original
+            await self.raise_exception(exc, ctx)
 
         else:
-            em = SaturnEmbed(
-                description=f"{ERROR} Something went wrong. Whoops!"
-                            f"```{str(exc)}```",
-                color=RED)
-            em.set_author(name=f"[View full error output]({await self.bot.paste.post(str(exc), syntax='py')})")
-            await ctx.send(embed=em)
-            await self.bot.stdout.send(embed=em)
-            print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
-            traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
-            log.warning("Something went wrong.")
-
+            await self.raise_exception(exc, ctx)
 
 def setup(bot):
     bot.add_cog(ErrorHandler(bot))

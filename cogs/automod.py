@@ -230,6 +230,19 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         await profanity_check(self.bot, message)
         await spam_check(self.bot, message)
 
+    async def get_profanity_status(self, ctx):
+        data = await self.bot.config.find_one({"_id": ctx.guild.id})
+        try:
+            if not data['profanity_toggle']:
+                toggle = False
+            else:
+                toggle = data['profanity_toggle']
+
+        except (TypeError, KeyError):
+            toggle = False
+
+        return toggle
+
     @commands.group(
         name='profanity',
         aliases=['prof', 'swears', 'sw', 'curses'],
@@ -243,21 +256,79 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
             raise
 
     @anti_profanity.command(
+        name='status',
+        aliases=['current'],
+        description='Displays the current status of the anti-profanity system.'
+    )
+    @commands.cooldown(1, 3, commands.BucketType.guild)
+    async def show_current_profanity_status(self, ctx):
+        toggle = await self.get_profanity_status(ctx)
+
+        status = "enabled" if not toggle else "disabled"
+        em = SaturnEmbed(
+            description=f"{INFO} Anti-profanity is currently `{status}`",
+            color=BLUE)
+        await ctx.send(embed=em)
+
+    @anti_profanity.command(
+        name='words',
+        aliases=['listswears', 'showswears', 'curses', 'swears'],
+        description='Displays the current blacklisted words.'
+    )
+    @commands.cooldown(1, 3, commands.BucketType.guild)
+    async def show_current_profanity_words(self, ctx):
+        data = await self.bot.config.find_one({"_id": ctx.guild.id})
+        words = []
+
+        try:
+            if not data['words']:
+                words = self.get_censor_words()
+
+            else:
+                words = data['words']
+
+        except (TypeError, KeyError):
+            words = self.get_censor_words()
+
+        toggle = await self.get_profanity_status(ctx)
+
+        if not toggle:
+            em = SaturnEmbed(
+                description=f"{ERROR} Anti-profanity is disabled in this guild.",
+                colour=RED)
+            return await ctx.send(embed=em)
+        
+        elif not len(words):
+            em = SaturnEmbed(
+                description=f"{ERROR} There are no blacklisted words in this guild.",
+                colour=RED)
+            return await ctx.send(embed=em)
+
+        else:
+            desc = "||" + '\n'.join(words) + "||"
+
+            if len(desc) >= 2000:
+                desc = desc[:2000] + "||... (truncated)"
+
+            em = SaturnEmbed(
+                description=desc,
+                color=MAIN,
+                timestamp=utc())
+            em.set_author(
+                icon_url=ctx.guild.icon_url, 
+                name="Blacklisted Words in {}".format(ctx.guild))
+            em.set_thumbnail(url=NOTE)
+            em.set_footer(text="Warning! You may find sensitive words in the spoilers!")
+            await ctx.send(embed=em)
+
+    @anti_profanity.command(
         name='toggle',
         aliases=['switch', 'tggle'],
         description='Toggles the anti-profanity system on or off.'
     )
     @commands.cooldown(1, 3, commands.BucketType.guild)
     async def toggle_profanity(self, ctx):
-        data = await self.bot.config.find_one({"_id": ctx.guild.id})
-        try:
-            if not data['profanity_toggle']:
-                toggle = False
-            else:
-                toggle = data['profanity_toggle']
-
-        except (TypeError, KeyError):
-            toggle = False
+        toggle = await self.get_profanity_status(ctx)
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
                                          {'$set': {"profanity_toggle": not toggle}}, upsert=True)
@@ -271,51 +342,51 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         name='add',
         aliases=['addword', 'addcurse', 'addswear', 'addprofanity'],
         description='Adds a curse word the anti-profanity system detects. '
-                    f'Use -default to include the default wordlist.'
+                    f'Use --default to change the current wordlist to the default wordlist.'
     )
     @commands.cooldown(1, 3, commands.BucketType.member)
     async def add_curse(self, ctx, *, word: str):
-        if word == "-default":
+        if str(word).lower() == "--default":
             words = self.get_censor_words()
 
         else:
             words = []
 
-        data = await self.bot.config.find_one({"_id": ctx.guild.id})
-        if words and word in words:
-            em = SaturnEmbed(
-                description=f"{ERROR} That word is already recognized as a curse word.",
-                colour=RED)
-            return await ctx.send(embed=em)
+            data = await self.bot.config.find_one({"_id": ctx.guild.id})
+            if words and word in words:
+                em = SaturnEmbed(
+                    description=f"{ERROR} That word is already recognized as a curse word.",
+                    colour=RED)
+                return await ctx.send(embed=em)
 
-        try:
-            _ = data['words']
-            if not data['words']:
+            try:
+                _ = data['words']
+                if not data['words']:
+                    words.append(word)
+
+                else:
+                    words = data['words']
+                    if word in words:
+                        em = SaturnEmbed(
+                            description=f"{ERROR} That word is already recognized as a curse word.",
+                            colour=RED)
+                        return await ctx.send(embed=em)
+
+                    words.append(word)
+
+            except (TypeError, KeyError):
                 words.append(word)
-
-            else:
-                words = data['words']
-                if word in words:
-                    em = SaturnEmbed(
-                        description=f"{ERROR} That word is already recognized as a curse word.",
-                        colour=RED)
-                    return await ctx.send(embed=em)
-
-                words.append(word)
-
-        except (TypeError, KeyError):
-            words.append(word)
 
         await self.bot.config.update_one({"_id": ctx.guild.id},
                                          {'$set': {"words": words}}, upsert=True)
 
-        if word != '-default':
+        if word != '--default':
             await ctx.message.delete()
 
         em = SaturnEmbed(
             description=f"{CHECK} Added "
-                        f"{f'|| {word} ||' if word != '-default' else 'the default wordlist'} "
-                        f"as a recognized curse word.",
+                        f"{f'||{word}||' if word != '--default' else 'the default wordlist'} "
+                        f" as a recognized curse word.",
             color=GREEN)
         await ctx.send(embed=em)
 
@@ -351,7 +422,7 @@ class AutoMod(commands.Cog, name='Auto Moderation'):
         await ctx.message.delete()
 
         em = SaturnEmbed(
-            description=f"{CHECK} Removed || {word} || as a registered curse word.",
+            description=f"{CHECK} Removed ||{word}|| as a registered curse word.",
             color=GREEN)
         await ctx.send(embed=em)
 

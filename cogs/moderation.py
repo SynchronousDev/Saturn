@@ -62,8 +62,7 @@ async def purge_msgs(bot, ctx, limit, check):
         colour=discord.Colour.orange(),
         timestamp=utc()
     )
-    em.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/"
-                         "thumbs/120/mozilla/36/memo_1f4dd.png")
+    em.set_thumbnail(url=NOTE)
     em.set_footer(text="Download the attached .txt file to view the contents.")
     await mod_logs.send(embed=em)
     await asyncio.sleep(0.5)

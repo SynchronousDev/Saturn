@@ -139,7 +139,13 @@ class Config(commands.Cog):
 
         prefixes = data["prefix"]
 
-        if isinstance(prefixes, str):
+        if prefix not in prefixes:
+            em = SaturnEmbed(
+                    description=f"{ERROR} `{prefix}` is not registered as a prefix.",
+                    colour=RED)
+            return await ctx.send(embed=em)
+
+        elif isinstance(prefixes, str) or len(prefixes) == 1:
             prefixes = None
 
         else:

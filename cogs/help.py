@@ -32,7 +32,7 @@ class Help(commands.Cog):
         except commands.CommandError:
             return False
 
-    async def full_command_syntax(self, ctx: commands.Context, command: commands.Command) -> str or False:
+    async def full_command_syntax(self, ctx: commands.Context, command: commands.Command) -> str:
         """
         Get the full command syntax.
         """
@@ -44,33 +44,53 @@ class Help(commands.Cog):
                 return f" ↳ {await syntax(command)}"
 
         else:
-            return "You cannot run this command."
+            return        
 
-    async def cog_command_syntax(self, ctx: commands.Context, command: commands.Command) -> str or False:
+    async def cog_command_syntax(self, ctx: commands.Context, command: commands.Command) -> str:
+        """
+        Get the cog command syntax.
+        """
         if await self.can_run(command, ctx):
             if not command.parent:
                 return f"**{command.name} {'(has subcommands)' if isinstance(command, commands.Group) else ''}" \
                        f"**\n`{await syntax(command)}` - {command.description}\n "
 
         else:
-            return False
+            return
 
     async def send_command_help(self, ctx, command):
+        """
+        Send help for a command/subcommand.
+        """
         em = SaturnEmbed(
-            title=f'Help for command {command.name}',
-            description=command.description,
+            title=f'Help for {"command" if not len(command.parents) else "subcommand"} `{command.name}`',
+            description=f"{command.description}",  # I put this in a f-string because I can format it later lol
             colour=MAIN,
             timestamp=utc()
         )
-        em.add_field(name='Syntax', value=await self.full_command_syntax(ctx, command))
+
+        em.add_field(name='Syntax', value=f"`{await syntax(command)}`")
         if command.aliases:
-            em.add_field(name='Aliases', value=', '.join(command.aliases))
+            em.add_field(name='Aliases', value=f"`{', '.join(command.aliases)}`")
 
         cooldown = command.get_cooldown_retry_after(ctx)
         if cooldown > 0:
-            em.add_field(name='Cooldown Remaining', value=convert_time(int(cooldown)))
+            em.add_field(name='Cooldown Remaining', value=f"`{convert_time(int(cooldown))}`")
 
-        await ctx.send(embed=em)
+        subcommands = [
+            f"`{await self.full_command_syntax(ctx, cmd)}`" for cmd in command.cog.walk_commands() if cmd.parent == command
+        ]
+
+        if len(subcommands) and await self.can_run(command, ctx):
+            em.add_field(
+                name='Subcommands',
+                value='\n'.join(subcommands)
+            )
+
+        if not await self.can_run(command, ctx):
+            em.set_footer(text="Warning! You cannot run this command!")
+
+        return await ctx.send(embed=em)
 
     @commands.command(
         name='help',
@@ -140,18 +160,32 @@ class Help(commands.Cog):
                 em.set_footer(text="Make sure the name of the module is exactly the same as listed above.")
                 return await ctx.send(embed=em)
 
-            elif self.bot.get_cog(_cog) and _cog not in self.unlisted_cogs:
-                cog = self.bot.get_cog(_cog)                
-                for command in cog.walk_commands():
-                    invoke = await self.cog_command_syntax(ctx, command)
-                    if invoke:
-                        entries.append(str(invoke))
+            elif self.bot.get_cog(_cog):
+                if _cog not in self.unlisted_cogs:
+                    cog = self.bot.get_cog(_cog)                
+                    for command in cog.walk_commands():
+                        invoke = await self.cog_command_syntax(ctx, command)
+                        if invoke:
+                            entries.append(str(invoke))
 
-                pager = Paginator(
-                    title=f"Commands in the {cog.qualified_name} module",
-                    entries=entries, length=6,
-                    colour=MAIN)
-                return await pager.start(ctx)
+                    pager = Paginator(
+                        title=f"Commands in the {cog.qualified_name} module",
+                        entries=entries, length=6,
+                        colour=MAIN)
+                    return await pager.start(ctx)
+
+                elif _cog in self.unlisted_cogs and ctx.author.id in self.bot.owner_ids:
+                    cog = self.bot.get_cog(_cog)                
+                    for command in cog.walk_commands():
+                        invoke = await self.cog_command_syntax(ctx, command)
+                        if invoke:
+                            entries.append(str(invoke))
+
+                    pager = Paginator(
+                        title=f"Commands in the {cog.qualified_name} module",
+                        entries=entries, length=6,
+                        colour=MAIN)
+                    return await pager.start(ctx)
 
             elif command := self.bot.get_command(_cmd):
                 if command in filtered_commands and ctx.author.id in self.bot.owner_ids:

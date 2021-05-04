@@ -420,7 +420,11 @@ class Fun(commands.Cog):
 					break
 
 				amount = random.randint(10, 50) 
-				will_attack = random.choice([True, False, True])
+				if attacker.health < 100:
+					will_attack = random.choice([True, False, True])
+
+				else:
+					will_attack = True
 
 				# if it returns True then member attacks
 				# it's a 2/3 chance that the member will attack
