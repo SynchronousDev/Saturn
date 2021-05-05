@@ -99,7 +99,7 @@ class Dev(commands.Cog):
         # noinspection RegExpAnonymousGroup
         if not re.search(  # Check if it's an expression
                 r"^(return|import|for|while|def|class|raise|print"
-                r"from|exit|[a-zA-Z0-9]+\s*=)", code, re.M) and len(
+                r"from|exit|[a-zA-Z0-9]+\s*=)", code) and len(
                     code.split("\n")) == 1:
             code = "_ = " + code
 

@@ -40,8 +40,7 @@ class Saturn(commands.Bot):
         self.__name__ = 'Saturn'
         self.src = 'https://github.com/SynchronousDev/saturn-discord-bot'
 
-        self.path = Path(__file__).parents[0]
-        self.path = str(self.path)
+        self.path = str(Path(__file__).parents[0])
         self.__version__ = '1.1.0'
 
         self.mongo_connection_url = os.environ.get("MONGO")
