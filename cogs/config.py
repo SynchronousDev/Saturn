@@ -497,7 +497,8 @@ class Config(commands.Cog):
         try:
             member_log_level = data['member_log_level']
 
-        except (TypeError, KeyError): member_log_level = "HIGH"
+        except (TypeError, KeyError): 
+            member_log_level = "HIGH"
 
         em = SaturnEmbed(
             description=f"{INFO} The member logs level is currently set to `{member_log_level.upper()}`\n"

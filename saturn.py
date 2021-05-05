@@ -107,7 +107,10 @@ class Saturn(commands.Bot):
                 return await ctx.send(embed=em)
 
             if await self.blacklists.find_one({"_id": ctx.author.id}):
-                raise Blacklisted
+                em = SaturnEmbed(
+                    description=f"{ERROR} You are blacklisted from the bot.",
+                    colour=RED)
+                await ctx.author.send(embed=em)
 
             elif not self.ready:
                 em = SaturnEmbed(

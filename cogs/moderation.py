@@ -395,7 +395,7 @@ async def unmute_members(bot, ctx, member: discord.Member, reason, mute_role):
         await bot.mutes.delete_one({"_id": member.id})
         bot.muted_users.pop(member.id)
 
-    except commands.MemberNotFound or KeyError:
+    except (commands.MemberNotFound, KeyError):
         pass
 
     await member.remove_roles(mute_role,
@@ -501,7 +501,7 @@ class Mod(commands.Cog, name='Moderation'):
                     await self.bot.mutes.delete_one({"_id": member.id})
                     self.bot.muted_users.pop(member.id)
 
-                except commands.MemberNotFound or KeyError:
+                except (commands.MemberNotFound, KeyError):
                     pass
 
                 continue
@@ -516,7 +516,7 @@ class Mod(commands.Cog, name='Moderation'):
                     await self.bot.mutes.delete_one({"_id": member.id})
                     self.bot.muted_users.pop(member.id)
 
-                except commands.MemberNotFound or KeyError:
+                except (commands.MemberNotFound, KeyError):
                     pass
 
                 if isinstance(member, discord.Member):
@@ -533,7 +533,7 @@ class Mod(commands.Cog, name='Moderation'):
                                 await self.bot.mutes.delete_one({"_id": member.id})
                                 self.bot.muted_users.pop(member.id)
 
-                            except commands.MemberNotFound or KeyError:
+                            except (commands.MemberNotFound, KeyError):
                                 pass
 
                     except (TypeError, KeyError):
@@ -554,7 +554,7 @@ class Mod(commands.Cog, name='Moderation'):
                     self.bot.banned_users.pop(member.id)
                     await guild.unban(user=member, reason="Ban time expired")
 
-                except discord.NotFound or commands.MemberNotFound or KeyError:
+                except (discord.NotFound, commands.MemberNotFound, KeyError):
                     pass
 
     @check_mods.before_loop
@@ -585,7 +585,7 @@ class Mod(commands.Cog, name='Moderation'):
                 await self.bot.mutes.delete_one({"_id": after.id})
                 self.bot.muted_users.pop(after.id)
 
-            except commands.MemberNotFound or KeyError:
+            except (commands.MemberNotFound, KeyError):
                 pass
 
     @commands.Cog.listener()
@@ -1110,7 +1110,7 @@ class Mod(commands.Cog, name='Moderation'):
                     await self.bot.mutes.delete_one({"_id": member.id})
                     self.bot.muted_users.pop(member.id)
 
-                except commands.MemberNotFound or KeyError:
+                except (commands.MemberNotFound, KeyError):
                     pass
 
                 em = SaturnEmbed(

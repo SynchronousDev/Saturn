@@ -61,7 +61,12 @@ async def profanity_check(bot, message):
                     return False  # make sure that they're not adding a word
                 # in that case then don't do stuff
 
-                await message.delete()
+                try:
+                    await message.delete()
+
+                except discord.NotFound:
+                    pass
+                
                 em = SaturnEmbed(
                     description=f"{WARNING} That word is not allowed in **{message.guild}**!",
                     colour=GOLD)
@@ -94,8 +99,9 @@ async def spam_check(bot, message):
                         limit=to_delete,
                         check=lambda m: m in _cache)  # make sure that the message author is the spammer
 
-                except discord.NotFound or discord.NoMoreItems or asyncio.QueueEmpty:
+                except (discord.NotFound. discord.NoMoreItems, asyncio.QueueEmpty):
                     pass
+
                 data = await bot.config.find_one({"_id": message.guild.id})
                 try:
                     whitelist = data['spam_whitelist']

@@ -75,12 +75,6 @@ class ErrorHandler(commands.Cog):
                 colour=RED)
             await ctx.send(embed=em)
 
-        elif isinstance(exc, Blacklisted):
-            em = Embed(
-                description=f"{ERROR} You are blacklisted from the bot.",
-                colour=RED)
-            await ctx.author.send(embed=em)
-
         elif isinstance(exc, commands.RoleNotFound):
             em = Embed(
                 description=f"{ERROR} No such role was found.",
@@ -164,12 +158,6 @@ class ErrorHandler(commands.Cog):
                 colour=RED)
             await ctx.send(embed=em)
 
-        elif isinstance(exc, Blacklisted):
-            em = SaturnEmbed(
-                    description=f"{ERROR} You are blacklisted.",
-                    colour=RED)
-            await ctx.send(embed=em)
-
         elif isinstance(exc, RoleNotHighEnough):
             em = SaturnEmbed(
                     description=f"{ERROR} You are not high enough in the role hierarchy to perform this action.",
@@ -179,12 +167,6 @@ class ErrorHandler(commands.Cog):
         elif isinstance(exc, BotRoleNotHighEnough):
             em = SaturnEmbed(
                     description=f"{ERROR} I am not high enough in the role hierarchy to perform this action.",
-                    color=RED)
-            await ctx.send(embed=em)
-
-        elif isinstance(exc, assets.errors.Blacklisted):
-            em = SaturnEmbed(
-                    description=f"{ERROR} You are blacklisted from using this bot.",
                     color=RED)
             await ctx.send(embed=em)
 

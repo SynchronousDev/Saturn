@@ -2,6 +2,7 @@ import contextlib
 import inspect
 import io
 import re
+from saturn import Saturn
 import textwrap
 import traceback
 # from traceback import format_exception
@@ -126,18 +127,26 @@ async def func():
 
         res = str(res)
 
-        pager = Paginator(
-            entries=[res[i: i + (2000 - len(code))]
-                     for i in range(0, len(res), (2000 - len(code)))],
-            length=1,
-            colour=colour,
-            title="Eval Job Completed" if colour == DIFF_GREEN else "Eval Failed",
-            footer=f'{self.bot.__name__} Eval command',
-            prefix=f"```py\n{code.strip('_ = ')}```\n```py\n",
-            suffix='```'
-        )
+        try:
+            pager = Paginator(
+                entries=[res[i: i + (2000 - len(code))]
+                        for i in range(0, len(res), (2000 - len(code)))],
+                length=1,
+                colour=colour,
+                title="Eval Job Completed" if colour == DIFF_GREEN else "Eval Failed",
+                footer=f'{self.bot.__name__} Eval command',
+                prefix=f"```py\n{code.strip('_ = ')}```\n```py\n",
+                suffix='```'
+            )
 
-        await pager.start(ctx)
+            await pager.start(ctx)
+
+        except AttributeError:
+            em = SaturnEmbed(
+                description=f"{INFO} Eval did not return any content.",
+                colour=BLUE)
+            return await ctx.send(embed=em)
+
 
     @commands.command(
         name='logout',

@@ -17,7 +17,3 @@ class InvalidLimit(commands.CommandError):
 class BotRoleNotHighEnough(commands.CommandError):
     """Raises when the bot's role is not higher than the target's role"""
     pass
-
-class Blacklisted(commands.CommandError):
-    """Raises when a member is blacklisted"""
-    pass
