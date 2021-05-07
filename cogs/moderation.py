@@ -69,10 +69,12 @@ async def create_purge_file(bot, ctx, deleted):
         await _create_pfile(bot, ctx, deleted)
 
     except FileNotFoundError:
-        os.mkdir(f"{bot.path}/assets/purge_txts")
-        await _create_pfile(bot, ctx, deleted)
+        try:
+            os.mkdir(f"{bot.path}/assets/purge_txts")
 
-    except FileExistsError:
+        except FileExistsError:
+            pass
+
         await _create_pfile(bot, ctx, deleted)
 
 async def _create_pfile(bot, ctx, deleted):
