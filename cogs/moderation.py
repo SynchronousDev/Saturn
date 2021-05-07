@@ -48,12 +48,7 @@ async def purge_msgs(bot, ctx, limit, check):
         await asyncio.sleep(0.5)
         await create_purge_file(bot, ctx, deleted)
 
-    try:
-        file = discord.File(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt')
-
-    except FileNotFoundError:
-        await create_purge_file(bot, ctx, deleted)
-        file = discord.File(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt')
+    file = discord.File(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt')
 
     em = SaturnEmbed(
         title='Messages Purged',
@@ -70,6 +65,14 @@ async def purge_msgs(bot, ctx, limit, check):
 
 
 async def create_purge_file(bot, ctx, deleted):
+    try:
+        await _create_pfile(bot, ctx, deleted)
+
+    except FileNotFoundError:
+        os.mkdir(f"{bot.path}/assets/purge_txts")
+        await _create_pfile(bot, ctx, deleted)
+
+async def _create_pfile(bot, ctx, deleted):
     with open(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
         f.write(f"{len(deleted)} messages deleted in the #{ctx.channel} channel by {ctx.author}:\n\n")
         for message in deleted:

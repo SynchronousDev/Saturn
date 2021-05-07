@@ -1,15 +1,39 @@
+import re
+import os
 from copy import deepcopy
-from time import time as _time
+from time import strftime, time as _time
 
-from dateutil.relativedelta import relativedelta
-
-from discord.ext import tasks
+from discord.errors import HTTPException
 
 from assets import *
+from dateutil.relativedelta import relativedelta
+from discord.ext import tasks
 
 log = logging.getLogger(__name__)
 
+async def create_export_file(ctx, messages, channel):
+    try:
+        await _create_efile(ctx.bot, ctx, messages)
 
+    except FileNotFoundError:
+        os.mkdir(f"{ctx.bot.path}/assets/purge_txts")
+        await _create_efile(ctx.bot, ctx, messages)
+
+async def _create_efile(ctx, messages, channel):
+    with open(f'{ctx.bot.path}/assets/channel_exports/{channel.id}-export.txt', 'w', encoding='utf-8') as f:
+        f.write(f"{len(messages)} messages exported from the #{channel} channel by {ctx.author}:\n\n")
+        for message in messages:
+            content = message.clean_content
+            if not message.author.bot:
+                f.write(f"{message.author} {convert_to_timestamp(message.created_at)} EST"
+                        f" (ID - {message.author.id})\n"
+                        f"{content} (Message ID - {message.id})\n\n")
+
+            else:
+                f.write(f"{message.author} {convert_to_timestamp(message.created_at)} EST"
+                        f" (ID - {message.author.id})\n"
+                        f"{'Embed/file sent by a bot' if not content else content}\n\n")
+    
 # noinspection SpellCheckingInspection
 class Utility(commands.Cog):
     """
@@ -42,29 +66,17 @@ class Utility(commands.Cog):
     async def before_clear_snipe_cache(self):
         await self.bot.wait_until_ready()
 
-    # @commands.command(
+    # @commands.group(
     #     name='poll',
     #     aliases=['pl', 'question'],
-    #     description="Start a poll for others to vote on."
+    #     description="Start a poll for others to vote on.",
+    #     invoke_without_command=True
     # )
     # @commands.cooldown(1, 3, commands.BucketType.member)
-    # async def new_poll(self, ctx, *, questions_and_choices):
-    #     questions_and_choices = questions_and_choices.split(' ')
-    #     question, choices = [], []
+    # async def poll(self, ctx, channel: typing.Optional[discord.TextChannel], question, *choices):
+    #     channel = channel or ctx.channel
 
-    #     for item in questions_and_choices:
-    #         if item.startswith('"') and item.endswith('"') and len(item) > 2:
-    #             if item in choices:
-    #                 continue
-
-    #             choices.append(item)
-
-    #         else:
-    #             question.append(item)
-
-    #     question = ' '.join(question)
-
-    #     if not question or not choices:
+    #     if not choices:
     #         em = SaturnEmbed(
     #             description=f"{ERROR} Please include both a question and choices.",
     #             color=RED)
@@ -77,7 +89,7 @@ class Utility(commands.Cog):
     #             color=RED)
     #         return await ctx.send(embed=em)
 
-    #     em = discord.Embed(
+    #     em = SaturnEmbed(
     #         title=question,
     #         description='\n\n'.join(
     #             ["{0} {1}".format(self.numbers[num], choice.replace('"', '')) for num, choice in enumerate(choices)]
@@ -86,32 +98,96 @@ class Utility(commands.Cog):
     #         timestamp=utc()
     #     )
     #     em.set_footer(text=f"Poll by {ctx.author.name}")
-    #     msg = await ctx.send(embed=em)
+    #     msg = await channel.send(embed=em)
 
     #     valid_emotes = self.numbers[:(len(choices))]
     #     for emoji in valid_emotes:
     #         await msg.add_reaction(emoji)
 
-    # @commands.Cog.listener()
-    # async def on_raw_reaction_add(self, payload):
-    #     reaction = str(_reaction.emoji)
-    #     r_index = (valid_emotes.index(reaction)) + 1
-
     #     self.polls[msg.id] = {
-    #         "1": 0,
-    #         "2": 0,
-    #         "3": 0,
-    #         "4": 0,
-    #         "5": 0,
-    #         "6": 0,
-    #         "7": 0,
-    #         "8": 0,
-    #         "9": 0,
-    #         "10": 0,
-    #         "guild_id": ctx.guild.id,
-    #         "message_author_id": ctx.author.id
+    #         "question": question,
+    #         "choices": choices,
+    #         "channel": msg.channel.id,
+    #         "author": ctx.author.id,
+    #         "guild": ctx.guild.id,
     #     }
-    #     self.polls[msg.id][str(r_index)] += 1
+
+    # @poll.command(name='polls')
+    # async def _polls(self, ctx):
+    #     await ctx.send(self.polls)
+
+    # @poll.command(
+    #     name='show',
+    #     aliases=['results', 'res', 'result', 'sh'],
+    #     description="Show the results of a poll."
+    # )
+    # async def show_poll_results(self, ctx, poll_id):
+    #     if re.search(MESSAGE_LINK_REGEX, str(poll_id)): # discord message url like https://discord.com/channels/num/num/num
+    #         items = poll_id.split('/')[4:]
+    #     else:
+            # if await self.bot.get_channel(items[1]).fetch_message(items[2]):
+            #     return await self.show_poll(items[2], items[1])
+            # try:   
+            #     if len(str(poll_id)) == 18 and self.polls[poll_id]:
+            #         try:
+            #             message = await ctx.fetch_message(poll_id)
+            #             if not message:
+            #                 em = SaturnEmbed(
+            #                     description=f"{ERROR} No poll with an id of `{poll_id}` was found.",
+            #                     color=RED)
+            #                 return await ctx.send(embed=em) 
+
+            #         except discord.NotFound:
+            #             em = SaturnEmbed(
+            #                 description=f"{ERROR} A poll with an id of `{poll_id}` was found, but the message does not exist anymore.",
+            #                 color=RED)
+            #             await ctx.send(embed=em) 
+
+            #             try:
+            #                 return self.polls.pop(poll_id)
+
+            #             except ValueError:
+            #                 return
+
+            #         else:
+            #             return await self.show_poll(message.id, message.channel.id)
+
+            # except KeyError:
+            #     em = SaturnEmbed(
+            #         description=f"{ERROR} No poll with an id of `{poll_id}` was found.",
+            #         color=RED)
+            #     return await ctx.send(embed=em)
+
+    #         em = SaturnEmbed(
+    #             description=f"{ERROR} No poll with an id of `{poll_id}` was found.",
+    #             color=RED)
+    #         await ctx.send(embed=em)
+
+    # async def show_poll(self, message_id, channel_id):
+    #     message = await self.bot.get_channel(channel_id).fetch_message(message_id)
+    #     message_reactions = message.reactions
+    #     _poll = self.polls[message.id]
+
+    #     print(message, message_reactions, _poll)
+
+        # for reaction in message_reactions:
+        #     if reaction not in 
+
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if self.bot.ready:
+            if payload.message_id in self.polls:
+                message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+
+                for reaction in message.reactions:
+                    if (not payload.member.bot and 
+                        payload.member in await reaction.users().flatten() and
+                        reaction.emoji != payload.emoji.name):
+
+                        await message.remove_reaction(reaction.emoji, payload.member)
+
+                    break
 
     @commands.command(
         name='uptime',
@@ -123,7 +199,7 @@ class Utility(commands.Cog):
         formatted_time = str(general_convert_time(time))
 
         await ctx.reply(
-            embed=discord.Embed(
+            embed=SaturnEmbed(
                 description=f"{self.bot.__name__} has been online for **{formatted_time}**",
                 colour=MAIN
             )
@@ -160,7 +236,7 @@ class Utility(commands.Cog):
         description="Show the bot's current version.")
     async def _vers(self, ctx):
         await ctx.reply(
-            embed=discord.Embed(
+            embed=SaturnEmbed(
                 description=f"{self.bot.__name__} is currently running on version **{self.bot.__version__}**",
                 colour=MAIN
             )
@@ -177,7 +253,7 @@ class Utility(commands.Cog):
             users = len(ctx.guild.members) - bots
             mods = len([m for m in ctx.guild.members if m.guild_permissions.kick_members]) - bots_with_perms
 
-            em = discord.Embed(
+            em = SaturnEmbed(
                 colour=MAIN,
                 timestamp=utc()
             )
@@ -274,20 +350,14 @@ class Utility(commands.Cog):
         msg = await ctx.send(embed=em)
         async with channel.typing():
             messages = await channel.history(limit=limit, oldest_first=True).flatten()
-            with open(f'{self.bot.path}/assets/channel_exports/{channel.id}-export.txt', 'w', encoding='utf-8') as f:
-                f.write(f"{len(messages)} messages exported from the #{channel} channel by {ctx.author}:\n\n")
-                for message in messages:
-                    content = message.clean_content
-                    if not message.author.bot:
-                        f.write(f"{message.author} {convert_to_timestamp(message.created_at)} EST"
-                                f" (ID - {message.author.id})\n"
-                                f"{content} (Message ID - {message.id})\n\n")
 
-                    else:
-                        f.write(f"{message.author} {convert_to_timestamp(message.created_at)} EST"
-                                f" (ID - {message.author.id})\n"
-                                f"{'Embed/file sent by a bot' if not content else content}\n\n")
+            try:
+                await create_export_file(ctx, messages, channel)
 
+            except FileNotFoundError:
+                await asyncio.sleep(0.5)
+                await create_export_file(ctx, messages, channel)
+            
             file = discord.File(f'{self.bot.path}/assets/channel_exports/{channel.id}-export.txt')
 
         await msg.delete()
