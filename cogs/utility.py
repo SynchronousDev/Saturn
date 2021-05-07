@@ -11,16 +11,16 @@ from discord.ext import tasks
 
 log = logging.getLogger(__name__)
 
-async def create_export_file(ctx, messages, channel):
+async def create_export_file(bot, ctx, messages, channel):
     try:
-        await _create_efile(ctx.bot, ctx, messages)
+        await _create_efile(bot, ctx, messages)
 
     except FileNotFoundError:
-        os.mkdir(f"{ctx.bot.path}/assets/purge_txts")
-        await _create_efile(ctx.bot, ctx, messages)
+        os.mkdir(f"{bot.path}/assets/purge_txts")
+        await _create_efile(bot, ctx, messages)
 
-async def _create_efile(ctx, messages, channel):
-    with open(f'{ctx.bot.path}/assets/channel_exports/{channel.id}-export.txt', 'w', encoding='utf-8') as f:
+async def _create_efile(bot, ctx, messages, channel):
+    with open(f'{bot.path}/assets/channel_exports/{channel.id}-export.txt', 'w', encoding='utf-8') as f:
         f.write(f"{len(messages)} messages exported from the #{channel} channel by {ctx.author}:\n\n")
         for message in messages:
             content = message.clean_content
@@ -352,11 +352,11 @@ class Utility(commands.Cog):
             messages = await channel.history(limit=limit, oldest_first=True).flatten()
 
             try:
-                await create_export_file(ctx, messages, channel)
+                await create_export_file(self.bot, ctx, messages, channel)
 
             except FileNotFoundError:
                 await asyncio.sleep(0.5)
-                await create_export_file(ctx, messages, channel)
+                await create_export_file(self.bot, ctx, messages, channel)
             
             file = discord.File(f'{self.bot.path}/assets/channel_exports/{channel.id}-export.txt')
 
