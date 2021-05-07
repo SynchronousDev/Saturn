@@ -19,6 +19,9 @@ async def create_export_file(bot, ctx, messages, channel):
         os.mkdir(f"{bot.path}/assets/purge_txts")
         await _create_efile(bot, ctx, messages, channel)
 
+    except FileExistsError:
+        await _create_efile(bot, ctx, messages, channel)
+
 async def _create_efile(bot, ctx, messages, channel):
     with open(f'{bot.path}/assets/channel_exports/{channel.id}-export.txt', 'w', encoding='utf-8') as f:
         f.write(f"{len(messages)} messages exported from the #{channel} channel by {ctx.author}:\n\n")

@@ -72,6 +72,9 @@ async def create_purge_file(bot, ctx, deleted):
         os.mkdir(f"{bot.path}/assets/purge_txts")
         await _create_pfile(bot, ctx, deleted)
 
+    except FileExistsError:
+        await _create_pfile(bot, ctx, deleted)
+
 async def _create_pfile(bot, ctx, deleted):
     with open(f'{bot.path}/assets/purge_txts/purge-{deleted[0].id}.txt', 'w+', encoding='utf-8') as f:
         f.write(f"{len(deleted)} messages deleted in the #{ctx.channel} channel by {ctx.author}:\n\n")
